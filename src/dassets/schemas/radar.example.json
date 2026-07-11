@@ -1,0 +1,4 @@
+{ "data": [
+  { "label": "木", "value": 62 }, { "label": "火", "value": 45 },
+  { "label": "土", "value": 83 }, { "label": "金", "value": 28 }, { "label": "水", "value": 91 }
+], "max": 100 }

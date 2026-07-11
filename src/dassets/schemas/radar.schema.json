@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Radar · N 维雷达图",
+  "type": "object",
+  "properties": {
+    "data": {
+      "type": "array", "minItems": 3,
+      "items": {
+        "type": "object",
+        "properties": { "label": { "type": "string" }, "value": { "type": "number", "minimum": 0 } },
+        "required": ["label", "value"]
+      }
+    },
+    "max": { "type": "number", "default": 100 },
+    "size": { "type": "number", "default": 230 }
+  },
+  "required": ["data"]
+}

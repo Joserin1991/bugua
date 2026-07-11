@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CastResult · 六爻卦象",
+  "type": "object",
+  "properties": {
+    "lines": {
+      "type": "array", "minItems": 6, "maxItems": 6, "description": "自下而上六爻",
+      "items": {
+        "type": "object",
+        "properties": {
+          "value": { "type": "integer", "enum": [6, 7, 8, 9], "description": "6老阴 7少阳 8少阴 9老阳" },
+          "yang": { "type": "boolean" }, "changing": { "type": "boolean" }
+        },
+        "required": ["value", "yang", "changing"]
+      }
+    },
+    "originalId": { "type": "integer", "minimum": 1, "maximum": 64, "description": "本卦（文王序）" },
+    "changedId": { "type": ["integer", "null"] },
+    "mutualId": { "type": "integer" }
+  },
+  "required": ["lines", "originalId"]
+}

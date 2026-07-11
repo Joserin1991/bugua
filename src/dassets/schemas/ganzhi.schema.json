@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GanZhiChar · 干支单字原子",
+  "type": "object",
+  "properties": {
+    "char": { "type": "string", "description": "甲乙丙丁…或子丑寅卯…" },
+    "wuxing": { "type": "string", "enum": ["木","火","土","金","水"], "description": "缺省按干支表自动推导" },
+    "yinyang": { "type": "string", "enum": ["阳","阴"], "description": "缺省自动推导；阳=实浓 阴=虚淡" },
+    "size": { "type": "number", "description": "字号(rem)" },
+    "brush": { "type": "boolean", "description": "毛笔字体" }
+  },
+  "required": ["char"]
+}

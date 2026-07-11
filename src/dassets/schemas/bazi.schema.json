@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BaziChart · 八字命盘引擎输出（computeBazi 产物）",
+  "type": "object",
+  "properties": {
+    "gender": { "type": "string", "enum": ["男", "女"] },
+    "solarText": { "type": "string" }, "lunarText": { "type": "string" }, "jieQi": { "type": "string" },
+    "pillars": {
+      "type": "array", "minItems": 4, "maxItems": 4,
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": { "type": "string" }, "gan": { "type": "string" }, "zhi": { "type": "string" },
+          "ganWx": { "type": "string" }, "zhiWx": { "type": "string" }, "ganGod": { "type": "string" },
+          "cangGan": { "type": "array", "items": { "type": "object", "properties": { "gan": {"type":"string"}, "god": {"type":"string"}, "wx": {"type":"string"} } } },
+          "naYin": { "type": "string" }
+        },
+        "required": ["label", "gan", "zhi"]
+      }
+    },
+    "dayGan": { "type": "string" }, "dayGanWx": { "type": "string" },
+    "wuxingCount": { "type": "object" },
+    "strength": { "type": "object", "properties": { "score": {"type":"number"}, "level": {"type":"string"}, "detail": {"type":"string"} } },
+    "favorable": { "type": "array", "items": { "type": "string" } },
+    "unfavorable": { "type": "array", "items": { "type": "string" } },
+    "daYun": { "type": "array", "items": { "type": "object", "properties": { "ganZhi": {"type":"string"}, "startYear": {"type":"integer"}, "endYear": {"type":"integer"}, "startAge": {"type":"integer"}, "god": {"type":"string"} } } },
+    "shenSha": { "type": "array", "items": { "type": "object", "properties": { "name": {"type":"string"}, "where": {"type":"string"}, "desc": {"type":"string"} } } },
+    "mingGong": { "type": "string" }, "taiYuan": { "type": "string" }
+  },
+  "required": ["gender", "pillars", "dayGan"]
+}

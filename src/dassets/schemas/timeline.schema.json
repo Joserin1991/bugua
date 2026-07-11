@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DayunLineChart · 运程折线（吉/平/凶）",
+  "type": "object",
+  "properties": {
+    "points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "year": { "type": "integer" },
+          "score": { "type": "number", "minimum": 1, "maximum": 5, "description": "1凶…5吉" },
+          "tag": { "type": "string", "description": "十神/事件标签" }
+        },
+        "required": ["year", "score"]
+      }
+    },
+    "activeYear": { "type": "integer" }
+  },
+  "required": ["points"]
+}
