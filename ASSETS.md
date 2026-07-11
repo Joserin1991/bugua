@@ -10,7 +10,7 @@
 |---|---|
 | 用途 | 排盘仪式动画第一幕：水墨太极旋转 |
 | 类型 | **视频**（需要动态的墨晕流动感，图片旋转做不出来） |
-| 格式 | **WebM（VP9 编码）**，最好带 Alpha 透明通道；若工具不支持透明，则**纯白背景**（#F5F0E4 更佳）也可以，代码里用 `mix-blend-mode: multiply` 融入宣纸底 |
+| 格式 | **WebM（VP9 编码）**，最好带 Alpha 透明通道；若工具不支持透明，则**纯白背景**（#FFFFFF）也可以，代码里用 `mix-blend-mode: multiply` 融入白底 |
 | 尺寸 | 1080 × 1080（正方形） |
 | 帧率/时长 | 24–30 fps，**4–6 秒无缝循环**（首尾帧衔接，太极旋转整数圈） |
 | 文件大小 | 建议 ≤ 5 MB（网页加载） |
@@ -18,10 +18,10 @@
 | 备选格式 | 若只能出 MP4（H.264）：改名放 `public/fx/` 后把 `RitualOverlay.tsx` 顶部 `TAIJI_VIDEO_URL` 的扩展名改成 `.mp4` 即可 |
 
 **生成 Prompt（中文）：**
-> 中国水墨画风格的太极图在宣纸上缓缓顺时针旋转，墨色浓淡相间，边缘有毛笔飞白和墨晕渗染效果，周围环绕淡淡的水墨烟雾缭绕流动，仙气飘飘，禅意空灵，米白色宣纸背景，极简构图，居中，无文字，无印章，循环动画
+> 纯黑白水墨风格的太极图缓缓顺时针旋转，浓墨与留白对比强烈，墨色由浓到淡层次分明，边缘有毛笔飞白和墨晕渗染效果，周围环绕黑灰色水墨烟雾缭绕流动，仙气飘飘，禅意空灵，纯白背景，黑白灰单色无彩色，极简构图，居中，无文字，无印章，循环动画
 
 **生成 Prompt（English）：**
-> Chinese ink wash painting style taiji (yin-yang) symbol slowly rotating clockwise on rice paper, ink gradients with dry-brush flying-white edges and ink bleed halo, surrounded by softly drifting ink mist and ethereal smoke, zen, minimal composition, centered, ivory rice paper background, no text, no watermark, seamless loop animation
+> Pure black and white Chinese ink wash taiji (yin-yang) symbol slowly rotating clockwise, strong contrast of dense black ink and white negative space, tonal ink gradients with dry-brush flying-white edges and ink bleed halo, surrounded by drifting grey ink mist and ethereal smoke, zen, monochrome only no color, minimal composition, centered, pure white background, no text, no watermark, seamless loop animation
 
 ---
 
@@ -38,10 +38,10 @@
 | 存放路径 | `public/fx/smoke-dissolve.webm`（预留位，当前由 CSS 模糊消散兜底） |
 
 **生成 Prompt（中文）：**
-> 浓白色水墨烟雾从画面中心向四周缓缓消散退去，露出透明背景，中国水墨画质感，烟雾如宣纸上晕开又收拢的墨雾，柔和飘逸，仙气，透明通道，从满屏浓雾到完全消散
+> 黑灰色水墨烟雾从画面中心向四周缓缓消散退去，露出透明背景，纯黑白水墨质感，烟雾如白纸上晕开又收拢的墨雾，浓淡相破，柔和飘逸，仙气，单色无彩色，透明通道，从满屏浓雾到完全消散
 
 **生成 Prompt（English）：**
-> Thick white-grey ink mist slowly dissolving outward from center revealing transparent background, Chinese ink painting texture, soft ethereal smoke like ink wash dispersing on rice paper, alpha channel, from full-screen fog to fully cleared, elegant and slow
+> Thick black and grey ink mist slowly dissolving outward from center revealing transparent background, monochrome Chinese ink painting texture, soft ethereal smoke like ink wash dispersing on white paper, black and white only no color, alpha channel, from full-screen fog to fully cleared, elegant and slow
 
 ---
 
@@ -57,10 +57,10 @@
 | 存放路径 | `public/bg/ink-landscape.jpg`，然后在 `src/index.css` 的 `body` 背景里取消对应注释（我预留了标注） |
 
 **生成 Prompt（中文）：**
-> 中国水墨山水画，远山如黛淡墨轻扫在画面顶部边缘，几只飞鸟点缀，右下角一叶扁舟，大量留白，米白宣纸底色，构图极简空灵，禅意，仙气，中央区域完全空白，淡雅低对比度，适合做网页背景
+> 纯黑白水墨山水画，远山淡墨轻扫在画面顶部边缘，几只飞鸟点缀，右下角一叶扁舟，大量留白，纯白底色，黑白灰单色无彩色，构图极简空灵，禅意，仙气，中央区域完全空白，淡雅低对比度，适合做网页背景
 
 **生成 Prompt（English）：**
-> Chinese ink wash landscape painting, faint distant mountains brushed lightly along top edge, a few small birds, tiny lone boat in bottom corner, vast negative space, ivory rice paper tone, extremely minimal and zen, ethereal, center area completely empty, low contrast muted elegance, suitable as webpage background
+> Black and white Chinese ink wash landscape painting, faint distant grey mountains brushed lightly along top edge, a few small birds, tiny lone boat in bottom corner, vast negative space, pure white background, monochrome only no color, extremely minimal and zen, ethereal, center area completely empty, low contrast muted elegance, suitable as webpage background
 
 ---
 
@@ -76,7 +76,7 @@
 | 存放路径 | `public/bg/ink-mountains-footer.png` |
 
 **生成 Prompt（中文）：**
-> 水墨远山横幅，连绵山峦淡墨渲染由浓到淡，山间云雾缭绕，几株松树剪影，底部渐隐为透明，横长构图，中国画留白意境，透明背景 PNG
+> 黑白水墨远山横幅，连绵山峦墨色由浓到淡渲染，山间云雾缭绕留白，几株松树剪影，底部渐隐为透明，横长构图，黑白灰单色无彩色，透明背景 PNG
 
 ---
 
@@ -91,13 +91,13 @@
 | 存放路径 | `public/fx/coin-front.png`、`public/fx/coin-back.png` |
 
 **生成 Prompt（中文）：**
-> 一枚古代铜钱的水墨画，圆形方孔钱，毛笔勾勒轮廓带飞白笔触，正面隐约可见「乾隆通宝」四字篆书（反面则为光背无字），淡赭石色晕染，透明背景，居中，中国画风格
+> 一枚古代铜钱的黑白水墨画，圆形方孔钱，毛笔勾勒轮廓带飞白笔触，正面隐约可见「乾隆通宝」四字篆书（反面则为光背无字），墨色浓淡晕染，黑白灰单色无彩色，透明背景，居中，中国画风格
 
 ---
 
 ## 通用要求
 
-- 色调统一：**米白宣纸底（#EDE7D7 附近）+ 墨黑（#1F1C17）+ 朱砂红点缀（#A8382B）**，避免鲜艳彩色
+- 色调统一：**纯黑白水墨**——白底（#F6F6F3 附近的冷白）+ 墨黑（#171717）+ 灰阶墨韵过渡；除朱砂红印章点缀（#A8382B）外**不得出现任何彩色**
 - 一律**无文字水印、无签名、无 logo**（提示词里已写明，生成后请检查）
 - 视频若无法输出 WebM，可先出高质量 MP4/GIF/PNG 序列帧，再用 ffmpeg 转：
   `ffmpeg -i in.mp4 -c:v libvpx-vp9 -crf 32 -b:v 0 -an taiji-ink-spin.webm`

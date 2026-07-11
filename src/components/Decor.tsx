@@ -1,7 +1,7 @@
 // 背景装饰：水墨氛围（雾气/飞鸟）、八卦轮、太极、云纹
 import { TRIGRAM_LINES } from '../data/hexagrams'
 
-const INK = '#1f1c17'
+const INK = '#171717'
 
 export function InkAtmosphere() {
   return (
@@ -61,12 +61,12 @@ export function BaguaWheel({ size = 520, className = '' }: { size?: number; clas
 export function Taiji({ cx, cy, r, spin = false }: { cx: number; cy: number; r: number; spin?: boolean }) {
   return (
     <g className={spin ? 'taiji-spin' : undefined} style={spin ? { transformOrigin: `${cx}px ${cy}px` } : undefined}>
-      <circle cx={cx} cy={cy} r={r} fill="#f3eddd" stroke={INK} strokeWidth="1.5" />
+      <circle cx={cx} cy={cy} r={r} fill="#f5f5f3" stroke={INK} strokeWidth="1.5" />
       <path
         d={`M ${cx} ${cy - r} A ${r} ${r} 0 0 1 ${cx} ${cy + r} A ${r / 2} ${r / 2} 0 0 1 ${cx} ${cy} A ${r / 2} ${r / 2} 0 0 0 ${cx} ${cy - r} Z`}
         fill={INK}
       />
-      <circle cx={cx} cy={cy - r / 2} r={r / 7} fill="#f3eddd" />
+      <circle cx={cx} cy={cy - r / 2} r={r / 7} fill="#f5f5f3" />
       <circle cx={cx} cy={cy + r / 2} r={r / 7} fill={INK} />
     </g>
   )

@@ -30,26 +30,26 @@ export function InkTaiji({ size = 300 }: { size?: number }) {
           <feGaussianBlur stdDeviation="7" />
         </filter>
         <radialGradient id="inkfill" cx="42%" cy="38%" r="80%">
-          <stop offset="0%" stopColor="#33302a" />
-          <stop offset="70%" stopColor="#1f1c17" />
-          <stop offset="100%" stopColor="#12100c" />
+          <stop offset="0%" stopColor="#343434" />
+          <stop offset="70%" stopColor="#171717" />
+          <stop offset="100%" stopColor="#0e0e0e" />
         </radialGradient>
       </defs>
       {/* 墨晕底 */}
-      <circle cx={c} cy={c} r={r} fill="#1f1c17" opacity="0.18" filter="url(#inkbleed)" />
+      <circle cx={c} cy={c} r={r} fill="#171717" opacity="0.18" filter="url(#inkbleed)" />
       <g filter="url(#inkrough)">
-        <circle cx={c} cy={c} r={r} fill="none" stroke="#1f1c17" strokeWidth={size * 0.02} opacity="0.9" />
+        <circle cx={c} cy={c} r={r} fill="none" stroke="#171717" strokeWidth={size * 0.02} opacity="0.9" />
         <path
           d={`M ${c} ${c - r} A ${r} ${r} 0 0 1 ${c} ${c + r} A ${r / 2} ${r / 2} 0 0 1 ${c} ${c} A ${r / 2} ${r / 2} 0 0 0 ${c} ${c - r} Z`}
           fill="url(#inkfill)"
         />
-        <circle cx={c} cy={c - r / 2} r={r / 6.5} fill="#f3eddd" />
+        <circle cx={c} cy={c - r / 2} r={r / 6.5} fill="#f5f5f3" />
         <circle cx={c} cy={c + r / 2} r={r / 6.5} fill="url(#inkfill)" />
       </g>
       {/* 飞白笔锋 */}
       <path
         d={`M ${c - r * 0.95} ${c + r * 0.4} A ${r} ${r} 0 0 1 ${c - r * 0.2} ${c - r * 0.97}`}
-        fill="none" stroke="#f3eddd" strokeWidth={size * 0.012} opacity="0.35" strokeLinecap="round" filter="url(#inkrough)"
+        fill="none" stroke="#f5f5f3" strokeWidth={size * 0.012} opacity="0.35" strokeLinecap="round" filter="url(#inkrough)"
       />
     </svg>
   )

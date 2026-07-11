@@ -1,23 +1,22 @@
 :root {
   /* 水墨国风主题 */
-  --paper: #ede7d7;
-  --paper-2: #e6dfcc;
-  --card: rgba(250, 246, 236, 0.82);
-  --card-solid: #f8f4e9;
-  --ink: #1f1c17;
-  --ink-soft: #40392e;
-  --ink-faint: #857b66;
-  --line: rgba(31, 28, 23, 0.28);
-  --line-strong: rgba(31, 28, 23, 0.55);
+  --paper: #f6f6f3;
+  --paper-2: #efefec;
+  --card: rgba(253, 253, 252, 0.85);
+  --card-solid: #fbfbfa;
+  --ink: #171717;
+  --ink-soft: #3b3b38;
+  --ink-faint: #7f7f7a;
+  --line: rgba(23, 23, 23, 0.28);
+  --line-strong: rgba(23, 23, 23, 0.55);
   --vermilion: #b03a2a;
   --vermilion-bright: #c74a35;
   --seal: #a8382b;
-  --gold-ink: #8a6d2f;
-  --wood: #3e7d4f;
-  --fire: #b3402a;
-  --earth: #8c6a2f;
-  --metal: #6e6a5e;
-  --water: #2e5e8c;
+  --wood: #4f7359;
+  --fire: #9c4636;
+  --earth: #86754d;
+  --metal: #6d6d68;
+  --water: #47657f;
   font-family: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
   color: var(--ink);
 }
@@ -38,10 +37,10 @@ body {
   /* 生成水墨山水背景图后，取消下一行注释并将其置于 background 列表首位（见 ASSETS.md 三）
      url("/bg/ink-landscape.jpg") center top / cover no-repeat fixed, */
   background:
-    radial-gradient(ellipse 70% 45% at 12% -6%, rgba(31, 28, 23, 0.10), transparent 62%),
-    radial-gradient(ellipse 55% 40% at 96% 104%, rgba(31, 28, 23, 0.12), transparent 60%),
-    radial-gradient(ellipse 40% 26% at 84% 8%, rgba(46, 94, 140, 0.05), transparent 60%),
-    linear-gradient(180deg, #efe9da 0%, #ebe4d2 48%, #e7dfca 100%);
+    radial-gradient(ellipse 70% 45% at 12% -6%, rgba(23, 23, 23, 0.10), transparent 62%),
+    radial-gradient(ellipse 55% 40% at 96% 104%, rgba(23, 23, 23, 0.12), transparent 60%),
+    radial-gradient(ellipse 40% 26% at 84% 8%, rgba(23, 23, 23, 0.04), transparent 60%),
+    linear-gradient(180deg, #f7f7f4 0%, #f2f2f0 48%, #ececea 100%);
   background-attachment: fixed;
   overflow-x: hidden;
 }
@@ -54,7 +53,7 @@ body::before {
   z-index: 0;
   pointer-events: none;
   opacity: 0.5;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.13 0 0 0 0 0.11 0 0 0 0 0.08 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23p)'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23p)'/%3E%3C/svg%3E");
 }
 
 ::selection {
@@ -141,8 +140,8 @@ body::before {
 .nav-tab.active {
   background: var(--ink);
   border-color: var(--ink);
-  color: #f3eddd;
-  box-shadow: 2px 3px 0 rgba(31, 28, 23, 0.25);
+  color: #f5f5f3;
+  box-shadow: 2px 3px 0 rgba(23, 23, 23, 0.25);
 }
 
 /* ---------- 面板 ---------- */
@@ -154,14 +153,14 @@ body::before {
   margin-bottom: 26px;
   backdrop-filter: blur(4px);
   position: relative;
-  box-shadow: 0 8px 26px rgba(31, 28, 23, 0.10);
+  box-shadow: 0 8px 26px rgba(23, 23, 23, 0.10);
 }
 
 .panel::before {
   content: "";
   position: absolute;
   inset: 5px;
-  border: 1px solid rgba(31, 28, 23, 0.12);
+  border: 1px solid rgba(23, 23, 23, 0.12);
   border-radius: 3px;
   pointer-events: none;
 }
@@ -227,7 +226,7 @@ body::before {
 .field select,
 .oracle-input textarea {
   width: 100%;
-  background: rgba(255, 253, 246, 0.75);
+  background: rgba(255, 255, 255, 0.75);
   border: 1px solid var(--line);
   border-radius: 4px;
   color: var(--ink);
@@ -250,7 +249,7 @@ body::before {
   appearance: none;
   display: inline-block;
   background: var(--ink);
-  color: #f3eddd;
+  color: #f5f5f3;
   border: none;
   font-family: "ZCOOL XiaoWei", "STKaiti", serif;
   font-size: 1.1rem;
@@ -259,14 +258,14 @@ body::before {
   padding: 12px 42px;
   border-radius: 4px 16px 4px 16px;
   cursor: pointer;
-  box-shadow: 3px 4px 0 rgba(31, 28, 23, 0.22);
+  box-shadow: 3px 4px 0 rgba(23, 23, 23, 0.22);
   transition: transform 0.25s, box-shadow 0.25s;
   position: relative;
 }
 
 .btn-gold:hover {
   transform: translateY(-2px);
-  box-shadow: 4px 6px 0 rgba(31, 28, 23, 0.25);
+  box-shadow: 4px 6px 0 rgba(23, 23, 23, 0.25);
 }
 
 .btn-gold:disabled {
@@ -291,7 +290,7 @@ body::before {
 }
 
 .btn-ghost:hover {
-  background: rgba(31, 28, 23, 0.06);
+  background: rgba(23, 23, 23, 0.06);
 }
 
 .form-actions {
@@ -313,7 +312,7 @@ body::before {
   border: 1.5px solid var(--ink);
   border-radius: 4px;
   overflow: hidden;
-  background: rgba(31, 28, 23, 0.35);
+  background: rgba(23, 23, 23, 0.35);
   min-width: 720px;
 }
 
@@ -324,7 +323,7 @@ body::before {
 }
 
 .pg-rowlabel {
-  color: #f3eddd;
+  color: #f5f5f3;
   background: var(--ink) !important;
   font-size: 0.78rem;
   letter-spacing: 0.22em;
@@ -335,7 +334,7 @@ body::before {
 }
 
 .pg-head {
-  color: #f3eddd;
+  color: #f5f5f3;
   background: var(--ink) !important;
   font-family: "ZCOOL XiaoWei", serif;
   letter-spacing: 0.28em;
@@ -413,7 +412,7 @@ body::before {
 
 .wx-bar-track {
   height: 10px;
-  background: rgba(31, 28, 23, 0.08);
+  background: rgba(23, 23, 23, 0.08);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -449,7 +448,7 @@ body::before {
   border-radius: 4px;
   padding: 12px 6px;
   text-align: center;
-  background: rgba(255, 253, 246, 0.6);
+  background: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   transition: all 0.3s;
 }
@@ -490,7 +489,7 @@ body::before {
   border-radius: 4px;
   text-align: center;
   padding: 9px 4px;
-  background: rgba(255, 253, 246, 0.6);
+  background: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   transition: all 0.25s;
   font-size: 0.85rem;
@@ -541,7 +540,7 @@ body::before {
   border-left: 9px solid transparent;
   border-right: 9px solid transparent;
   border-top: 14px solid var(--vermilion);
-  filter: drop-shadow(0 2px 2px rgba(31, 28, 23, 0.3));
+  filter: drop-shadow(0 2px 2px rgba(23, 23, 23, 0.3));
   z-index: 3;
 }
 
@@ -627,7 +626,7 @@ body::before {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: radial-gradient(circle at 34% 30%, #efe6cd, #d8c9a2 55%, #b7a276);
+  background: radial-gradient(circle at 34% 30%, #f0f0ee, #d8d8d4 55%, #ababa5);
   border: 2px solid var(--ink-soft);
   display: flex;
   align-items: center;
@@ -635,7 +634,7 @@ body::before {
   color: var(--ink-soft);
   font-family: "ZCOOL XiaoWei", serif;
   letter-spacing: 0.08em;
-  box-shadow: 2px 4px 10px rgba(31, 28, 23, 0.3), inset 0 0 10px rgba(255, 250, 235, 0.7);
+  box-shadow: 2px 4px 10px rgba(23, 23, 23, 0.3), inset 0 0 10px rgba(255, 250, 235, 0.7);
   position: relative;
 }
 
@@ -811,7 +810,7 @@ body::before {
 .mist-blob {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(255, 253, 245, 0.85), rgba(255, 253, 245, 0));
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
   filter: blur(30px);
   animation: mistdrift 26s ease-in-out infinite alternate;
 }
@@ -862,8 +861,8 @@ body::before {
   justify-content: center;
   gap: 30px;
   background:
-    radial-gradient(ellipse 60% 45% at 50% 42%, rgba(255, 253, 246, 0.55), transparent 70%),
-    linear-gradient(180deg, #efe9da, #e7dfca);
+    radial-gradient(ellipse 60% 45% at 50% 42%, rgba(255, 255, 255, 0.55), transparent 70%),
+    linear-gradient(180deg, #f7f7f4, #ececea);
   animation: fadein 0.6s ease both;
 }
 
@@ -922,7 +921,7 @@ body::before {
 .ritual-mist {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(240, 236, 224, 0.95), rgba(240, 236, 224, 0));
+  background: radial-gradient(closest-side, rgba(240, 240, 238, 0.95), rgba(240, 240, 238, 0));
   filter: blur(18px);
   animation: ritualmist 3.2s ease-in-out infinite alternate;
 }
@@ -1008,7 +1007,7 @@ body::before {
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 10px 12px;
-  background: rgba(255, 253, 246, 0.6);
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .shensha-item .ss-name {

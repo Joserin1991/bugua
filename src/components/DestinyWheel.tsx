@@ -18,7 +18,7 @@ const YUEJIAN: Record<string, string> = {
 }
 
 const WX_HEX: Record<string, string> = {
-  木: '#3e7d4f', 火: '#b3402a', 土: '#8c6a2f', 金: '#6e6a5e', 水: '#2e5e8c',
+  木: '#4f7359', 火: '#9c4636', 土: '#86754d', 金: '#6d6d68', 水: '#47657f',
 }
 
 function polar(cx: number, cy: number, r: number, deg: number): [number, number] {
@@ -69,21 +69,21 @@ export function DestinyWheel({ chart, size = 460, highlightZhi, highlightLabel }
 
         {/* 外圈墨圈（禅圈缓转） */}
         <g className="enso-slow">
-          <circle cx={c} cy={c} r={rOuter} fill="none" stroke="#1f1c17" strokeWidth={size * 0.012} opacity="0.75" filter="url(#wheelrough)" strokeDasharray={`${rOuter * 5.6} ${rOuter * 0.7}`} strokeLinecap="round" />
-          <circle cx={c} cy={c} r={rOuter - 5} fill="none" stroke="#1f1c17" strokeWidth="1" opacity="0.25" filter="url(#wheelrough)" />
+          <circle cx={c} cy={c} r={rOuter} fill="none" stroke="#171717" strokeWidth={size * 0.012} opacity="0.75" filter="url(#wheelrough)" strokeDasharray={`${rOuter * 5.6} ${rOuter * 0.7}`} strokeLinecap="round" />
+          <circle cx={c} cy={c} r={rOuter - 5} fill="none" stroke="#171717" strokeWidth="1" opacity="0.25" filter="url(#wheelrough)" />
         </g>
 
         {/* 转动盘体 */}
         <g className="wheel-rotor" style={{ transform: `rotate(${rotation}deg)` }}>
-          <circle cx={c} cy={c} r={rZhi + c * 0.085} fill="rgba(250,246,236,0.85)" stroke="#1f1c17" strokeWidth="1.4" />
-          <circle cx={c} cy={c} r={rGua + c * 0.075} fill="none" stroke="#1f1c17" strokeWidth="0.8" opacity="0.5" />
-          <circle cx={c} cy={c} r={rMonth + c * 0.07} fill="none" stroke="#1f1c17" strokeWidth="0.8" opacity="0.5" />
+          <circle cx={c} cy={c} r={rZhi + c * 0.085} fill="rgba(253,253,252,0.9)" stroke="#171717" strokeWidth="1.4" />
+          <circle cx={c} cy={c} r={rGua + c * 0.075} fill="none" stroke="#171717" strokeWidth="0.8" opacity="0.5" />
+          <circle cx={c} cy={c} r={rMonth + c * 0.07} fill="none" stroke="#171717" strokeWidth="0.8" opacity="0.5" />
 
           {/* 十二分隔线 */}
           {ZHI_LIST.map((_, i) => {
             const [x1, y1] = polar(c, c, rHub, i * 30 + 15)
             const [x2, y2] = polar(c, c, rZhi + c * 0.085, i * 30 + 15)
-            return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#1f1c17" strokeWidth="0.7" opacity="0.35" />
+            return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#171717" strokeWidth="0.7" opacity="0.35" />
           })}
 
           {ZHI_LIST.map((zhi, i) => {
@@ -119,7 +119,7 @@ export function DestinyWheel({ chart, size = 460, highlightZhi, highlightLabel }
                     {marks.map((m, k) => (
                       <g key={m} transform={`translate(${zx - ((marks.length - 1) * 7) + k * 14} ${zy + size * 0.052})`}>
                         <rect x={-6.5} y={-6.5} width={13} height={13} rx={2} fill="#a8382b" />
-                        <text x={0} y={0.5} textAnchor="middle" dominantBaseline="central" fontSize={size * 0.021} fill="#f3eddd">{m}</text>
+                        <text x={0} y={0.5} textAnchor="middle" dominantBaseline="central" fontSize={size * 0.021} fill="#f5f5f3">{m}</text>
                       </g>
                     ))}
                   </g>
@@ -129,7 +129,7 @@ export function DestinyWheel({ chart, size = 460, highlightZhi, highlightLabel }
                   x={gx} y={gy}
                   textAnchor="middle" dominantBaseline="central"
                   fontSize={size * 0.052}
-                  fill="#1f1c17"
+                  fill="#171717"
                   transform={`rotate(${deg} ${gx} ${gy})`}
                 >
                   {String.fromCodePoint(0x4dbf + gua.id)}
@@ -138,7 +138,7 @@ export function DestinyWheel({ chart, size = 460, highlightZhi, highlightLabel }
                   x={gx} y={gy + size * 0.042}
                   textAnchor="middle" dominantBaseline="central"
                   fontSize={size * 0.023}
-                  fill="#40392e"
+                  fill="#3b3b38"
                   transform={`rotate(${deg} ${gx} ${gy})`}
                 >
                   {gua.name}
@@ -148,7 +148,7 @@ export function DestinyWheel({ chart, size = 460, highlightZhi, highlightLabel }
                   x={mx} y={my}
                   textAnchor="middle" dominantBaseline="central"
                   fontSize={size * 0.026}
-                  fill="#857b66"
+                  fill="#7f7f7a"
                   transform={`rotate(${deg} ${mx} ${my})`}
                 >
                   {YUEJIAN[zhi]}
@@ -159,15 +159,15 @@ export function DestinyWheel({ chart, size = 460, highlightZhi, highlightLabel }
         </g>
 
         {/* 中宫（不随盘转动） */}
-        <circle cx={c} cy={c} r={rHub} fill="#f8f4e9" stroke="#1f1c17" strokeWidth="1.4" />
+        <circle cx={c} cy={c} r={rHub} fill="#fbfbfa" stroke="#171717" strokeWidth="1.4" />
         <circle cx={c} cy={c} r={rHub - 4} fill="none" stroke="#a8382b" strokeWidth="0.8" opacity="0.6" />
         {/* 小太极 */}
         <g opacity="0.92">
           <circle cx={c} cy={c - rHub * 0.45} r={rHub * 0.3} fill="none" />
-          <path d={`M ${c} ${c - rHub * 0.62} A ${rHub * 0.62} ${rHub * 0.62} 0 0 1 ${c} ${c + rHub * 0.62} A ${rHub * 0.31} ${rHub * 0.31} 0 0 1 ${c} ${c} A ${rHub * 0.31} ${rHub * 0.31} 0 0 0 ${c} ${c - rHub * 0.62} Z`} fill="#1f1c17" />
-          <circle cx={c} cy={c} r={rHub * 0.62} fill="none" stroke="#1f1c17" strokeWidth="1.2" />
-          <circle cx={c} cy={c - rHub * 0.31} r={rHub * 0.09} fill="#f8f4e9" />
-          <circle cx={c} cy={c + rHub * 0.31} r={rHub * 0.09} fill="#1f1c17" />
+          <path d={`M ${c} ${c - rHub * 0.62} A ${rHub * 0.62} ${rHub * 0.62} 0 0 1 ${c} ${c + rHub * 0.62} A ${rHub * 0.31} ${rHub * 0.31} 0 0 1 ${c} ${c} A ${rHub * 0.31} ${rHub * 0.31} 0 0 0 ${c} ${c - rHub * 0.62} Z`} fill="#171717" />
+          <circle cx={c} cy={c} r={rHub * 0.62} fill="none" stroke="#171717" strokeWidth="1.2" />
+          <circle cx={c} cy={c - rHub * 0.31} r={rHub * 0.09} fill="#fbfbfa" />
+          <circle cx={c} cy={c + rHub * 0.31} r={rHub * 0.09} fill="#171717" />
         </g>
         <text x={c} y={c + rHub * 0.82} textAnchor="middle" fontSize={size * 0.026} fill="#a8382b" letterSpacing="2">
           {highlightLabel ?? `日主 ${chart.dayGan}${chart.dayGanWx}`}
