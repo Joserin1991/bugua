@@ -78,11 +78,40 @@ function Home({ go }: { go: (s: Screen) => void }) {
         </div>
       </div>
       <div className="bottom-nav">
-        <button className="bnav-item active"><span className="bicon">◉</span>对话</button>
-        <button className="bnav-item" onClick={() => go('records')}><span className="bicon">☰</span>记录</button>
-        <button className="bnav-item" onClick={() => go('me')}><span className="bicon">◯</span>我的</button>
+        <button className="bnav-item active"><NavIcon kind="chat" active />对话</button>
+        <button className="bnav-item" onClick={() => go('records')}><NavIcon kind="record" />记录</button>
+        <button className="bnav-item" onClick={() => go('me')}><NavIcon kind="me" />我的</button>
       </div>
     </>
+  )
+}
+
+// 底部导航水墨小图标（笔触感 stroke）
+function NavIcon({ kind, active = false }: { kind: 'chat' | 'record' | 'me'; active?: boolean }) {
+  const s = active ? '#211d14' : '#948d7c'
+  return (
+    <svg viewBox="0 0 24 24" fill="none">
+      {kind === 'chat' && (
+        <>
+          <path d="M4.5 6.5 Q4 4.5 6 4.2 Q12 3.2 18 4.2 Q20 4.5 19.6 6.6 Q19.2 10 19.4 13 Q19.6 15.4 17.4 15.6 L9.5 16.2 L6 19 L6.2 16 Q4.6 15.6 4.4 13.6 Q4 10 4.5 6.5 Z" stroke={s} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          {active && <circle cx="18.5" cy="5.5" r="2.2" fill="#a8382b" />}
+        </>
+      )}
+      {kind === 'record' && (
+        <>
+          <path d="M5 5.2 Q12 4.4 19 5.2" stroke={s} strokeWidth="2" strokeLinecap="round" />
+          <path d="M5.4 10.1 Q12 9.4 18.6 10.1" stroke={s} strokeWidth="1.7" strokeLinecap="round" />
+          <path d="M5.8 15 Q11 14.4 15.5 15" stroke={s} strokeWidth="1.4" strokeLinecap="round" />
+          <path d="M6.2 19.6 Q9.5 19.2 12 19.6" stroke={s} strokeWidth="1.2" strokeLinecap="round" />
+        </>
+      )}
+      {kind === 'me' && (
+        <>
+          <circle cx="12" cy="8.2" r="3.6" stroke={s} strokeWidth="1.7" />
+          <path d="M4.8 20 Q6.5 14.4 12 14.4 Q17.5 14.4 19.2 20" stroke={s} strokeWidth="1.7" strokeLinecap="round" />
+        </>
+      )}
+    </svg>
   )
 }
 

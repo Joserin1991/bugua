@@ -39,20 +39,18 @@ export function WheelEngine({ config }: { config: WheelConfig }) {
         {/* 旋转盘体 */}
         <g className="wheel-rotor" style={{ transform: `rotate(${rotation}deg)` }}>
           <circle cx={c} cy={c} r={outerRingR + 22} fill="rgba(253,253,252,0.92)" stroke={TOKENS.ink} strokeWidth="1.4" />
-          {/* 环界线 */}
-          {config.rings.map((ring, i) => {
-            const prev = i === 0 ? hubR + 4 : (config.rings[i - 1].radius * maxR + ring.radius * maxR) / 2
-            void prev
-            return (
-              <circle key={ring.id} cx={c} cy={c} r={ring.radius * maxR + (ring.id === 'zhi' ? 20 : 13)}
-                fill="none" stroke={TOKENS.ink} strokeWidth="0.7" opacity="0.32" />
-            )
-          })}
+          {/* 环界线：主环重、辅环淡 */}
+          {config.rings.map((ring) => (
+            <circle key={ring.id} cx={c} cy={c} r={ring.radius * maxR + (ring.id === 'zhi' ? 20 : 13)}
+              fill="none" stroke={TOKENS.ink}
+              strokeWidth={ring.tone === 'strong' ? 1.1 : 0.6}
+              opacity={ring.tone === 'strong' ? 0.42 : ring.tone === 'mid' ? 0.24 : 0.15} />
+          ))}
           {/* 十二分隔线 */}
           {ZHI_LIST.map((_, i) => {
             const [x1, y1] = polar(c, hubR + 4, i * 30 + 15)
             const [x2, y2] = polar(c, outerRingR + 22, i * 30 + 15)
-            return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={TOKENS.ink} strokeWidth="0.6" opacity="0.28" />
+            return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={TOKENS.ink} strokeWidth="0.55" opacity="0.16" />
           })}
           {/* 高亮扇区（以地支环 highlight 为准） */}
           {(() => {
@@ -95,13 +93,14 @@ export function WheelEngine({ config }: { config: WheelConfig }) {
 function RingLayer({ ring, c, maxR }: { ring: WheelRing; c: number; maxR: number }) {
   const r = ring.radius * maxR
   const fs = SIZE * 0.032 * (ring.fontScale ?? 1)
+  const toneColor = ring.tone === 'faint' ? TOKENS.inkFaint : ring.tone === 'mid' ? TOKENS.inkSoft : TOKENS.ink
   return (
     <g>
       {ring.items.map((it, i) => {
         if (!it.label) return null
         const deg = i * 30
         const [x, y] = polar(c, r, deg)
-        const fill = it.highlight ? TOKENS.seal : (it.color ?? TOKENS.inkSoft)
+        const fill = it.highlight ? TOKENS.seal : (it.color ?? toneColor)
         return (
           <g key={i} transform={`rotate(${deg} ${x} ${y})`}>
             <text
