@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { InkAtmosphere, BaguaWheel } from './components/Decor'
-import { BaziPanel } from './components/BaziPanel'
+import { MasterFlow } from './components/MasterFlow'
+import { GlossaryProvider } from './components/Master'
 import { DivinePanel } from './components/DivinePanel'
 import { OraclePanel } from './components/OraclePanel'
 
 type Tab = 'bazi' | 'divine' | 'oracle'
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: 'bazi', label: '八字排盘' },
+  { key: 'bazi', label: '问命排盘' },
   { key: 'divine', label: '六爻卜卦' },
   { key: 'oracle', label: '答疑解惑' },
 ]
@@ -40,9 +41,11 @@ export default function App() {
         </nav>
 
         <main>
-          {tab === 'bazi' && <BaziPanel />}
-          {tab === 'divine' && <DivinePanel />}
-          {tab === 'oracle' && <OraclePanel />}
+          <GlossaryProvider>
+            {tab === 'bazi' && <MasterFlow />}
+            {tab === 'divine' && <DivinePanel />}
+            {tab === 'oracle' && <OraclePanel />}
+          </GlossaryProvider>
         </main>
 
         <footer className="footer-note">
