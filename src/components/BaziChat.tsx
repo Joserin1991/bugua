@@ -6,6 +6,9 @@ import { interpretBazi, interpretLiuNian, type BaziReading } from '../lib/interp
 import { tenGod } from '../lib/wuxing'
 import { saveRecord } from '../lib/records'
 import { MasterMsg, UserMsg, CardMsg, Chips, ProgressEnso, InputBar, InkArt } from './ChatUI'
+import { CITIES } from '../lib/cities'
+import { buildTrace } from '../lib/trace'
+import { TraceCard } from './TraceCard'
 import { PillarCards, WuxingPctBars, Radar, wuxingRadarData, abilityRadarData, TenGodOrbit, DayunLineChart } from './InfoGraphics'
 import { ProTable, ChartMeta, ShenshaSection, WheelSection, ReadingSections } from './ChartSections'
 import { ZiweiChart } from './ZiweiChart'
@@ -28,9 +31,9 @@ type NewItem =
 
 type Item = NewItem & { id: number }
 
-type Stage = 'gender' | 'date' | 'hour' | 'computing' | 'ready'
+type Stage = 'gender' | 'date' | 'hour' | 'city' | 'computing' | 'ready'
 
-const TOPIC_KEYS = ['五行分析', '十神关系', '大运走势', '流年运势', '事业运势', '财运走势', '感情运势', '健康提点', '神煞照命', '专业细盘', '紫微星盘', '命理总断'] as const
+const TOPIC_KEYS = ['推演过程', '五行分析', '十神关系', '大运走势', '流年运势', '事业运势', '财运走势', '感情运势', '健康提点', '神煞照命', '专业细盘', '紫微星盘', '命理总断'] as const
 type Topic = typeof TOPIC_KEYS[number]
 
 function detectTopic(text: string): Topic | null {
@@ -42,6 +45,7 @@ function detectTopic(text: string): Topic | null {
     ['大运走势', /(大运)/],
     ['流年运势', /(流年|今年|明年|运势)/],
     ['五行分析', /(五行|喜用|缺什么)/],
+    ['推演过程', /(怎么算|为什么|推演|过程|依据|凭什么|原理)/],
     ['十神关系', /(十神)/],
     ['神煞照命', /(神煞|贵人|桃花星|驿马)/],
     ['紫微星盘', /(紫微|星盘|斗数)/],
@@ -61,6 +65,7 @@ export function BaziChat() {
   const [gender, setGender] = useState<'男' | '女'>('男')
   const [date, setDate] = useState('1995-08-16')
   const [hour, setHour] = useState(9)
+  const [cityIdx, setCityIdx] = useState(0)
   const [pct, setPct] = useState(0)
   const [chart, setChart] = useState<BaziChart | null>(null)
   const [ziwei, setZiwei] = useState<ZwChart | null>(null)
@@ -92,12 +97,22 @@ export function BaziChat() {
   const confirmHour = (h: number) => {
     setHour(h)
     user(`${HOUR_OPTIONS.find((o) => o.v === h)?.label.split('（')[0] ?? ''}。`)
+    master(['最后一问：出生在哪座城市？', '中西部与沿海钟表同刻、日影不同——老朽要按当地真太阳时给你校时，差之一辰谬以千里。'])
+    setStage('city')
+  }
+
+  const confirmCity = (idx: number) => {
+    const city = idx >= 0 ? CITIES[idx] : null
+    user(city ? `${city.name}。` : '记不清了，直接排吧。')
     master(['多谢。', '正在为你排演，请稍候片刻。'])
     setStage('computing')
     const [y, m, d] = date.split('-').map(Number)
-    const c = computeBazi(y, m, d, h, 30, gender)
+    // 用时辰中点作钟表时刻，交由引擎做真太阳时校正
+    const clockH = hour === 0 ? 0 : hour === 23 ? 23 : hour + 1
+    const clockM = (hour === 0 || hour === 23) ? 30 : 0
+    const c = computeBazi(y, m, d, clockH, clockM, gender, city)
     let zw: ZwChart | null = null
-    try { zw = computeZiwei(y, m, d, h, gender) } catch { /* 忽略 */ }
+    try { zw = computeZiwei(y, m, d, hour, gender) } catch { /* 忽略 */ }
     // 进度动画
     let p = 0
     const timer = setInterval(() => {
@@ -122,7 +137,7 @@ export function BaziChat() {
       summary: `日主${c.dayGan}${c.dayGanWx} · ${c.strength.level} · 喜${c.favorable.join('')}`,
     })
     node(
-      <CardMsg title="四柱八字" sub={`公历 ${c.solarText} ｜ 农历 ${c.lunarText} ｜ 属${c.animal}`}>
+      <CardMsg title="四柱八字" sub={`${c.solarCorrection ? `真太阳时 ${c.solarCorrection.trueText}（${c.solarCorrection.city} ${c.solarCorrection.offsetMin > 0 ? '+' : ''}${c.solarCorrection.offsetMin} 分）｜ ` : ''}农历 ${c.lunarText} ｜ 属${c.animal}`}>
         <PillarCards chart={c} />
         <div className="divider-ink" />
         <WheelSection chart={c} activeLn={currentLn(c)} />
@@ -133,7 +148,7 @@ export function BaziChat() {
       `你的命盘排好了。日元${c.dayGan}${c.dayGanWx}，生于${c.pillars[1].zhi}月，日主${c.strength.level}，喜`,
       <Term key="t" k="喜用神">{`${c.favorable.join('、')}`}</Term>,
       `。${r.geju.split('。')[2] ?? ''}。`,
-      '这是你的命盘核心结构。你想先了解哪方面？',
+      '这盘每一步怎么算的，老朽都可以摊开给你看——点「推演过程」便知。想先了解哪方面？',
     ])
   }
 
@@ -155,6 +170,15 @@ export function BaziChat() {
 
     const ln = currentLn(c)
     switch (topic) {
+      case '推演过程': {
+        master(['不藏私——这盘从校时到取用，每一步的规则、证据、结论都在这里，逐条点开看。'])
+        node(
+          <CardMsg title="推演过程" sub="法 · 证 · 断 三段式，点步骤展开">
+            <TraceCard steps={buildTrace(c)} />
+          </CardMsg>,
+        )
+        break
+      }
       case '五行分析': {
         master(['我们先看你的五行强弱。'])
         node(
@@ -322,6 +346,15 @@ export function BaziChat() {
               {HOUR_OPTIONS.map((h) => <option key={h.label} value={h.v}>{h.label}</option>)}
             </select>
             <button className="chip" onClick={() => confirmHour(hour)}>差不多这时候</button>
+          </div>
+        )}
+        {!busy && stage === 'city' && (
+          <div className="inline-input-row fade-in">
+            <select value={cityIdx} onChange={(e) => setCityIdx(Number(e.target.value))}>
+              {CITIES.map((ct, i) => <option key={ct.name} value={i}>{ct.name}（东经{ct.lng}°）</option>)}
+            </select>
+            <button className="chip" onClick={() => confirmCity(cityIdx)}>就是这里</button>
+            <button className="chip chip-ghost" onClick={() => confirmCity(-1)}>跳过</button>
           </div>
         )}
         {stage === 'computing' && pct > 0 && <ProgressEnso label="排盘中" pct={pct} />}

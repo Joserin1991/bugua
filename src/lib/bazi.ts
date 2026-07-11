@@ -31,6 +31,21 @@ export interface ShenSha {
   desc: string
 }
 
+export interface StrengthStep {
+  name: '得令' | '得地' | '得势'
+  rule: string
+  evidence: string
+  score: number
+}
+
+export interface SolarCorrection {
+  city: string
+  lng: number
+  offsetMin: number
+  clockText: string   // 输入的钟表时间
+  trueText: string    // 校正后的真太阳时
+}
+
 export interface BaziChart {
   gender: '男' | '女'
   solarText: string
@@ -41,6 +56,8 @@ export interface BaziChart {
   dayGanWx: WuXing
   wuxingCount: Record<WuXing, number>
   strength: { score: number; level: '身强' | '偏强' | '中和' | '偏弱' | '身弱'; detail: string }
+  strengthSteps: StrengthStep[]
+  solarCorrection: SolarCorrection | null
   favorable: WuXing[]  // 喜用神
   unfavorable: WuXing[] // 忌神
   daYun: DaYunItem[]
@@ -65,7 +82,23 @@ const SEASON_XIANG: Record<WuXing, WuXing> = { 木: '火', 火: '土', 土: '金
 export function computeBazi(
   year: number, month: number, day: number,
   hour: number, minute: number, gender: '男' | '女',
+  city?: { name: string; lng: number } | null,
 ): BaziChart {
+  // 真太阳时校正：真太阳时 ≈ 钟表时间 + (经度 - 120°) × 4 分钟
+  let solarCorrection: SolarCorrection | null = null
+  if (city) {
+    const offsetMin = Math.round((city.lng - 120) * 4)
+    const dt = new Date(year, month - 1, day, hour, minute + offsetMin, 0)
+    solarCorrection = {
+      city: city.name,
+      lng: city.lng,
+      offsetMin,
+      clockText: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+      trueText: `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`,
+    }
+    year = dt.getFullYear(); month = dt.getMonth() + 1; day = dt.getDate()
+    hour = dt.getHours(); minute = dt.getMinutes()
+  }
   const solar = Solar.fromYmdHms(year, month, day, hour, minute, 0)
   const lunar = solar.getLunar()
   const ec = lunar.getEightChar()
@@ -101,42 +134,67 @@ export function computeBazi(
     })
   }
 
-  // 日主强弱：得令 / 得地 / 得势 综合打分
+  // 日主强弱：得令 / 得地 / 得势 综合打分（结构化步骤，供推演过程展示）
   const monthZhi = ec.getMonthZhi()
+  const strengthSteps: StrengthStep[] = []
   let score = 0
   const details: string[] = []
   const wang = SEASON_WANG[monthZhi]
-  if (wang === dayGanWx) {
-    score += 40
-    details.push(`日主${dayGan}${dayGanWx}生于${monthZhi}月，当令而旺（得令）`)
-  } else if (SEASON_XIANG[wang] === dayGanWx) {
-    score += 20
-    details.push(`日主${dayGanWx}生于${monthZhi}月，月令${wang}相生之地（得生）`)
-  } else {
-    details.push(`日主${dayGanWx}生于${monthZhi}月，不得月令之气`)
+  {
+    let s = 0; let ev: string
+    if (wang === dayGanWx) {
+      s = 40; ev = `${monthZhi}月当令五行为${wang}，与日主${dayGan}${dayGanWx}同气——当令而旺`
+      details.push(`日主${dayGan}${dayGanWx}生于${monthZhi}月，当令而旺（得令）`)
+    } else if (SEASON_XIANG[wang] === dayGanWx) {
+      s = 20; ev = `${monthZhi}月当令为${wang}，${wang}生${dayGanWx}——月令相生之地`
+      details.push(`日主${dayGanWx}生于${monthZhi}月，月令${wang}相生之地（得生）`)
+    } else {
+      ev = `${monthZhi}月当令为${wang}，与日主${dayGanWx}非同气非相生——不得月令`
+      details.push(`日主${dayGanWx}生于${monthZhi}月，不得月令之气`)
+    }
+    strengthSteps.push({ name: '得令', rule: '月令为提纲：当令 +40，月令所生 +20，余 0', evidence: ev, score: s })
+    score += s
   }
   // 得地：地支藏干中比劫与印的力量
-  let rootScore = 0
-  for (const p of pillars) {
-    p.cangGan.forEach((c, i) => {
-      const w = i === 0 ? 10 : 5
-      if (c.wx === dayGanWx) rootScore += w
-      else if (c.god === '正印' || c.god === '偏印') rootScore += w * 0.7
+  {
+    let rootScore = 0
+    const evs: string[] = []
+    for (const p of pillars) {
+      p.cangGan.forEach((c, i) => {
+        const w = i === 0 ? 10 : 5
+        if (c.wx === dayGanWx) { rootScore += w; evs.push(`${p.label}${p.zhi}藏${c.gan}（比劫${i === 0 ? '本气+10' : '余气+5'}）`) }
+        else if (c.god === '正印' || c.god === '偏印') { rootScore += w * 0.7; evs.push(`${p.label}${p.zhi}藏${c.gan}（印星${i === 0 ? '+7' : '+3.5'}）`) }
+      })
+    }
+    const s = Math.min(rootScore, 35)
+    if (rootScore >= 20) details.push('地支通根有力，印比扶身（得地）')
+    else if (rootScore >= 10) details.push('地支略有根气')
+    else details.push('地支无根，日主虚浮')
+    strengthSteps.push({
+      name: '得地',
+      rule: '查四支藏干：藏比劫本气 +10 / 余气 +5，藏印星七折，上限 35',
+      evidence: evs.length ? evs.join('；') : '四支藏干中无比劫无印星——地支无根',
+      score: Math.round(s * 10) / 10,
     })
+    score += s
   }
-  score += Math.min(rootScore, 35)
-  if (rootScore >= 20) details.push('地支通根有力，印比扶身（得地）')
-  else if (rootScore >= 10) details.push('地支略有根气')
-  else details.push('地支无根，日主虚浮')
   // 得势：天干比劫印星
-  let helpers = 0
-  for (const p of pillars) {
-    if (p.label === '日柱') continue
-    const g = p.ganGod
-    if (['比肩', '劫财', '正印', '偏印'].includes(g)) helpers += 1
+  {
+    const helpers: string[] = []
+    for (const p of pillars) {
+      if (p.label === '日柱') continue
+      if (['比肩', '劫财', '正印', '偏印'].includes(p.ganGod)) helpers.push(`${p.label}${p.gan}为${p.ganGod}`)
+    }
+    const s = helpers.length * 8
+    if (helpers.length >= 2) details.push('天干印比成势，同气相助（得势）')
+    strengthSteps.push({
+      name: '得势',
+      rule: '查年月时三干：透比劫或印星每见 +8',
+      evidence: helpers.length ? helpers.join('；') : '三干无印比帮扶',
+      score: s,
+    })
+    score += s
   }
-  score += helpers * 8
-  if (helpers >= 2) details.push('天干印比成势，同气相助（得势）')
 
   let level: BaziChart['strength']['level']
   if (score >= 65) level = '身强'
@@ -243,6 +301,8 @@ export function computeBazi(
     dayGanWx,
     wuxingCount: roundedCount,
     strength: { score: Math.round(score), level, detail: details.join('；') },
+    strengthSteps,
+    solarCorrection,
     favorable,
     unfavorable,
     daYun,
