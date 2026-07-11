@@ -8,6 +8,7 @@ import { saveRecord } from '../lib/records'
 import { MasterMsg, UserMsg, CardMsg, Chips, ProgressEnso, InputBar, InkArt } from './ChatUI'
 import { CITIES } from '../lib/cities'
 import { traceNarrative } from '../lib/trace'
+import { loadAiConfig, buildMasterSystem, askMaster, type ChatTurn } from '../lib/ai'
 import { sanpan } from '../lib/sanpan'
 import { SanpanCard } from './SanpanCard'
 import { PillarCards, WuxingPctBars, Radar, wuxingRadarData, abilityRadarData, TenGodOrbit, DayunLineChart } from './InfoGraphics'
@@ -78,6 +79,9 @@ export function BaziChat() {
   const readingRef = useRef<BaziReading | null>(null)
   const ziweiRef = useRef<ZwChart | null>(null)
   const birthRef = useRef<Date | null>(null)
+  const aiHistoryRef = useRef<ChatTurn[]>([])
+  const aiSystemRef = useRef<string>('')
+  const [aiThinking, setAiThinking] = useState(false)
 
   const reading = useMemo(() => (chart ? interpretBazi(chart) : null), [chart])
   chartRef.current = chart
@@ -120,6 +124,7 @@ export function BaziChat() {
     try { zw = computeZiwei(y, m, d, hour, gender) } catch { /* 忽略 */ }
     ziweiRef.current = zw
     birthRef.current = new Date(y, m - 1, d, clockH, clockM)
+    aiSystemRef.current = buildMasterSystem(c, zw)
     // 进度动画
     let p = 0
     const timer = setInterval(() => {
@@ -301,19 +306,35 @@ export function BaziChat() {
     }
   }
 
-  // 底部自由提问
+  // 底部自由提问：配置了 AI 走大模型（带上下文），否则回落规则引擎
   const onAsk = (text: string) => {
     if (stage !== 'ready') {
       user(text)
       master(['莫急，先把生辰告诉老朽，排出命盘，方能为你细断。'])
       return
     }
-    const topic = detectTopic(text)
     user(text)
+    const cfg = loadAiConfig()
+    if (cfg && aiSystemRef.current) {
+      setAiThinking(true)
+      askMaster(cfg, aiSystemRef.current, aiHistoryRef.current.slice(-8), text)
+        .then((reply) => {
+          aiHistoryRef.current.push({ role: 'user', content: text }, { role: 'assistant', content: reply })
+          master([reply])
+        })
+        .catch(() => {
+          const topic = detectTopic(text)
+          if (topic) { master(['天机线路一时不通，老朽以本盘规则为你细断。']); runTopic(topic, null) }
+          else master(['天机线路一时不通（AI 连接失败），且换个问法，或到「我的」页检查 AI 配置。'])
+        })
+        .finally(() => { setAiThinking(false); scroll() })
+      return
+    }
+    const topic = detectTopic(text)
     if (topic) {
       runTopic(topic, null)
     } else {
-      master(['此问尚在天机之外——你可以问老朽事业、财运、感情、健康、大运流年，或让老朽看看五行与紫微星盘。'])
+      master(['此问尚在天机之外——你可以问老朽事业、财运、感情、健康、大运流年，或让老朽看看五行与紫微星盘。到「我的」页接入 AI 后，老朽便可自由对答。'])
     }
   }
 
@@ -367,6 +388,11 @@ export function BaziChat() {
             </select>
             <button className="chip" onClick={() => confirmCity(cityIdx)}>就是这里</button>
             <button className="chip chip-ghost" onClick={() => confirmCity(-1)}>跳过</button>
+          </div>
+        )}
+        {aiThinking && (
+          <div className="msg-row fade-in">
+            <div className="msg-bubble typing" style={{ marginLeft: 44 }}>老朽正在掐指推算<span className="caret">▌</span></div>
           </div>
         )}
         {stage === 'computing' && pct > 0 && <ProgressEnso label="排盘中" pct={pct} />}

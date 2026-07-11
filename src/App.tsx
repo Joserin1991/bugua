@@ -5,6 +5,7 @@ import { BaziChat } from './components/BaziChat'
 import { DivineChat } from './components/DivineChat'
 import { OracleChat } from './components/OracleChat'
 import { loadRecords, type RecordItem } from './lib/records'
+import { loadAiConfig, saveAiConfig, testAi } from './lib/ai'
 
 type Screen = 'home' | 'bazi' | 'divine' | 'oracle' | 'records' | 'me'
 
@@ -172,8 +173,47 @@ function RecordsScreen() {
 
 // ---------- 我的 ----------
 function MeScreen() {
+  const saved = loadAiConfig()
+  const [baseUrl, setBaseUrl] = useState(saved?.baseUrl ?? '')
+  const [apiKey, setApiKey] = useState(saved?.apiKey ?? '')
+  const [model, setModel] = useState(saved?.model ?? '')
+  const [status, setStatus] = useState(saved ? '已接入 AI（密钥仅存本机）' : '未接入 · 大师问答走本地规则引擎')
+  const [testing, setTesting] = useState(false)
+
+  const save = () => {
+    if (!baseUrl.trim() || !apiKey.trim() || !model.trim()) {
+      saveAiConfig(null)
+      setStatus('已清除配置 · 回到本地规则引擎')
+      return
+    }
+    saveAiConfig({ baseUrl: baseUrl.trim(), apiKey: apiKey.trim(), model: model.trim() })
+    setStatus('已保存（密钥仅存本机浏览器）')
+  }
+
+  const test = async () => {
+    const cfg = loadAiConfig()
+    if (!cfg) { setStatus('请先保存配置'); return }
+    setTesting(true)
+    setStatus('测试中…')
+    const r = await testAi(cfg)
+    setStatus(r.msg)
+    setTesting(false)
+  }
+
   return (
     <div className="records-list">
+      <div className="ai-config card-msg">
+        <div className="card-title">大师 AI 接入</div>
+        <div className="card-sub">配置后自由提问由大模型实时分析（排盘计算不变）；留空保存即关闭</div>
+        <label className="ai-field">接口地址<input value={baseUrl} placeholder="https://api.openai.com/v1 或 Anthropic/中转地址" onChange={(e) => setBaseUrl(e.target.value)} /></label>
+        <label className="ai-field">API Key<input type="password" value={apiKey} placeholder="sk-…（只存这台设备）" onChange={(e) => setApiKey(e.target.value)} /></label>
+        <label className="ai-field">模型<input value={model} placeholder="如 claude-sonnet-5 / gpt-4o" onChange={(e) => setModel(e.target.value)} /></label>
+        <div className="ai-actions">
+          <button className="chip" onClick={save}>保存</button>
+          <button className="chip chip-ghost" onClick={test} disabled={testing}>测试连接</button>
+        </div>
+        <p className="ai-status">{status}</p>
+      </div>
       <div className="records-empty">
         玄机阁 · 卜卦问道
         <br />
