@@ -93,7 +93,7 @@ export function DivinePanel() {
             ) : (
               <button className="btn-ghost" onClick={reset}>再卜一卦</button>
             )}
-            <span style={{ marginLeft: 14, color: 'var(--text-dim)', fontSize: '0.8rem', letterSpacing: '0.1em' }}>
+            <span style={{ marginLeft: 14, color: 'var(--ink-faint)', fontSize: '0.8rem', letterSpacing: '0.1em' }}>
               {lines.length}/6 爻
             </span>
           </div>

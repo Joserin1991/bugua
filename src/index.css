@@ -1,26 +1,25 @@
 :root {
-  --ink: #0a0818;
-  --ink-2: #120f28;
-  --ink-3: #1a1538;
-  --panel: rgba(24, 19, 52, 0.72);
-  --panel-solid: #171233;
-  --line: rgba(212, 175, 55, 0.22);
-  --line-strong: rgba(212, 175, 55, 0.45);
-  --gold: #d4af37;
-  --gold-bright: #f0d878;
-  --gold-dim: #9a7f2a;
-  --mist: #b9b3d9;
-  --text: #e8e4f5;
-  --text-dim: #8f88b8;
-  --cinnabar: #c0392b;
-  --jade: #4fae8d;
-  --wood: #6fbf73;
-  --fire: #e06c5a;
-  --earth: #c9a24b;
-  --metal: #d8d8e0;
-  --water: #5a9bd8;
+  /* 水墨国风主题 */
+  --paper: #ede7d7;
+  --paper-2: #e6dfcc;
+  --card: rgba(250, 246, 236, 0.82);
+  --card-solid: #f8f4e9;
+  --ink: #1f1c17;
+  --ink-soft: #40392e;
+  --ink-faint: #857b66;
+  --line: rgba(31, 28, 23, 0.28);
+  --line-strong: rgba(31, 28, 23, 0.55);
+  --vermilion: #b03a2a;
+  --vermilion-bright: #c74a35;
+  --seal: #a8382b;
+  --gold-ink: #8a6d2f;
+  --wood: #3e7d4f;
+  --fire: #b3402a;
+  --earth: #8c6a2f;
+  --metal: #6e6a5e;
+  --water: #2e5e8c;
   font-family: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
-  color: var(--text);
+  color: var(--ink);
 }
 
 * {
@@ -30,22 +29,36 @@
 }
 
 html {
-  background: var(--ink);
+  background: var(--paper);
 }
 
 body {
   min-height: 100vh;
+  color: var(--ink);
+  /* 生成水墨山水背景图后，取消下一行注释并将其置于 background 列表首位（见 ASSETS.md 三）
+     url("/bg/ink-landscape.jpg") center top / cover no-repeat fixed, */
   background:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(88, 60, 160, 0.35), transparent 60%),
-    radial-gradient(ellipse 60% 40% at 85% 100%, rgba(45, 30, 90, 0.5), transparent 65%),
-    radial-gradient(ellipse 50% 35% at 10% 85%, rgba(30, 50, 95, 0.4), transparent 60%),
-    linear-gradient(180deg, #0a0818 0%, #100c26 45%, #0c0a1e 100%);
+    radial-gradient(ellipse 70% 45% at 12% -6%, rgba(31, 28, 23, 0.10), transparent 62%),
+    radial-gradient(ellipse 55% 40% at 96% 104%, rgba(31, 28, 23, 0.12), transparent 60%),
+    radial-gradient(ellipse 40% 26% at 84% 8%, rgba(46, 94, 140, 0.05), transparent 60%),
+    linear-gradient(180deg, #efe9da 0%, #ebe4d2 48%, #e7dfca 100%);
   background-attachment: fixed;
   overflow-x: hidden;
 }
 
+/* 宣纸纹理 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.13 0 0 0 0 0.11 0 0 0 0 0.08 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23p)'/%3E%3C/svg%3E");
+}
+
 ::selection {
-  background: rgba(212, 175, 55, 0.35);
+  background: rgba(176, 58, 42, 0.25);
 }
 
 /* ---------- 布局 ---------- */
@@ -59,26 +72,24 @@ body {
 
 .site-header {
   text-align: center;
-  padding: 44px 0 18px;
+  padding: 46px 0 14px;
   position: relative;
 }
 
 .site-title {
   font-family: "Ma Shan Zheng", "STKaiti", "KaiTi", cursive;
-  font-size: clamp(2.6rem, 6vw, 4rem);
+  font-size: clamp(2.8rem, 6vw, 4.2rem);
   font-weight: 400;
-  letter-spacing: 0.18em;
-  color: var(--gold-bright);
-  text-shadow:
-    0 0 24px rgba(212, 175, 55, 0.45),
-    0 0 60px rgba(212, 175, 55, 0.2);
+  letter-spacing: 0.16em;
+  color: var(--ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .site-subtitle {
-  margin-top: 10px;
-  color: var(--mist);
-  letter-spacing: 0.5em;
-  text-indent: 0.5em;
+  margin-top: 8px;
+  color: var(--ink-soft);
+  letter-spacing: 0.55em;
+  text-indent: 0.55em;
   font-size: 0.95rem;
   font-weight: 300;
 }
@@ -86,22 +97,24 @@ body {
 .header-seal {
   display: inline-block;
   margin-top: 14px;
-  padding: 3px 10px;
-  border: 1px solid var(--cinnabar);
-  color: #e2685a;
+  padding: 4px 10px;
+  border: 1.6px solid var(--seal);
+  color: var(--seal);
   font-family: "ZCOOL XiaoWei", "STKaiti", serif;
   font-size: 0.78rem;
   letter-spacing: 0.3em;
   text-indent: 0.3em;
-  border-radius: 2px;
+  border-radius: 3px;
+  transform: rotate(-3deg);
+  background: rgba(168, 56, 43, 0.06);
 }
 
 /* ---------- 导航 ---------- */
 .nav-tabs {
   display: flex;
   justify-content: center;
-  gap: 8px;
-  margin: 26px auto 34px;
+  gap: 10px;
+  margin: 24px auto 34px;
   flex-wrap: wrap;
 }
 
@@ -109,54 +122,68 @@ body {
   appearance: none;
   background: transparent;
   border: 1px solid var(--line);
-  color: var(--mist);
+  color: var(--ink-soft);
   font-family: inherit;
   font-size: 1rem;
   letter-spacing: 0.24em;
   text-indent: 0.24em;
   padding: 10px 26px;
-  border-radius: 999px;
+  border-radius: 4px 14px 4px 14px;
   cursor: pointer;
   transition: all 0.35s ease;
 }
 
 .nav-tab:hover {
   border-color: var(--line-strong);
-  color: var(--gold-bright);
+  color: var(--ink);
 }
 
 .nav-tab.active {
-  background: linear-gradient(180deg, rgba(212, 175, 55, 0.18), rgba(212, 175, 55, 0.05));
-  border-color: var(--gold);
-  color: var(--gold-bright);
-  box-shadow: 0 0 18px rgba(212, 175, 55, 0.25) inset, 0 0 22px rgba(212, 175, 55, 0.12);
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #f3eddd;
+  box-shadow: 2px 3px 0 rgba(31, 28, 23, 0.25);
 }
 
 /* ---------- 面板 ---------- */
 .panel {
-  background: var(--panel);
+  background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 6px;
   padding: 28px;
   margin-bottom: 26px;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(4px);
   position: relative;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 8px 26px rgba(31, 28, 23, 0.10);
 }
 
 .panel::before {
   content: "";
   position: absolute;
-  inset: 6px;
-  border: 1px solid rgba(212, 175, 55, 0.1);
-  border-radius: 10px;
+  inset: 5px;
+  border: 1px solid rgba(31, 28, 23, 0.12);
+  border-radius: 3px;
   pointer-events: none;
 }
 
+/* 面板右上朱砂角印 */
+.panel::after {
+  content: "";
+  position: absolute;
+  top: -5px;
+  right: 18px;
+  width: 10px;
+  height: 22px;
+  background: var(--seal);
+  opacity: 0.85;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
+}
+
 .panel-title {
-  font-family: "ZCOOL XiaoWei", "STKaiti", "KaiTi", serif;
-  font-size: 1.35rem;
-  color: var(--gold);
+  font-family: "Ma Shan Zheng", "STKaiti", "KaiTi", serif;
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: var(--ink);
   letter-spacing: 0.3em;
   text-indent: 0.3em;
   text-align: center;
@@ -165,7 +192,7 @@ body {
 
 .panel-caption {
   text-align: center;
-  color: var(--text-dim);
+  color: var(--ink-faint);
   font-size: 0.82rem;
   letter-spacing: 0.15em;
   margin-bottom: 22px;
@@ -176,20 +203,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: 14px;
-  color: var(--gold-dim);
+  color: var(--ink-faint);
   margin-bottom: 18px;
-}
-
-.title-ornament::before,
-.title-ornament::after {
-  content: "";
-  height: 1px;
-  width: 90px;
-  background: linear-gradient(90deg, transparent, var(--gold-dim));
-}
-
-.title-ornament::after {
-  background: linear-gradient(90deg, var(--gold-dim), transparent);
 }
 
 /* ---------- 表单 ---------- */
@@ -202,7 +217,7 @@ body {
 
 .field label {
   display: block;
-  color: var(--mist);
+  color: var(--ink-soft);
   font-size: 0.85rem;
   letter-spacing: 0.2em;
   margin-bottom: 8px;
@@ -212,50 +227,50 @@ body {
 .field select,
 .oracle-input textarea {
   width: 100%;
-  background: rgba(10, 8, 24, 0.65);
+  background: rgba(255, 253, 246, 0.75);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  color: var(--text);
+  border-radius: 4px;
+  color: var(--ink);
   font-family: inherit;
   font-size: 1rem;
   padding: 10px 12px;
   outline: none;
   transition: border-color 0.3s, box-shadow 0.3s;
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 .field input:focus,
 .field select:focus,
 .oracle-input textarea:focus {
-  border-color: var(--gold);
-  box-shadow: 0 0 12px rgba(212, 175, 55, 0.2);
+  border-color: var(--vermilion);
+  box-shadow: 0 0 0 3px rgba(176, 58, 42, 0.12);
 }
 
 .btn-gold {
   appearance: none;
   display: inline-block;
-  background: linear-gradient(180deg, #e8c95c, #b8912a);
-  color: #241a05;
+  background: var(--ink);
+  color: #f3eddd;
   border: none;
   font-family: "ZCOOL XiaoWei", "STKaiti", serif;
   font-size: 1.1rem;
   letter-spacing: 0.35em;
   text-indent: 0.35em;
   padding: 12px 42px;
-  border-radius: 999px;
+  border-radius: 4px 16px 4px 16px;
   cursor: pointer;
-  box-shadow: 0 0 24px rgba(212, 175, 55, 0.35), 0 4px 14px rgba(0, 0, 0, 0.4);
-  transition: transform 0.25s, box-shadow 0.25s, filter 0.25s;
+  box-shadow: 3px 4px 0 rgba(31, 28, 23, 0.22);
+  transition: transform 0.25s, box-shadow 0.25s;
+  position: relative;
 }
 
 .btn-gold:hover {
   transform: translateY(-2px);
-  filter: brightness(1.08);
-  box-shadow: 0 0 34px rgba(212, 175, 55, 0.5), 0 6px 18px rgba(0, 0, 0, 0.45);
+  box-shadow: 4px 6px 0 rgba(31, 28, 23, 0.25);
 }
 
 .btn-gold:disabled {
-  filter: grayscale(0.5) brightness(0.7);
+  opacity: 0.55;
   cursor: not-allowed;
   transform: none;
 }
@@ -264,19 +279,19 @@ body {
   appearance: none;
   background: transparent;
   border: 1px solid var(--line-strong);
-  color: var(--gold);
+  color: var(--ink-soft);
   font-family: inherit;
   font-size: 0.92rem;
   letter-spacing: 0.2em;
   text-indent: 0.2em;
   padding: 9px 24px;
-  border-radius: 999px;
+  border-radius: 4px 14px 4px 14px;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .btn-ghost:hover {
-  background: rgba(212, 175, 55, 0.1);
+  background: rgba(31, 28, 23, 0.06);
 }
 
 .form-actions {
@@ -284,64 +299,90 @@ body {
   margin-top: 6px;
 }
 
-/* ---------- 四柱排盘表 ---------- */
+/* ---------- 四柱排盘表（专业版） ---------- */
+.pillars-scroll {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-faint) transparent;
+}
+
 .pillars-grid {
   display: grid;
-  grid-template-columns: 84px repeat(4, 1fr);
-  gap: 2px;
-  border: 1px solid var(--line-strong);
-  border-radius: 10px;
+  grid-template-columns: 72px repeat(6, minmax(96px, 1fr));
+  gap: 1.5px;
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
   overflow: hidden;
-  background: rgba(212, 175, 55, 0.12);
+  background: rgba(31, 28, 23, 0.35);
+  min-width: 720px;
 }
 
 .pillars-grid > div {
-  background: rgba(13, 10, 30, 0.88);
-  padding: 12px 8px;
+  background: var(--card-solid);
+  padding: 10px 6px;
   text-align: center;
 }
 
 .pg-rowlabel {
-  color: var(--gold-dim);
-  font-size: 0.8rem;
-  letter-spacing: 0.25em;
+  color: #f3eddd;
+  background: var(--ink) !important;
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: "ZCOOL XiaoWei", serif;
 }
 
 .pg-head {
-  color: var(--gold);
+  color: #f3eddd;
+  background: var(--ink) !important;
   font-family: "ZCOOL XiaoWei", serif;
-  letter-spacing: 0.3em;
-  text-indent: 0.3em;
-  font-size: 1.02rem;
-  background: rgba(212, 175, 55, 0.08) !important;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  font-size: 1rem;
+  padding: 12px 6px !important;
+}
+
+.pg-head.pg-lucol {
+  color: #e8b8ad;
 }
 
 .pg-gan,
 .pg-zhi {
   font-family: "Ma Shan Zheng", "STKaiti", cursive;
-  font-size: 2.1rem;
-  line-height: 1.15;
-  text-shadow: 0 0 14px currentColor;
+  font-size: 2.05rem;
+  line-height: 1.12;
 }
 
 .pg-shishen {
-  color: var(--mist);
+  color: var(--ink-soft);
   font-size: 0.82rem;
   letter-spacing: 0.1em;
 }
 
 .pg-canggan {
-  font-size: 0.78rem;
-  color: var(--text-dim);
+  font-size: 0.76rem;
+  color: var(--ink-faint);
   line-height: 1.7;
 }
 
 .pg-nayin {
-  color: var(--mist);
-  font-size: 0.82rem;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+.pg-small {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+}
+
+.pg-shensha {
+  font-size: 0.72rem;
+  color: var(--seal);
+  line-height: 1.8;
+  letter-spacing: 0.05em;
 }
 
 .wx-木 { color: var(--wood); }
@@ -372,26 +413,26 @@ body {
 
 .wx-bar-track {
   height: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 999px;
+  background: rgba(31, 28, 23, 0.08);
+  border-radius: 2px;
   overflow: hidden;
 }
 
 .wx-bar-fill {
   height: 100%;
-  border-radius: 999px;
-  box-shadow: 0 0 10px currentColor;
+  border-radius: 2px;
   background: currentColor;
+  opacity: 0.85;
   transition: width 1s ease;
 }
 
 .wx-bar-count {
   text-align: right;
-  color: var(--text-dim);
+  color: var(--ink-faint);
   font-size: 0.85rem;
 }
 
-/* ---------- 大运 ---------- */
+/* ---------- 大运流年 ---------- */
 .dayun-strip {
   display: grid;
   grid-auto-flow: column;
@@ -400,15 +441,15 @@ body {
   overflow-x: auto;
   padding: 6px 2px 14px;
   scrollbar-width: thin;
-  scrollbar-color: var(--gold-dim) transparent;
+  scrollbar-color: var(--ink-faint) transparent;
 }
 
 .dayun-cell {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 4px;
   padding: 12px 6px;
   text-align: center;
-  background: rgba(13, 10, 30, 0.7);
+  background: rgba(255, 253, 246, 0.6);
   cursor: pointer;
   transition: all 0.3s;
 }
@@ -418,19 +459,20 @@ body {
 }
 
 .dayun-cell.active {
-  border-color: var(--gold);
-  background: rgba(212, 175, 55, 0.1);
-  box-shadow: 0 0 16px rgba(212, 175, 55, 0.2);
+  border-color: var(--vermilion);
+  background: rgba(176, 58, 42, 0.07);
+  box-shadow: 2px 2px 0 rgba(176, 58, 42, 0.25);
 }
 
 .dayun-gz {
   font-family: "Ma Shan Zheng", "STKaiti", cursive;
   font-size: 1.4rem;
   line-height: 1.2;
+  color: var(--ink);
 }
 
 .dayun-age {
-  color: var(--text-dim);
+  color: var(--ink-faint);
   font-size: 0.72rem;
   margin-top: 6px;
   letter-spacing: 0.05em;
@@ -445,10 +487,10 @@ body {
 
 .liunian-cell {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 4px;
   text-align: center;
   padding: 9px 4px;
-  background: rgba(13, 10, 30, 0.6);
+  background: rgba(255, 253, 246, 0.6);
   cursor: pointer;
   transition: all 0.25s;
   font-size: 0.85rem;
@@ -457,8 +499,9 @@ body {
 .liunian-cell:hover { border-color: var(--line-strong); }
 
 .liunian-cell.active {
-  border-color: var(--gold);
-  background: rgba(212, 175, 55, 0.12);
+  border-color: var(--vermilion);
+  background: rgba(176, 58, 42, 0.08);
+  color: var(--vermilion);
 }
 
 .liunian-gz {
@@ -466,13 +509,61 @@ body {
   font-size: 1.05rem;
 }
 
-.liunian-year { color: var(--text-dim); font-size: 0.72rem; }
+.liunian-year { color: var(--ink-faint); font-size: 0.72rem; }
+
+/* ---------- 命盘天衡（转动命盘） ---------- */
+.wheel-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0 2px;
+}
+
+.wheel-hint {
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  letter-spacing: 0.2em;
+}
+
+.destiny-wheel-wrap {
+  position: relative;
+  width: min(480px, 92vw);
+}
+
+.destiny-wheel-wrap .pointer {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 14px solid var(--vermilion);
+  filter: drop-shadow(0 2px 2px rgba(31, 28, 23, 0.3));
+  z-index: 3;
+}
+
+.wheel-rotor {
+  transition: transform 1.4s cubic-bezier(0.22, 0.8, 0.24, 1);
+  transform-origin: 50% 50%;
+}
+
+.enso-slow {
+  animation: ensospin 90s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+@keyframes ensospin {
+  to { transform: rotate(360deg); }
+}
 
 /* ---------- 解读文本 ---------- */
 .reading-section { margin-top: 18px; }
 
 .reading-h {
-  color: var(--gold);
+  color: var(--ink);
   font-family: "ZCOOL XiaoWei", serif;
   font-size: 1.08rem;
   letter-spacing: 0.25em;
@@ -483,13 +574,16 @@ body {
 }
 
 .reading-h::before {
-  content: "❖";
-  color: var(--gold-dim);
-  font-size: 0.8rem;
+  content: "";
+  width: 9px;
+  height: 9px;
+  background: var(--seal);
+  transform: rotate(45deg);
+  flex: none;
 }
 
 .reading-p {
-  color: var(--text);
+  color: var(--ink-soft);
   line-height: 2.05;
   font-size: 0.95rem;
   text-align: justify;
@@ -504,13 +598,13 @@ body {
 }
 
 .mystic-tag {
-  border: 1px solid var(--line-strong);
-  color: var(--gold-bright);
-  border-radius: 999px;
+  border: 1px solid rgba(168, 56, 43, 0.55);
+  color: var(--seal);
+  border-radius: 3px;
   font-size: 0.78rem;
   padding: 3px 12px;
   letter-spacing: 0.12em;
-  background: rgba(212, 175, 55, 0.07);
+  background: rgba(168, 56, 43, 0.05);
 }
 
 /* ---------- 卦象 ---------- */
@@ -533,15 +627,15 @@ body {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: radial-gradient(circle at 32% 30%, #f4dc8a, #c39b32 55%, #8a6a1d);
-  border: 2px solid #6e541a;
+  background: radial-gradient(circle at 34% 30%, #efe6cd, #d8c9a2 55%, #b7a276);
+  border: 2px solid var(--ink-soft);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #4a3510;
+  color: var(--ink-soft);
   font-family: "ZCOOL XiaoWei", serif;
   letter-spacing: 0.08em;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 0 12px rgba(255, 240, 180, 0.5);
+  box-shadow: 2px 4px 10px rgba(31, 28, 23, 0.3), inset 0 0 10px rgba(255, 250, 235, 0.7);
   position: relative;
 }
 
@@ -549,12 +643,12 @@ body {
   position: absolute;
   width: 16px;
   height: 16px;
-  background: var(--ink-2);
-  border: 1px solid #6e541a;
+  background: var(--paper);
+  border: 1.5px solid var(--ink-soft);
 }
 
 .coin span { position: relative; z-index: 1; font-size: 0.72rem; }
-.coin.tail { filter: brightness(0.8) saturate(0.8); }
+.coin.tail { filter: brightness(0.86) saturate(0.7); }
 
 .coin.tossing {
   animation: cointoss 0.75s cubic-bezier(0.3, 0.6, 0.4, 1) infinite;
@@ -588,15 +682,14 @@ body {
 
 .yao .bar {
   height: 100%;
-  border-radius: 3px;
-  background: linear-gradient(180deg, var(--gold-bright), var(--gold-dim));
-  box-shadow: 0 0 10px rgba(212, 175, 55, 0.45);
+  border-radius: 2px;
+  background: var(--ink);
   animation: yaoglow 0.5s ease;
 }
 
 @keyframes yaoglow {
-  from { box-shadow: 0 0 26px rgba(240, 216, 120, 0.9); transform: scaleX(0.6); }
-  to { box-shadow: 0 0 10px rgba(212, 175, 55, 0.45); transform: scaleX(1); }
+  from { opacity: 0.2; transform: scaleX(0.6); }
+  to { opacity: 1; transform: scaleX(1); }
 }
 
 .yao.yang .bar { width: 100%; }
@@ -605,14 +698,14 @@ body {
 .yao-mark {
   width: 46px;
   font-size: 0.72rem;
-  color: #e2685a;
+  color: var(--vermilion);
   letter-spacing: 0.08em;
 }
 
 .yao-name {
   width: 34px;
   text-align: right;
-  color: var(--text-dim);
+  color: var(--ink-faint);
   font-size: 0.72rem;
 }
 
@@ -631,20 +724,19 @@ body {
 .gua-card .gua-symbol {
   font-size: 4.2rem;
   line-height: 1;
-  color: var(--gold-bright);
-  text-shadow: 0 0 24px rgba(212, 175, 55, 0.5);
+  color: var(--ink);
 }
 
 .gua-card .gua-name {
   font-family: "ZCOOL XiaoWei", serif;
   font-size: 1.15rem;
-  color: var(--text);
+  color: var(--ink);
   margin-top: 10px;
   letter-spacing: 0.12em;
 }
 
 .gua-card .gua-role {
-  color: var(--text-dim);
+  color: var(--seal);
   font-size: 0.78rem;
   letter-spacing: 0.3em;
   margin-top: 4px;
@@ -652,19 +744,19 @@ body {
 
 .gua-arrow {
   align-self: center;
-  color: var(--gold-dim);
+  color: var(--ink-faint);
   font-size: 1.6rem;
 }
 
 .guaci-block {
   margin-top: 18px;
-  border-left: 2px solid var(--gold-dim);
+  border-left: 3px solid var(--seal);
   padding: 4px 0 4px 16px;
 }
 
 .guaci-original {
   font-family: "ZCOOL XiaoWei", "STKaiti", serif;
-  color: var(--gold-bright);
+  color: var(--ink);
   font-size: 1.02rem;
   letter-spacing: 0.15em;
   line-height: 1.9;
@@ -691,8 +783,8 @@ body {
   appearance: none;
   background: transparent;
   border: 1px solid var(--line);
-  color: var(--mist);
-  border-radius: 999px;
+  color: var(--ink-soft);
+  border-radius: 3px;
   font-family: inherit;
   font-size: 0.85rem;
   padding: 6px 16px;
@@ -702,24 +794,38 @@ body {
 }
 
 .category-chip.active {
-  border-color: var(--gold);
-  color: var(--gold-bright);
-  background: rgba(212, 175, 55, 0.1);
+  border-color: var(--seal);
+  color: var(--seal);
+  background: rgba(168, 56, 43, 0.07);
 }
 
 /* ---------- 背景与装饰 ---------- */
-.starfield {
+.ink-atmosphere {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  overflow: hidden;
+}
+
+.mist-blob {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 253, 245, 0.85), rgba(255, 253, 245, 0));
+  filter: blur(30px);
+  animation: mistdrift 26s ease-in-out infinite alternate;
+}
+
+@keyframes mistdrift {
+  from { transform: translate3d(-4%, 0, 0) scale(1); opacity: 0.5; }
+  to { transform: translate3d(5%, -3%, 0) scale(1.15); opacity: 0.85; }
 }
 
 .bagua-bg {
   position: fixed;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.14;
+  opacity: 0.07;
   animation: slowspin 240s linear infinite;
 }
 
@@ -733,16 +839,133 @@ body {
 .cloud-divider {
   display: block;
   margin: 0 auto;
-  opacity: 0.55;
+  opacity: 0.7;
 }
 
 .footer-note {
   text-align: center;
-  color: var(--text-dim);
+  color: var(--ink-faint);
   font-size: 0.75rem;
   letter-spacing: 0.25em;
   margin-top: 40px;
   line-height: 2.2;
+}
+
+/* ---------- 排盘仪式动画 ---------- */
+.ritual-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  background:
+    radial-gradient(ellipse 60% 45% at 50% 42%, rgba(255, 253, 246, 0.55), transparent 70%),
+    linear-gradient(180deg, #efe9da, #e7dfca);
+  animation: fadein 0.6s ease both;
+}
+
+.ritual-overlay.leaving {
+  animation: ritualleave 1s ease both;
+}
+
+@keyframes ritualleave {
+  to { opacity: 0; filter: blur(6px); }
+}
+
+.ritual-stage {
+  position: relative;
+  width: min(420px, 86vw);
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ritual-taiji {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: taijiritual 2.6s cubic-bezier(0.5, 0.05, 0.4, 1) infinite;
+}
+
+@keyframes taijiritual {
+  to { transform: rotate(360deg); }
+}
+
+.ritual-taiji.dissolving {
+  animation: taijidissolve 1.15s ease forwards;
+}
+
+@keyframes taijidissolve {
+  0% { opacity: 1; filter: blur(0); transform: rotate(0) scale(1); }
+  100% { opacity: 0; filter: blur(22px); transform: rotate(140deg) scale(1.5); }
+}
+
+.ritual-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply; /* 白底视频融入宣纸 */
+}
+
+.ritual-video.dissolving {
+  animation: taijidissolve 1.15s ease forwards;
+}
+
+.ritual-mist {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(240, 236, 224, 0.95), rgba(240, 236, 224, 0));
+  filter: blur(18px);
+  animation: ritualmist 3.2s ease-in-out infinite alternate;
+}
+
+.ritual-mist.dissolving {
+  animation: mistgone 1.1s ease forwards;
+}
+
+@keyframes ritualmist {
+  from { transform: translate(-6%, 2%) scale(1); opacity: 0.75; }
+  to { transform: translate(7%, -5%) scale(1.25); opacity: 1; }
+}
+
+@keyframes mistgone {
+  to { transform: scale(2.1); opacity: 0; filter: blur(40px); }
+}
+
+.ritual-wheel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: wheelreveal 1.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes wheelreveal {
+  0% { opacity: 0; transform: rotate(-160deg) scale(0.55); filter: blur(14px); }
+  100% { opacity: 1; transform: rotate(0) scale(1); filter: blur(0); }
+}
+
+.ritual-caption {
+  color: var(--ink-soft);
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+  font-size: 0.95rem;
+  font-family: "ZCOOL XiaoWei", serif;
+  animation: captionpulse 2.4s ease-in-out infinite;
+}
+
+@keyframes captionpulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
 }
 
 /* ---------- 加载中占卜动画 ---------- */
@@ -752,14 +975,13 @@ body {
   align-items: center;
   gap: 18px;
   padding: 30px 0;
-  color: var(--mist);
+  color: var(--ink-soft);
   letter-spacing: 0.3em;
   font-size: 0.9rem;
 }
 
 .taiji-spin {
   animation: taijispin 3.2s linear infinite;
-  filter: drop-shadow(0 0 18px rgba(212, 175, 55, 0.4));
 }
 
 @keyframes taijispin {
@@ -784,19 +1006,19 @@ body {
 
 .shensha-item {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 10px 12px;
-  background: rgba(13, 10, 30, 0.6);
+  background: rgba(255, 253, 246, 0.6);
 }
 
 .shensha-item .ss-name {
-  color: var(--gold-bright);
+  color: var(--seal);
   font-size: 0.92rem;
   letter-spacing: 0.15em;
 }
 
 .shensha-item .ss-desc {
-  color: var(--text-dim);
+  color: var(--ink-faint);
   font-size: 0.75rem;
   margin-top: 4px;
   line-height: 1.6;
@@ -805,6 +1027,5 @@ body {
 @media (max-width: 640px) {
   .panel { padding: 20px 14px; }
   .pg-gan, .pg-zhi { font-size: 1.5rem; }
-  .pillars-grid { grid-template-columns: 62px repeat(4, 1fr); }
   .yao { width: 110px; }
 }

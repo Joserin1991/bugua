@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { StarField, BaguaWheel } from './components/Decor'
+import { InkAtmosphere, BaguaWheel } from './components/Decor'
 import { BaziPanel } from './components/BaziPanel'
 import { DivinePanel } from './components/DivinePanel'
 import { OraclePanel } from './components/OraclePanel'
@@ -17,7 +17,7 @@ export default function App() {
 
   return (
     <>
-      <StarField />
+      <InkAtmosphere />
       <BaguaWheel className="bagua-bg tl" />
       <BaguaWheel className="bagua-bg br" size={640} />
       <div className="app-shell">

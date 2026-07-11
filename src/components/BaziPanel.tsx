@@ -1,9 +1,11 @@
-// 八字排盘面板：出生信息 → 四柱 · 五行 · 神煞 · 大运流年 · 命理详解
+// 八字排盘面板：出生信息 → 仪式动画 → 专业细盘 · 命盘天衡 · 大运流年 · 命理详解
 import { useMemo, useState } from 'react'
-import { computeBazi, liuNianRange, type BaziChart } from '../lib/bazi'
+import { computeBazi, columnDetail, liuNianRange, type BaziChart, type ColumnDetail } from '../lib/bazi'
 import { interpretBazi, interpretLiuNian } from '../lib/interpret'
 import { WUXING_COLOR, WUXING_LIST } from '../lib/wuxing'
-import { CloudDivider, TaijiSpinner } from './Decor'
+import { CloudDivider } from './Decor'
+import { RitualOverlay } from './RitualOverlay'
+import { DestinyWheel } from './DestinyWheel'
 
 const HOUR_OPTIONS = [
   { v: 0, label: '子时 23:00-00:59（早子）' }, { v: 1, label: '丑时 01:00-02:59' },
@@ -20,7 +22,8 @@ export function BaziPanel() {
   const [hour, setHour] = useState(9)
   const [gender, setGender] = useState<'男' | '女'>('男')
   const [chart, setChart] = useState<BaziChart | null>(null)
-  const [consulting, setConsulting] = useState(false)
+  const [ritual, setRitual] = useState(false)
+  const [revealed, setRevealed] = useState(false)
   const [dayunIdx, setDayunIdx] = useState(0)
   const [lnYear, setLnYear] = useState<number | null>(null)
 
@@ -29,17 +32,14 @@ export function BaziPanel() {
   const paipan = () => {
     const [y, m, d] = date.split('-').map(Number)
     if (!y || !m || !d) return
-    setConsulting(true)
-    setChart(null)
-    setTimeout(() => {
-      const c = computeBazi(y, m, d, hour, 30, gender)
-      setChart(c)
-      const now = new Date().getFullYear()
-      const idx = c.daYun.findIndex((dy) => now >= dy.startYear && now <= dy.endYear)
-      setDayunIdx(idx >= 0 ? idx : 0)
-      setLnYear(now)
-      setConsulting(false)
-    }, 1400)
+    const c = computeBazi(y, m, d, hour, 30, gender)
+    setChart(c)
+    setRevealed(false)
+    setRitual(true)
+    const now = new Date().getFullYear()
+    const idx = c.daYun.findIndex((dy) => now >= dy.startYear && now <= dy.endYear)
+    setDayunIdx(idx >= 0 ? idx : 0)
+    setLnYear(now)
   }
 
   const activeDayun = chart?.daYun[dayunIdx]
@@ -53,13 +53,48 @@ export function BaziPanel() {
     [activeLn, chart],
   )
 
+  // 专业细盘七列：四柱 + 大运 + 流年
+  const columns = useMemo(() => {
+    if (!chart) return []
+    const yearZhi = chart.pillars[0].zhi
+    const dayZhi = chart.pillars[2].zhi
+    const cols: { label: string; detail: ColumnDetail; lu: boolean }[] = chart.pillars.map((p) => ({
+      label: p.label,
+      lu: false,
+      detail: columnDetail(p.gan, p.zhi, chart.dayGan, yearZhi, dayZhi, p.label === '日柱'),
+    }))
+    if (activeDayun) {
+      cols.push({
+        label: '大运',
+        lu: true,
+        detail: columnDetail(activeDayun.ganZhi[0], activeDayun.ganZhi[1], chart.dayGan, yearZhi, dayZhi),
+      })
+    }
+    if (activeLn) {
+      cols.push({
+        label: '流年',
+        lu: true,
+        detail: columnDetail(activeLn.ganZhi[0], activeLn.ganZhi[1], chart.dayGan, yearZhi, dayZhi),
+      })
+    }
+    return cols
+  }, [chart, activeDayun, activeLn])
+
   const maxWx = chart ? Math.max(...WUXING_LIST.map((w) => chart.wuxingCount[w]), 1) : 1
+  const show = chart && revealed
 
   return (
     <>
+      {ritual && chart && (
+        <RitualOverlay
+          chart={chart}
+          onDone={() => { setRitual(false); setRevealed(true) }}
+        />
+      )}
+
       <section className="panel fade-in">
         <h2 className="panel-title">乾坤定盘</h2>
-        <p className="panel-caption">输入出生信息 · 天干地支立现 · 真太阳时以出生地为准</p>
+        <p className="panel-caption">输入出生信息 · 太极推演 · 烟散盘成</p>
         <div className="form-grid">
           <div className="field">
             <label>出生日期（公历）</label>
@@ -82,57 +117,71 @@ export function BaziPanel() {
           </div>
         </div>
         <div className="form-actions">
-          <button className="btn-gold" onClick={paipan} disabled={consulting}>
-            {consulting ? '推演中' : '起盘排演'}
+          <button className="btn-gold" onClick={paipan} disabled={ritual}>
+            {ritual ? '推演中' : '起盘排演'}
           </button>
         </div>
-        {consulting && (
-          <div className="consulting">
-            <TaijiSpinner />
-            <span>正在推演天干地支 · 阴阳五行流转…</span>
-          </div>
-        )}
       </section>
 
-      {chart && reading && (
+      {show && reading && (
         <>
           <section className="panel fade-in">
-            <h2 className="panel-title">{gender === '男' ? '乾造' : '坤造'} 四柱排盘</h2>
+            <h2 className="panel-title">{gender === '男' ? '乾造' : '坤造'} 专业细盘</h2>
             <p className="panel-caption">
               公历 {chart.solarText} ｜ 农历 {chart.lunarText} ｜ 生肖属{chart.animal} ｜ {chart.xingZuo} ｜ 节气 {chart.jieQi}后
             </p>
-            <div className="pillars-grid">
-              <div className="pg-rowlabel"></div>
-              {chart.pillars.map((p) => (
-                <div key={p.label} className="pg-head">{p.label}</div>
-              ))}
-              <div className="pg-rowlabel">十神</div>
-              {chart.pillars.map((p) => (
-                <div key={p.label} className="pg-shishen">{p.ganGod}</div>
-              ))}
-              <div className="pg-rowlabel">天干</div>
-              {chart.pillars.map((p) => (
-                <div key={p.label} className={`pg-gan wx-${p.ganWx}`}>{p.gan}</div>
-              ))}
-              <div className="pg-rowlabel">地支</div>
-              {chart.pillars.map((p) => (
-                <div key={p.label} className={`pg-zhi wx-${p.zhiWx}`}>{p.zhi}</div>
-              ))}
-              <div className="pg-rowlabel">藏干</div>
-              {chart.pillars.map((p) => (
-                <div key={p.label} className="pg-canggan">
-                  {p.cangGan.map((c) => (
-                    <div key={c.gan}>
-                      <span className={`wx-${c.wx}`}>{c.gan}</span>
-                      <span style={{ opacity: 0.75 }}> {c.god}</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-              <div className="pg-rowlabel">纳音</div>
-              {chart.pillars.map((p) => (
-                <div key={p.label} className="pg-nayin">{p.naYin}</div>
-              ))}
+            <div className="pillars-scroll">
+              <div className="pillars-grid">
+                <div className="pg-rowlabel"></div>
+                {columns.map((c) => (
+                  <div key={c.label} className={`pg-head ${c.lu ? 'pg-lucol' : ''}`}>{c.label}</div>
+                ))}
+                <div className="pg-rowlabel">十神</div>
+                {columns.map((c) => (
+                  <div key={c.label} className="pg-shishen">{c.detail.ganGod}</div>
+                ))}
+                <div className="pg-rowlabel">天干</div>
+                {columns.map((c) => (
+                  <div key={c.label} className={`pg-gan wx-${c.detail.ganWx}`}>{c.detail.gan}</div>
+                ))}
+                <div className="pg-rowlabel">地支</div>
+                {columns.map((c) => (
+                  <div key={c.label} className={`pg-zhi wx-${c.detail.zhiWx}`}>{c.detail.zhi}</div>
+                ))}
+                <div className="pg-rowlabel">藏干</div>
+                {columns.map((c) => (
+                  <div key={c.label} className="pg-canggan">
+                    {c.detail.cangGan.map((g) => (
+                      <div key={g.gan}>
+                        <span className={`wx-${g.wx}`}>{g.gan}</span>
+                        <span style={{ opacity: 0.8 }}> {g.god}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+                <div className="pg-rowlabel">星运</div>
+                {columns.map((c) => (
+                  <div key={c.label} className="pg-small">{c.detail.xingYun}</div>
+                ))}
+                <div className="pg-rowlabel">自坐</div>
+                {columns.map((c) => (
+                  <div key={c.label} className="pg-small">{c.detail.ziZuo}</div>
+                ))}
+                <div className="pg-rowlabel">空亡</div>
+                {columns.map((c) => (
+                  <div key={c.label} className="pg-small">{c.detail.kong}</div>
+                ))}
+                <div className="pg-rowlabel">纳音</div>
+                {columns.map((c) => (
+                  <div key={c.label} className="pg-nayin">{c.detail.naYin}</div>
+                ))}
+                <div className="pg-rowlabel">神煞</div>
+                {columns.map((c) => (
+                  <div key={c.label} className="pg-shensha">
+                    {c.detail.shenSha.length ? c.detail.shenSha.map((s) => <div key={s}>{s}</div>) : <span style={{ opacity: 0.4 }}>—</span>}
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="tag-row" style={{ marginTop: 16, justifyContent: 'center' }}>
               <span className="mystic-tag">命宫 {chart.mingGong}</span>
@@ -144,35 +193,16 @@ export function BaziPanel() {
           </section>
 
           <section className="panel fade-in">
-            <h2 className="panel-title">五行气数</h2>
-            <p className="panel-caption">干支藏气加权统计 · 观其盈虚</p>
-            <div className="wuxing-bars">
-              {WUXING_LIST.map((w) => (
-                <div key={w} className="wx-bar-row">
-                  <span className={`wx-bar-label wx-${w}`}>{w}{chart.favorable.includes(w) ? ' ✦' : ''}</span>
-                  <div className="wx-bar-track">
-                    <div
-                      className="wx-bar-fill"
-                      style={{ width: `${(chart.wuxingCount[w] / maxWx) * 100}%`, color: WUXING_COLOR[w] }}
-                    />
-                  </div>
-                  <span className="wx-bar-count">{chart.wuxingCount[w]}</span>
-                </div>
-              ))}
+            <h2 className="panel-title">命盘天衡</h2>
+            <p className="panel-caption">红针所指为当前流年地支 · 点选下方大运流年，观命盘转动</p>
+            <div className="wheel-stage">
+              <DestinyWheel
+                chart={chart}
+                highlightZhi={activeLn?.zhi ?? chart.pillars[0].zhi}
+                highlightLabel={activeLn ? `流年 ${activeLn.ganZhi} · ${activeLn.year}` : undefined}
+              />
+              <span className="wheel-hint">外为地支十二宫 · 中为十二消息卦 · 内为月建 · 朱印标注四柱本位</span>
             </div>
-            {chart.shenSha.length > 0 && (
-              <>
-                <h3 className="reading-h">神煞照命</h3>
-                <div className="shensha-grid">
-                  {chart.shenSha.map((s, i) => (
-                    <div className="shensha-item" key={i}>
-                      <div className="ss-name">{s.name} <small style={{ color: 'var(--text-dim)' }}>{s.where}</small></div>
-                      <div className="ss-desc">{s.desc}</div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
           </section>
 
           <section className="panel fade-in">
@@ -209,8 +239,40 @@ export function BaziPanel() {
               <div className="reading-section fade-in" key={lnYear}>
                 <h3 className="reading-h">{lnReading.theme}</h3>
                 <p className="reading-p">{lnReading.text}</p>
-                {lnReading.extra && <p className="reading-p" style={{ color: 'var(--gold-bright)' }}>⚑ {lnReading.extra}。</p>}
+                {lnReading.extra && <p className="reading-p" style={{ color: 'var(--seal)' }}>⚑ {lnReading.extra}。</p>}
               </div>
+            )}
+          </section>
+
+          <section className="panel fade-in">
+            <h2 className="panel-title">五行气数</h2>
+            <p className="panel-caption">干支藏气加权统计 · 观其盈虚</p>
+            <div className="wuxing-bars">
+              {WUXING_LIST.map((w) => (
+                <div key={w} className="wx-bar-row">
+                  <span className={`wx-bar-label wx-${w}`}>{w}{chart.favorable.includes(w) ? ' ✦' : ''}</span>
+                  <div className="wx-bar-track">
+                    <div
+                      className="wx-bar-fill"
+                      style={{ width: `${(chart.wuxingCount[w] / maxWx) * 100}%`, color: WUXING_COLOR[w] }}
+                    />
+                  </div>
+                  <span className="wx-bar-count">{chart.wuxingCount[w]}</span>
+                </div>
+              ))}
+            </div>
+            {chart.shenSha.length > 0 && (
+              <>
+                <h3 className="reading-h">神煞照命</h3>
+                <div className="shensha-grid">
+                  {chart.shenSha.map((s, i) => (
+                    <div className="shensha-item" key={i}>
+                      <div className="ss-name">{s.name} <small style={{ color: 'var(--ink-faint)' }}>{s.where}</small></div>
+                      <div className="ss-desc">{s.desc}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </section>
 

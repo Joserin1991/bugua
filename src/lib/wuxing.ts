@@ -125,6 +125,31 @@ export const YANGREN: Record<string, string> = {
   甲: '卯', 丙: '午', 戊: '午', 庚: '酉', 壬: '子',
 }
 
+export const GAN_LIST = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸']
+export const ZHI_LIST = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
+
+// 十二长生
+const CHANGSHENG_ORDER = ['长生', '沐浴', '冠带', '临官', '帝旺', '衰', '病', '死', '墓', '绝', '胎', '养']
+const CS_START: Record<string, number> = {
+  甲: 11, 丙: 2, 戊: 2, 庚: 5, 壬: 8, // 阳干长生：亥 寅 寅 巳 申（顺行）
+  乙: 6, 丁: 9, 己: 9, 辛: 0, 癸: 3,  // 阴干长生：午 酉 酉 子 卯（逆行）
+}
+
+export function changSheng(gan: string, zhi: string): string {
+  const start = CS_START[gan]
+  const zi = ZHI_LIST.indexOf(zhi)
+  const forward = GAN_YINYANG[gan] === '阳'
+  const step = forward ? (zi - start + 12) % 12 : (start - zi + 12) % 12
+  return CHANGSHENG_ORDER[step]
+}
+
+// 旬空（甲子旬中戌亥空……以柱内干支自查）
+export function kongWang(gan: string, zhi: string): string {
+  const g = GAN_LIST.indexOf(gan)
+  const z = ZHI_LIST.indexOf(zhi)
+  return ZHI_LIST[(z - g + 10) % 12] + ZHI_LIST[(z - g + 11) % 12]
+}
+
 export const WUXING_TRAITS: Record<WuXing, { nature: string; organ: string; virtue: string; direction: string; season: string }> = {
   木: { nature: '生发、条达', organ: '肝胆', virtue: '仁', direction: '东方', season: '春' },
   火: { nature: '炎上、光明', organ: '心与小肠', virtue: '礼', direction: '南方', season: '夏' },

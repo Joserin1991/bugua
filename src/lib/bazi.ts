@@ -1,8 +1,9 @@
 // 八字排盘引擎 —— 基于 lunar-javascript 的精确历法计算
-import { Solar, Lunar } from 'lunar-javascript'
+import { Solar, Lunar, LunarUtil } from 'lunar-javascript'
 import {
   GAN_WUXING, ZHI_WUXING, ZHI_CANGGAN, tenGod, type WuXing,
   TIANYI, WENCHANG, taohua, yima, YANGREN, ZHI_CHONG, ZHI_HE,
+  changSheng, kongWang,
 } from './wuxing'
 
 export interface Pillar {
@@ -270,4 +271,50 @@ export function liuNianOf(year: number, dayGan: string): LiuNian {
 
 export function liuNianRange(startYear: number, count: number, dayGan: string): LiuNian[] {
   return Array.from({ length: count }, (_, i) => liuNianOf(startYear + i, dayGan))
+}
+
+// ---------- 专业细盘：任意干支列的详情（四柱 / 大运 / 流年通用） ----------
+export interface ColumnDetail {
+  gan: string
+  zhi: string
+  ganWx: WuXing
+  zhiWx: WuXing
+  ganGod: string
+  cangGan: { gan: string; god: string; wx: WuXing }[]
+  xingYun: string   // 星运：日干于此支的十二长生
+  ziZuo: string     // 自坐：本柱天干坐本柱地支
+  kong: string      // 本柱旬空
+  naYin: string
+  shenSha: string[] // 本柱神煞（短名）
+}
+
+export function shenShaOfZhi(zhi: string, dayGan: string, yearZhi: string, dayZhi: string): string[] {
+  const out: string[] = []
+  if ((TIANYI[dayGan] ?? []).includes(zhi)) out.push('天乙贵人')
+  if (WENCHANG[dayGan] === zhi) out.push('文昌贵人')
+  if (taohua(yearZhi) === zhi || taohua(dayZhi) === zhi) out.push('桃花')
+  if (yima(yearZhi) === zhi || yima(dayZhi) === zhi) out.push('驿马')
+  if (YANGREN[dayGan] === zhi) out.push('羊刃')
+  if (ZHI_CHONG[zhi] === dayZhi) out.push('冲日支')
+  if (ZHI_HE[zhi] === dayZhi) out.push('合日支')
+  return out
+}
+
+export function columnDetail(
+  gan: string, zhi: string, dayGan: string, yearZhi: string, dayZhi: string, isDayPillar = false,
+): ColumnDetail {
+  const nayinMap = (LunarUtil as any).NAYIN ?? {}
+  return {
+    gan,
+    zhi,
+    ganWx: GAN_WUXING[gan],
+    zhiWx: ZHI_WUXING[zhi],
+    ganGod: isDayPillar ? '日元' : tenGod(dayGan, gan),
+    cangGan: ZHI_CANGGAN[zhi].map((g) => ({ gan: g, god: tenGod(dayGan, g), wx: GAN_WUXING[g] })),
+    xingYun: changSheng(dayGan, zhi),
+    ziZuo: changSheng(gan, zhi),
+    kong: kongWang(gan, zhi),
+    naYin: nayinMap[gan + zhi] ?? '',
+    shenSha: shenShaOfZhi(zhi, dayGan, yearZhi, dayZhi),
+  }
 }
