@@ -1077,6 +1077,15 @@ body {
   margin: 18px 0;
 }
 
+/* 卡片如墨晕开般浮现 */
+@keyframes cardReveal {
+  0% { opacity: 0; transform: translateY(16px) scale(0.985); filter: blur(6px); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+.card-reveal { animation: cardReveal 0.9s cubic-bezier(0.22, 0.8, 0.3, 1) both; }
+
 /* ---------- AI 配置 ---------- */
 .ai-config { margin-bottom: 14px; }
 

@@ -96,7 +96,7 @@ export function UserMsg({ children }: { children: ReactNode }) {
 // 卡片消息（图表/盘面容器）
 export function CardMsg({ title, sub, children }: { title?: string; sub?: string; children: ReactNode }) {
   return (
-    <div className="card-msg fade-in">
+    <div className="card-msg card-reveal">
       {title && <div className="card-title">{title}</div>}
       {sub && <div className="card-sub">{sub}</div>}
       {children}
