@@ -1,6 +1,6 @@
-// 命理解读引擎：基于五行、十神、卦象的规则化文本生成
+// 命理解读引擎：断语先摆本盘证据（何柱何干透何星），再下结论——言必有据
 import type { BaziChart, LiuNian } from './bazi'
-import { WUXING_TRAITS, tenGodGroup, ZHI_CHONG, ZHI_HE, type WuXing } from './wuxing'
+import { WUXING_TRAITS, GAN_WUXING, tenGod, tenGodGroup, ZHI_CHONG, ZHI_HE, type WuXing } from './wuxing'
 import type { CastResult } from './hexagram'
 import { LUCK_LABEL } from './hexagram'
 
@@ -52,6 +52,25 @@ export interface BaziReading {
   advice: string
 }
 
+// 找某类十神在盘中的具体落点：「月干甲透正官」「日支卯本气藏乙七杀」
+function starLocations(chart: BaziChart, match: (god: string) => boolean): string[] {
+  const out: string[] = []
+  for (const p of chart.pillars) {
+    if (p.label !== '日柱' && match(p.ganGod)) out.push(`${p.label.slice(0, 1)}干${p.gan}${GAN_WUXING[p.gan]}透${p.ganGod}`)
+  }
+  for (const p of chart.pillars) {
+    p.cangGan.forEach((c, i) => {
+      if (match(c.god)) out.push(`${p.label.slice(0, 1)}支${p.zhi}${i === 0 ? '本气' : '余气'}藏${c.gan}${c.god}`)
+    })
+  }
+  return out
+}
+
+function currentDayun(chart: BaziChart) {
+  const y = new Date().getFullYear()
+  return chart.daYun.find((d) => y >= d.startYear && y <= d.endYear) ?? null
+}
+
 export function interpretBazi(chart: BaziChart): BaziReading {
   const { dayGan, dayGanWx, strength, favorable, unfavorable, wuxingCount, pillars, gender } = chart
 
@@ -77,48 +96,64 @@ export function interpretBazi(chart: BaziChart): BaziReading {
       : `${minWx}气偏弱，可借${WX_COLOR_ADVICE[minWx]}与${WX_DIRECTION[minWx]}之气补益。`,
   ].join('')
 
-  // 事业：看透干十神
+  // 事业：以透干十神为证，逐组落到具体柱位
   const gods = pillars.filter((p) => p.label !== '日柱').map((p) => tenGodGroup(p.ganGod))
   const uniqueGroups = [...new Set(gods)]
-  const careerParts = uniqueGroups.map((g) => GOD_CAREER[g])
+  const careerParts = uniqueGroups.map((g) => {
+    const locs = starLocations(chart, (x) => x !== '日元' && tenGodGroup(x) === g).slice(0, 2)
+    return `${locs.join('、')}——${GOD_CAREER[g]}`
+  })
   const favCareer = favorable.map((w) => WX_CAREER[w]).join('；')
+  const dy = currentDayun(chart)
+  const dyGod = dy ? tenGod(chart.dayGan, dy.ganZhi[0]) : ''
   const career = [
-    `天干透出${uniqueGroups.join('、')}，`,
     careerParts.join('。') + '。',
-    `以喜用五行论，最利行业为：${favCareer}。`,
-    `发展方位以${favorable.map((w) => WX_DIRECTION[w]).join('、')}为佳。`,
+    dy ? `你现行${dy.ganZhi}大运（${dy.startYear}—${dy.endYear}），运干${dy.ganZhi[0]}为${dyGod}，${['正官', '七杀'].includes(dyGod) ? '正是掌权担责的十年，宜主动扛事' : ['正财', '偏财'].includes(dyGod) ? '财星当运，事业重心宜向经营变现倾斜' : ['正印', '偏印'].includes(dyGod) ? '印星当运，宜借平台与资历稳步上行' : ['食神', '伤官'].includes(dyGod) ? '食伤当运，才华变现之期，宜露锋芒' : '比劫当运，宜自立门户或深耕专业'}。` : '',
+    `以喜用五行论，最利行业为：${favCareer}；发展方位以${favorable.map((w) => WX_DIRECTION[w]).join('、')}为佳。`,
   ].join('')
 
-  // 财运
-  const hasWealth = pillars.some((p) => p.ganGod.includes('财')) || pillars.some((p) => p.cangGan.some((c) => c.god.includes('财')))
-  const wealth = hasWealth
-    ? (strength.level.includes('强')
-      ? '财星入命而身强足以任财，属「身强担财」之格，敢博敢挣，正财偏财皆可图之；中年后财运尤旺，投资置业眼光独到。'
-      : '财星入命而身偏弱，财多身弱则求财劳心，宜稳扎稳打、细水长流，忌重杠杆豪赌；先强己身（印比运）再图大财。')
-    : '财星不显于天干，求财宜走专业技能路线，以才生财、以名带利；财藏于支者，往往是闷声聚财之相。'
+  // 财运：先指认财星落点，再以身强身弱定担财之力
+  const wealthLocs = starLocations(chart, (g) => g.includes('财') && g !== '劫财')
+  const wealth = wealthLocs.length
+    ? [
+      `你的财星有据可查：${wealthLocs.slice(0, 3).join('、')}。`,
+      strength.level.includes('强')
+        ? `日主${strength.level}（${strength.score}分），身强足以任财，属「身强担财」之格——敢博敢挣，正财偏财皆可图之；中年后财运尤旺，投资置业眼光独到。`
+        : strength.level === '中和'
+          ? `日主中和（${strength.score}分），财来能受、财去不伤，求财之道贵在细水长流、稳中取利。`
+          : `然日主${strength.level}（仅${strength.score}分），财多身弱则求财劳心——宜稳扎稳打，忌重杠杆豪赌；先强己身（行印比之运）再图大财。`,
+    ].join('')
+    : `遍查四柱，天干不透财、地支亦少财根——求财宜走专业技能路线，以才生财、以名带利；此类命局往往是闷声聚财之相，不显山露水。`
 
   // 感情
   const spouseZhi = pillars[2].zhi
   const spouseGods = pillars[2].cangGan.map((c) => c.god)
   const chongSpouse = pillars.some((p) => p.label !== '日柱' && ZHI_CHONG[p.zhi] === spouseZhi)
   const heSpouse = pillars.some((p) => p.label !== '日柱' && ZHI_HE[p.zhi] === spouseZhi)
+  const spouseStarLocs = gender === '男'
+    ? starLocations(chart, (g) => g.includes('财') && g !== '劫财')
+    : starLocations(chart, (g) => g === '正官' || g === '七杀')
+  const taohuaSha = chart.shenSha.find((s) => s.name === '咸池桃花')
   const love = [
     `日支${spouseZhi}为夫妻宫，宫中藏${spouseGods.join('、')}。`,
-    gender === '男'
-      ? '男命以财星为妻缘之星，'
-      : '女命以官星为夫缘之星，',
+    gender === '男' ? '男命以财星为妻缘之星——' : '女命以官星为夫缘之星——',
+    spouseStarLocs.length
+      ? `你的${gender === '男' ? '妻星' : '夫星'}落在${spouseStarLocs[0]}${spouseStarLocs[1] ? `、${spouseStarLocs[1]}` : ''}，缘分有根，该来时自会来。`
+      : `此星深藏不透，缘分多由日久相处而生，不走一见钟情的路数。`,
     heSpouse ? '夫妻宫得六合，姻缘和顺，伴侣多为贴心助力之人；' : '',
-    chongSpouse ? '唯夫妻宫逢冲，感情路上须多沟通包容，晚婚或聚少离多反主安稳；' : '',
+    chongSpouse ? `唯${pillars.find((p) => p.label !== '日柱' && ZHI_CHONG[p.zhi] === spouseZhi)?.label ?? ''}${ZHI_CHONG[spouseZhi]}冲夫妻宫${spouseZhi}，感情路上须多沟通包容，晚婚或聚少离多反主安稳；` : '',
     !heSpouse && !chongSpouse ? '夫妻宫安稳无刑冲，婚姻基础牢固；' : '',
+    taohuaSha ? `${taohuaSha.where}见咸池桃花，人缘魅力不缺，唯须自持；` : '',
     `择偶以五行属${favorable[0]}${favorable[1] ? '、' + favorable[1] : ''}之人（生肖方位可参）最能旺己。`,
   ].join('')
 
-  // 健康
+  // 健康：五行盈虚以分数为证
   const weakOrgan = WUXING_TRAITS[minWx].organ
   const strongOrgan = WUXING_TRAITS[maxWx].organ
   const health = [
-    `五行以${minWx}最弱，${minWx}主${weakOrgan}，日常宜多加保养；`,
-    wuxingCount[maxWx] >= 3.5 ? `${maxWx}气过旺亦恐${strongOrgan}负担过重，凡事过犹不及。` : '',
+    `细数你盘中五行：${(Object.entries(wuxingCount) as [WuXing, number][]).map(([w, n]) => `${w}${n}`).join('、')}。`,
+    `${minWx}最弱${wuxingCount[minWx] <= 0.5 ? '（近乎无根）' : `（仅${wuxingCount[minWx]}分）`}，${minWx}主${weakOrgan}，日常宜多加保养；`,
+    wuxingCount[maxWx] >= 3.5 ? `${maxWx}气独旺（${wuxingCount[maxWx]}分），亦恐${strongOrgan}负担过重，凡事过犹不及。` : '',
     `作息上宜取${WUXING_TRAITS[minWx].season}季之气调补，`,
     `衣饰家居可多用${WX_COLOR_ADVICE[minWx]}以平衡气场。`,
   ].join('')
@@ -129,9 +164,13 @@ export function interpretBazi(chart: BaziChart): BaziReading {
     `方位宜往${favorable.map((w) => WX_DIRECTION[w]).join('、')}发展；`,
     `颜色宜取${favorable.map((w) => WX_COLOR_ADVICE[w]).join('、')}；`,
     `行业宜近${favorable.map((w) => WX_CAREER[w].split('、')[0]).join('、')}等属性领域。`,
-    chart.shenSha.some((s) => s.name === '天乙贵人') ? '命带天乙贵人，危难之际常有人扶，宜广结善缘以应贵气。' : '',
-    chart.shenSha.some((s) => s.name === '驿马星') ? '命带驿马，动中求财，外出发展、多走动反而运旺。' : '',
-    chart.shenSha.some((s) => s.name === '文昌贵人') ? '文昌入命，进修考试皆有加持，终身学习是最好的开运法。' : '',
+    ...chart.shenSha
+      .filter((s) => ['天乙贵人', '驿马星', '文昌贵人'].includes(s.name))
+      .map((s) => s.name === '天乙贵人'
+        ? `${s.where}见天乙贵人，危难之际常有人扶，宜广结善缘以应贵气。`
+        : s.name === '驿马星'
+          ? `${s.where}见驿马，动中求财，外出发展、多走动反而运旺。`
+          : `${s.where}见文昌，进修考试皆有加持，终身学习是最好的开运法。`),
   ].join('')
 
   return { geju, personality, career, wealth, love, health, advice }
