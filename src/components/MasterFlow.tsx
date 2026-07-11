@@ -1,4 +1,4 @@
-// 大师问命：问年庚 → 掐指推演 → 逐步揭示天机
+// 大师问命：问话如唠家常，讲解专业而暖心，一步步将天机道来
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { computeBazi, liuNianRange, type BaziChart } from '../lib/bazi'
 import { computeZiwei, type ZwChart } from '../lib/ziwei'
@@ -13,14 +13,23 @@ import {
 } from './ChartSections'
 
 const HOUR_OPTIONS = [
-  { v: 0, label: '子时 23:00-00:59（早子）' }, { v: 1, label: '丑时 01:00-02:59' },
-  { v: 3, label: '寅时 03:00-04:59' }, { v: 5, label: '卯时 05:00-06:59' },
-  { v: 7, label: '辰时 07:00-08:59' }, { v: 9, label: '巳时 09:00-10:59' },
-  { v: 11, label: '午时 11:00-12:59' }, { v: 13, label: '未时 13:00-14:59' },
-  { v: 15, label: '申时 15:00-16:59' }, { v: 17, label: '酉时 17:00-18:59' },
-  { v: 19, label: '戌时 19:00-20:59' }, { v: 21, label: '亥时 21:00-22:59' },
-  { v: 23, label: '子时 23:00-23:59（晚子）' },
+  { v: 0, label: '深夜 23:00–00:59（早子时）' }, { v: 1, label: '凌晨 01:00–02:59（丑时）' },
+  { v: 3, label: '凌晨 03:00–04:59（寅时）' }, { v: 5, label: '清晨 05:00–06:59（卯时）' },
+  { v: 7, label: '早上 07:00–08:59（辰时）' }, { v: 9, label: '上午 09:00–10:59（巳时）' },
+  { v: 11, label: '中午 11:00–12:59（午时）' }, { v: 13, label: '下午 13:00–14:59（未时）' },
+  { v: 15, label: '下午 15:00–16:59（申时）' }, { v: 17, label: '傍晚 17:00–18:59（酉时）' },
+  { v: 19, label: '晚上 19:00–20:59（戌时）' }, { v: 21, label: '夜里 21:00–22:59（亥时）' },
+  { v: 23, label: '深夜 23:00–23:59（晚子时）' },
 ]
+
+// 五行性情的白话说法
+const WX_PLAIN: Record<WuXing, string> = {
+  木: '生长向上、心怀仁厚',
+  火: '热忱明亮、感染旁人',
+  土: '沉稳可靠、说到做到',
+  金: '果断利落、讲义气',
+  水: '聪慧灵动、随物赋形',
+}
 
 type Ask = 'gender' | 'date' | 'hour' | 'ritual' | 'reveal'
 
@@ -31,7 +40,7 @@ export function MasterFlow() {
   const [hour, setHour] = useState(9)
   const [chart, setChart] = useState<BaziChart | null>(null)
   const [ziwei, setZiwei] = useState<ZwChart | null>(null)
-  const [step, setStep] = useState(0)        // 已揭示到的步数
+  const [step, setStep] = useState(0)
   const [typingDone, setTypingDone] = useState(false)
   const [dayunIdx, setDayunIdx] = useState(0)
   const [lnYear, setLnYear] = useState<number | null>(null)
@@ -69,7 +78,6 @@ export function MasterFlow() {
     setStep(0); setTypingDone(false)
   }
 
-  // ---------- 揭示步骤 ----------
   interface RevealStep {
     speech: ReactNode[]
     content?: ReactNode
@@ -77,33 +85,35 @@ export function MasterFlow() {
 
   const steps: RevealStep[] = useMemo(() => {
     if (!chart || !reading) return []
-    const zao = chart.gender === '男' ? '乾造' : '坤造'
     const maxWx = (Object.keys(chart.wuxingCount) as WuXing[]).reduce((a, b) => (chart.wuxingCount[a] >= chart.wuxingCount[b] ? a : b))
     const minWx = (Object.keys(chart.wuxingCount) as WuXing[]).reduce((a, b) => (chart.wuxingCount[a] <= chart.wuxingCount[b] ? a : b))
+    const strengthPlain = chart.strength.level.includes('强')
+      ? '底气足、能扛事，最怕的反而是用力过猛'
+      : chart.strength.level === '中和'
+        ? '不偏不倚，是难得的平稳之相'
+        : '心思细、感受深，最需要的是懂得借力与休息'
     const list: RevealStep[] = [
       {
         speech: [
-          `唔……${zao}，生于${chart.lunarText.split(' ')[0]}，${chart.jieQi}之后。老朽掐指一算，你的`,
+          `唔……农历${chart.lunarText.split(' ')[0]}，${chart.jieQi}之后出生。好，你的`,
           <Term key="t" k="四柱八字" />,
-          `已然立定——年柱${chart.pillars[0].gan}${chart.pillars[0].zhi}，月柱${chart.pillars[1].gan}${chart.pillars[1].zhi}，日柱${chart.pillars[2].gan}${chart.pillars[2].zhi}，时柱${chart.pillars[3].gan}${chart.pillars[3].zhi}。日柱天干${chart.dayGan}，便是你的`,
+          `排出来了——${chart.pillars.map((p) => p.gan + p.zhi).join('、')}，一共八个字。`,
+          '别被这几个字唬住，说白了，它就是你落地那一刻，天地间年、月、日、时四股气的一张「快照」。',
+          `其中日柱头一个字「${chart.dayGan}」，就是八字里的「你自己」，命书里称`,
           <Term key="t2" k="日元" />,
-          `，五行属${chart.dayGanWx}——此乃你命之本体。`,
+          `，五行属${chart.dayGanWx}——往后所有的解读，都围着这个字转。`,
         ],
         content: <SimplePillars chart={chart} />,
       },
       {
         speech: [
-          '八个字不过是门面，门内乾坤方是真章。且看细盘——地支之中皆有',
+          '接着看这张细盘。密密麻麻不必怕——每一格，都是那八个字里长出来的细节。',
+          '地支里暗藏的字叫',
           <Term key="t" k="藏干" />,
-          '，干支映照日元而成',
+          '，干支对照你自己，就照出了',
           <Term key="t2" k="十神" />,
-          '；柱柱各有',
-          <Term key="t3" k="星运" />,
-          '、',
-          <Term key="t4" k="空亡" />,
-          '、',
-          <Term key="t5" k="纳音" />,
-          '。此表右侧两列，便是你当下所行的大运与流年。凡有不明之处，点其名目，老朽自当细说。',
+          '——听着玄，其实说的就是：你命里的贵人、财富、才华、压力，各自站在什么位置。',
+          '右边两列，是你正在走的运和今年的年景。红色虚线的词都能点，点开老朽讲给你听，不懂就问，莫客气。',
         ],
         content: (
           <>
@@ -114,35 +124,38 @@ export function MasterFlow() {
       },
       {
         speech: [
-          `再观五行之气。你盘中${maxWx}气最盛，得${WUXING_TRAITS[maxWx].virtue}德之性；${minWx}气最弱，${WUXING_TRAITS[minWx].organ}与${WUXING_TRAITS[minWx].virtue}道皆宜留意涵养。综合得令、得地、得势，日主判为「${chart.strength.level}」，故老朽为你取${chart.favorable.join('、')}为`,
+          `再看五行。你盘中${maxWx}气最足——骨子里自带${WX_PLAIN[maxWx]}的劲儿，这是老天爷给你的本钱。`,
+          `${minWx}气弱了些，但记住：五行弱不是毛病，只是先天带得少，后天补上便是——穿${minWx === '水' ? '蓝黑' : minWx === '木' ? '青绿' : minWx === '火' ? '红' : minWx === '金' ? '白' : '黄'}色、往${WUXING_TRAITS[minWx].direction}走动，都是补法。`,
+          `合起来看，你日主${chart.strength.level}——${strengthPlain}。所以老朽给你取${chart.favorable.join('、')}为`,
           <Term key="t" k="喜用神" />,
-          `，忌${chart.unfavorable.join('、')}。记住这几个字——衣色、方位、行业，皆可依此趋吉。`,
+          '。这两个字请记牢，它们是你一生顺风的方向。',
         ],
         content: <WuxingSection chart={chart} />,
       },
       {
         speech: [
-          '你的命上还照着几颗',
+          '你命里还照着几颗星，术数里叫',
           <Term key="t" k="神煞" />,
-          '。神煞如天上使者，吉者暗中扶持，凶者提点防范——不必惧，知其所在，便可用其所长。',
+          '。莫紧张——神煞听着吓人，多数其实是护着你的：像天乙贵人，说的是你危难时总有人伸手；驿马，说的是你越走动越有运。',
+          '就算有听着凶的，也别怕。知道它在哪儿，绕开便是——命理从来不是吓唬人，是提前给你递个信儿。',
         ],
         content: <ShenshaSection chart={chart} />,
       },
       {
         speech: [
-          '八字既明，老朽为你铸一面',
+          '八字看完，老朽为你铸一面',
           <Term key="t" k="命盘天衡" />,
-          '。红针所指，便是今岁太岁所在。往后你点选大运流年，此盘亦随之转动——命运流转，尽在盘中。',
+          '。红针指着的，就是你今年站的位置。',
+          '往后你点选大运流年，这盘会跟着转。你看着它转，就会明白一件事：命不是刻死的碑，是一年一年流动的水。',
         ],
         content: <WheelSection chart={chart} activeLn={activeLn} />,
       },
       {
         speech: [
-          `命如舟，运如水。${chart.qiYunText}。你如今行${activeDayun?.ganZhi ?? ''}${activeDayun ? `大运（${activeDayun.god}运）` : ''}，今岁流年${activeLn?.ganZhi ?? ''}。点选任一`,
-          <Term key="t" k="大运" />,
-          '与',
-          <Term key="t2" k="流年" />,
-          '，老朽为你细断那十年、那一年的气象。',
+          `命好比船，运好比水。${chart.qiYunText}。`,
+          `你如今行的是${activeDayun?.ganZhi ?? ''}运，今年是${activeLn?.ganZhi ?? ''}年。`,
+          '每十年换一段水路，有顺流也有逆流——顺的时候莫狂，逆的时候莫馁，水总会转弯。',
+          '点下面的格子，老朽给你细讲每一段水路、每一年的年景。',
         ],
         content: (
           <DayunSection
@@ -157,27 +170,25 @@ export function MasterFlow() {
       },
       ...(ziwei ? [{
         speech: [
-          '八字论气数，斗数观星垣。老朽再为你布一张紫微星盘——十二宫分列，众星各守其垣。你是',
+          '八字论的是气，星盘观的是象。老朽再为你摆一张紫微星盘——把你出生那一刻的星空，安进十二个宫格里，事业、姻缘、财帛、健康，各归各位。',
+          `你是`,
           <Term key="t" k="五行局">{ziwei.fiveElementsClass}</Term>,
-          `，命主${ziwei.soul}，身主${ziwei.body}。星曜、`,
-          <Term key="t2" k="四化" />,
-          '、',
-          <Term key="t3" k="大限" />,
-          '皆在盘上，点星名可知其义，点宫格可观其垣。',
+          `，命主${ziwei.soul}、身主${ziwei.body}。`,
+          '星名都能点——点开就知道那颗星在你命里管什么事。慢慢看，不急。',
         ],
         content: <ZiweiChart chart={ziwei} gender={chart.gender} />,
       } satisfies RevealStep] : []),
       {
         speech: [
-          '最后，且听老朽将此命从头道来——格局、性情、事业、财帛、姻缘、康健，一一为你剖解。',
+          '最后，听老朽把这命从头给你说透——不绕玄话，只说你听得懂的。',
         ],
         content: <ReadingSections reading={reading} />,
       },
       {
         speech: [
-          '天机已尽于此。',
-          '命由天定，运在人为——盘上所示是「势」，路怎么走，终究在你自己脚下。',
-          '若有他事相问，可再来问卦；若为亲友问命，老朽随时恭候。',
+          '天机说尽，茶也该凉了。',
+          '记住老朽一句话：盘上写的是「势」，不是「定数」。命给你发了牌，牌怎么打，从来都在你自己手里。',
+          '你今日肯坐下来认识自己，已经胜过许多浑浑噩噩赶路的人。去吧——有难处，随时回来找老朽。',
         ],
       },
     ]
@@ -190,32 +201,34 @@ export function MasterFlow() {
     scrollDown()
   }
 
+  const hourLabel = HOUR_OPTIONS.find((h) => h.v === hour)?.label ?? ''
+
   return (
     <div className="master-dialog">
       {/* 开场 */}
       <MasterBubble
         done={ask !== 'gender'}
         segments={[
-          '贵客请坐。',
-          '老朽玄机子，隐于此阁，观星推命四十余载。',
-          '今日所测何人——是乾造，还是坤造？',
+          '贵客请坐，不必拘礼。',
+          '老朽玄机子，在这阁里看了四十多年的命。今日想看谁的命？',
+          '先告诉老朽——测男命，还是女命？',
         ]}
       />
       {ask === 'gender' && (
         <div className="master-actions fade-in">
-          <button className="btn-ghost" onClick={() => { setGender('男'); setAsk('date') }}>乾造 · 男命</button>
-          <button className="btn-ghost" onClick={() => { setGender('女'); setAsk('date') }}>坤造 · 女命</button>
+          <button className="btn-ghost" onClick={() => { setGender('男'); setAsk('date') }}>男命</button>
+          <button className="btn-ghost" onClick={() => { setGender('女'); setAsk('date') }}>女命</button>
         </div>
       )}
-      {gender && <GuestBubble>{gender === '男' ? '乾造，男命。' : '坤造，女命。'}</GuestBubble>}
+      {gender && <GuestBubble>{gender === '男' ? '看男命。' : '看女命。'}</GuestBubble>}
 
-      {/* 问年庚 */}
+      {/* 问生日 */}
       {gender && (
         <MasterBubble
           done={ask !== 'date'}
           segments={[
-            `好，${gender === '男' ? '乾造' : '坤造'}。`,
-            '敢问贵客年庚——何年、何月、何日降生？公历即可，老朽自会换算农历节气。',
+            '好。',
+            '哪年哪月哪日出生的？阳历就行——农历、节气这些麻烦事，老朽自会替你换算，不劳费心。',
           ]}
         />
       )}
@@ -226,11 +239,11 @@ export function MasterFlow() {
             onChange={(e) => setDate(e.target.value)}
             className="master-input"
           />
-          <button className="btn-gold" onClick={() => { if (date) { setAsk('hour'); scrollDown() } }}>回禀大师</button>
+          <button className="btn-gold" onClick={() => { if (date) { setAsk('hour'); scrollDown() } }}>就是这天</button>
         </div>
       )}
       {(ask === 'hour' || ask === 'ritual' || ask === 'reveal') && (
-        <GuestBubble>{date.split('-')[0]}年{Number(date.split('-')[1])}月{Number(date.split('-')[2])}日生。</GuestBubble>
+        <GuestBubble>{date.split('-')[0]}年{Number(date.split('-')[1])}月{Number(date.split('-')[2])}日。</GuestBubble>
       )}
 
       {/* 问时辰 */}
@@ -238,8 +251,8 @@ export function MasterFlow() {
         <MasterBubble
           done={ask !== 'hour'}
           segments={[
-            '几时所生？',
-            '时辰定时柱，差之一辰，命盘便谬以千里。若实在不知，可择大概时分。',
+            '几点钟出生的？',
+            '记不清确切钟点也不打紧，选个大概——早上、晌午还是半夜，越接近越好。',
           ]}
         />
       )}
@@ -248,14 +261,14 @@ export function MasterFlow() {
           <select value={hour} onChange={(e) => setHour(Number(e.target.value))} className="master-input">
             {HOUR_OPTIONS.map((h) => <option key={h.label} value={h.v}>{h.label}</option>)}
           </select>
-          <button className="btn-gold" onClick={confirmHour}>如实相告</button>
+          <button className="btn-gold" onClick={confirmHour}>差不多这时候</button>
         </div>
       )}
       {(ask === 'ritual' || ask === 'reveal') && (
-        <GuestBubble>{HOUR_OPTIONS.find((h) => h.v === hour)?.label.split(' ')[0]}生人。</GuestBubble>
+        <GuestBubble>{hourLabel.split('（')[0]}出生的。</GuestBubble>
       )}
 
-      {/* 仪式 */}
+      {/* 掐指推演 */}
       {ask === 'ritual' && chart && (
         <RitualOverlay chart={chart} onDone={() => { setAsk('reveal'); setStep(0); setTypingDone(false); scrollDown() }} />
       )}
