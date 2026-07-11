@@ -1076,3 +1076,89 @@ body {
   background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
   margin: 18px 0;
 }
+
+/* ---------- 推演过程 ---------- */
+.trace-list { display: grid; gap: 8px; }
+
+.trace-step {
+  border: 1px solid var(--card-line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.4);
+  overflow: hidden;
+}
+
+.trace-step.open { border-color: var(--line-strong); }
+
+.trace-head {
+  appearance: none;
+  border: none;
+  background: none;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.trace-no {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: var(--ink);
+  color: #f4f2ea;
+  font-size: 0.72rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "ZCOOL XiaoWei", serif;
+}
+
+.trace-step.open .trace-no { background: var(--seal); }
+
+.trace-title {
+  font-family: "ZCOOL XiaoWei", serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+}
+
+.trace-result-mini { font-size: 0.7rem; color: var(--ink-faint); }
+
+.trace-body {
+  padding: 4px 13px 13px 53px;
+  display: grid;
+  gap: 7px;
+}
+
+.trace-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 0.82rem;
+  line-height: 1.85;
+  color: var(--ink-soft);
+}
+
+.trace-row b { color: var(--ink); font-weight: 600; }
+
+.trace-key {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--ink);
+  color: #f4f2ea;
+  font-size: 0.62rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "ZCOOL XiaoWei", serif;
+  transform: translateY(-1px);
+}
+
+.trace-key.ev { background: var(--ink-faint); }
+.trace-key.rs { background: var(--seal); }
