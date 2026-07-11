@@ -1,7 +1,7 @@
 // 八字排盘引擎 —— 基于 lunar-javascript 的精确历法计算
 import { Solar, Lunar, LunarUtil } from 'lunar-javascript'
 import {
-  GAN_WUXING, ZHI_WUXING, ZHI_CANGGAN, tenGod, type WuXing,
+  GAN_WUXING, ZHI_WUXING, ZHI_CANGGAN, GAN_YINYANG, tenGod, type WuXing,
   TIANYI, WENCHANG, taohua, yima, YANGREN, ZHI_CHONG, ZHI_HE,
   changSheng, kongWang,
 } from './wuxing'
@@ -239,7 +239,7 @@ export function computeBazi(
     startAge: d.getStartAge(),
     god: tenGod(dayGan, d.getGanZhi()[0]),
   }))
-  const qiYunText = `出生后${yun.getStartYear()}年${yun.getStartMonth()}个月${yun.getStartDay()}天起运，${gender === '男' ? '阳' : '阴'}命${yun.isForward() ? '顺' : '逆'}排`
+  const qiYunText = `出生后${yun.getStartYear()}年${yun.getStartMonth()}个月${yun.getStartDay()}天起运，${GAN_YINYANG[pillars[0].gan]}年${gender}命${yun.isForward() ? '顺' : '逆'}排`
 
   // 神煞
   const shenSha: ShenSha[] = []
