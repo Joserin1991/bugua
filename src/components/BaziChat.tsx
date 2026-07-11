@@ -414,7 +414,7 @@ function DayunCard({ chart }: { chart: BaziChart }) {
   const d = chart.daYun[idx]
   const god = tenGod(chart.dayGan, d.ganZhi[0])
   return (
-    <CardMsg title="大运排盘" sub="每十年一运 · 点折线上的节点切换">
+    <CardMsg title="大运排盘" sub="每十年一运 · 岁数为虚岁 · 点折线上的节点切换">
       <div className="dayun-strip">
         {chart.daYun.map((dy, i) => (
           <div key={dy.ganZhi + dy.startYear} className={`dayun-cell ${i === idx ? 'active' : ''}`} onClick={() => setIdx(i)}>
@@ -425,7 +425,7 @@ function DayunCard({ chart }: { chart: BaziChart }) {
       </div>
       <DayunLineChart chart={chart} activeIdx={idx} onPick={setIdx} />
       <p className="reading-p" style={{ marginTop: 8 }}>
-        你{now >= d.startYear && now <= d.endYear ? '当前行' : '于此段行'}「{d.ganZhi}」大运（{d.startYear}—{d.endYear}，{god}运）。
+        你{now >= d.startYear && now <= d.endYear ? '当前行' : '于此段行'}「{d.ganZhi}」大运（{d.startYear}—{d.endYear}，<Term k={god}>{god}</Term>运）。
         {['正官', '正印', '正财', '食神'].includes(god)
           ? '此运正星当值，宜稳中求进、积累根基，是修成正果的十年。'
           : ['七杀', '伤官', '劫财', '偏印'].includes(god)
