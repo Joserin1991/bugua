@@ -1,14 +1,14 @@
 :root {
   /* 水墨纸本主题（对话版） */
-  --paper: #edeae0;
-  --paper-deep: #e3dfd2;
-  --card: #f7f5ee;
-  --card-line: rgba(30, 28, 24, 0.16);
-  --ink: #1e1c18;
-  --ink-soft: #45423a;
-  --ink-faint: #8b8779;
-  --line: rgba(30, 28, 24, 0.22);
-  --line-strong: rgba(30, 28, 24, 0.5);
+  --paper: #f0ecdf;
+  --paper-deep: #e8e2d0;
+  --card: #f8f5ea;
+  --card-line: rgba(33, 29, 20, 0.14);
+  --ink: #211d14;          /* 浓墨 */
+  --ink-soft: #4c463a;     /* 中墨 */
+  --ink-faint: #948d7c;    /* 淡墨 */
+  --line: rgba(33, 29, 20, 0.2);
+  --line-strong: rgba(33, 29, 20, 0.45);
   --seal: #a8382b;
   --seal-soft: rgba(168, 56, 43, 0.09);
   --wood: #4f7359;
@@ -22,12 +22,12 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html { background: #dcd8ca; }
+html { background: #ddd7c6; }
 
 body {
   min-height: 100vh;
   color: var(--ink);
-  background: #dcd8ca;
+  background: #ddd7c6;
 }
 
 ::selection { background: rgba(168, 56, 43, 0.22); }
@@ -41,7 +41,7 @@ body {
   min-height: 100dvh;
   background:
     radial-gradient(ellipse 90% 30% at 50% -4%, rgba(30, 28, 24, 0.06), transparent 70%),
-    linear-gradient(180deg, #efece2 0%, #ece9de 55%, #e7e3d6 100%);
+    linear-gradient(180deg, #f2eee1 0%, #efeadb 55%, #e9e3d2 100%);
   box-shadow: 0 0 60px rgba(30, 28, 24, 0.35);
   display: flex;
   flex-direction: column;
@@ -56,7 +56,7 @@ body {
   z-index: 0;
   pointer-events: none;
   opacity: 0.55;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.12 0 0 0 0 0.11 0 0 0 0 0.09 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23p)'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.13 0 0 0 0 0.11 0 0 0 0 0.07 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23p)'/%3E%3C/svg%3E");
 }
 
 .phone > * { position: relative; z-index: 1; }
@@ -250,22 +250,22 @@ body {
 }
 
 .bnav-item.active { color: var(--ink); }
-.bnav-item .bicon { font-size: 1.05rem; }
+.bnav-item svg { width: 22px; height: 22px; }
 
 /* ---------- 聊天流 ---------- */
 .chat-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 10px 14px 16px;
+  padding: 14px 18px 24px;
   scrollbar-width: thin;
   scrollbar-color: var(--ink-faint) transparent;
 }
 
 .msg-row {
   display: flex;
-  gap: 9px;
+  gap: 10px;
   align-items: flex-start;
-  margin: 14px 0;
+  margin: 20px 0;
 }
 
 .msg-avatar { flex: none; margin-top: 2px; }
@@ -274,9 +274,9 @@ body {
   background: var(--card);
   border: 1px solid var(--card-line);
   border-radius: 3px 14px 14px 14px;
-  padding: 11px 14px;
+  padding: 13px 17px;
   max-width: 82%;
-  line-height: 1.95;
+  line-height: 2.1;
   font-size: 0.92rem;
   color: var(--ink-soft);
   box-shadow: 1px 2px 0 rgba(30, 28, 24, 0.08);
@@ -295,7 +295,7 @@ body {
 .user-row {
   display: flex;
   justify-content: flex-end;
-  margin: 12px 0;
+  margin: 16px 0;
 }
 
 .user-pill {
@@ -311,11 +311,11 @@ body {
 
 /* 卡片消息 */
 .card-msg {
-  margin: 6px 0 14px 41px;
+  margin: 8px 0 20px 42px;
   background: var(--card);
   border: 1px solid var(--card-line);
-  border-radius: 10px;
-  padding: 16px 14px;
+  border-radius: 12px;
+  padding: 22px 18px;
   box-shadow: 1px 2px 0 rgba(30, 28, 24, 0.08);
   overflow: hidden;
 }
@@ -323,8 +323,8 @@ body {
 .card-msg .card-title {
   text-align: center;
   font-family: "ZCOOL XiaoWei", "STKaiti", serif;
-  font-size: 1.02rem;
-  letter-spacing: 0.25em;
+  font-size: 1.08rem;
+  letter-spacing: 0.34em;
   text-indent: 0.25em;
   color: var(--ink);
   margin-bottom: 4px;
@@ -346,8 +346,8 @@ body {
 .chips-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 8px 0 14px 41px;
+  gap: 9px;
+  margin: 10px 0 18px 42px;
 }
 
 .chip {
@@ -487,23 +487,23 @@ body {
 .pillar-cards {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 10px;
   margin: 6px 0 4px;
 }
 
 .pcard {
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.45);
   border: 1px solid var(--card-line);
-  border-radius: 8px;
+  border-radius: 10px;
   text-align: center;
-  padding: 10px 4px 8px;
+  padding: 14px 4px 10px;
 }
 
 .pcard .pc-tag { font-size: 0.66rem; color: var(--ink-faint); letter-spacing: 0.2em; }
 
 .pcard .pc-gz {
   font-family: "Ma Shan Zheng", "STKaiti", cursive;
-  font-size: 1.7rem;
+  font-size: 1.95rem;
   line-height: 1.25;
   margin: 4px 0 2px;
 }
@@ -695,7 +695,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: 80;
-  background: rgba(30, 28, 24, 0.4);
+  background: rgba(33, 29, 20, 0.25);
   backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
@@ -758,7 +758,7 @@ body {
   border: 1.5px solid var(--ink);
   border-radius: 4px;
   overflow: hidden;
-  background: rgba(30, 28, 24, 0.35);
+  background: rgba(33, 29, 20, 0.22);
   min-width: 640px;
 }
 
@@ -922,7 +922,7 @@ body {
     "mao  center center xu"
     "yin  chou   zi     hai";
   gap: 1.5px;
-  background: rgba(30, 28, 24, 0.4);
+  background: rgba(33, 29, 20, 0.25);
   border: 1.5px solid var(--ink);
   border-radius: 4px;
   overflow: hidden;
@@ -1074,5 +1074,5 @@ body {
 .divider-ink {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
-  margin: 12px 0;
+  margin: 18px 0;
 }

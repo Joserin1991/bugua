@@ -19,6 +19,7 @@ export interface WheelRing {
   radius: number        // 0..1（相对半径）
   fontScale?: number    // 相对字号（默认 1）
   brush?: boolean       // 用毛笔字体
+  tone?: 'strong' | 'mid' | 'faint' // 视觉层级：主环重、辅环淡
   items: WheelRingItem[] // 长度 12，索引 = 地支序（子=0）
 }
 
@@ -88,12 +89,12 @@ export function baziToWheel(chart: BaziChart, activeLn: LiuNian | null): WheelCo
     rotateToZhi: activeLn?.zhi ?? chart.pillars[0].zhi,
     centerLabel: activeLn ? `流年 ${activeLn.ganZhi} · ${activeLn.year}` : `日主 ${chart.dayGan}${chart.dayGanWx}`,
     rings: [
-      { id: 'gong', name: '十二宫', radius: 0.33, fontScale: 0.72, items: gongItems },
-      { id: 'changsheng', name: '十二长生', radius: 0.45, fontScale: 0.72, items: csItems },
-      { id: 'zhi', name: '十二地支', radius: 0.585, fontScale: 1.5, brush: true, items: zhiItems },
-      { id: 'gan', name: '藏干本气', radius: 0.70, fontScale: 0.8, items: ganItems },
-      { id: 'liunian', name: '流年', radius: 0.80, fontScale: 0.68, items: lnItems },
-      { id: 'dayun', name: '大运', radius: 0.905, fontScale: 0.62, items: dyItems },
+      { id: 'gong', name: '十二宫', radius: 0.33, fontScale: 0.72, tone: 'faint', items: gongItems },
+      { id: 'changsheng', name: '十二长生', radius: 0.45, fontScale: 0.72, tone: 'faint', items: csItems },
+      { id: 'zhi', name: '十二地支', radius: 0.585, fontScale: 1.5, brush: true, tone: 'strong', items: zhiItems },
+      { id: 'gan', name: '藏干本气', radius: 0.70, fontScale: 0.78, tone: 'faint', items: ganItems },
+      { id: 'liunian', name: '流年', radius: 0.80, fontScale: 0.66, tone: 'mid', items: lnItems },
+      { id: 'dayun', name: '大运', radius: 0.905, fontScale: 0.62, tone: 'mid', items: dyItems },
     ],
   }
 }

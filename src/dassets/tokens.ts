@@ -5,11 +5,11 @@ export type WuXingKey = '木' | '火' | '土' | '金' | '水'
 
 export const TOKENS = {
   // 纸墨基色
-  paper: '#edeae0',
-  card: '#f7f5ee',
-  ink: '#1e1c18',
-  inkSoft: '#45423a',
-  inkFaint: '#8b8779',
+  paper: '#f0ecdf',
+  card: '#f8f5ea',
+  ink: '#211d14',
+  inkSoft: '#4c463a',
+  inkFaint: '#948d7c',
   seal: '#a8382b',       // 朱砂：高亮/印章/凶忌标记
   paperText: '#f4f2ea',  // 深底上的文字
 
