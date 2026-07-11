@@ -1,6 +1,6 @@
 // 大师 AI 问答：把命盘全量证据交给大模型，回答专业+可懂+有情绪价值
 // 密钥只存用户本机 localStorage，绝不写入代码库或上传
-import type { BaziChart } from './bazi'
+import { liuNianRange, type BaziChart } from './bazi'
 import type { ZwChart } from './ziwei'
 import { buildTrace } from './trace'
 
@@ -34,6 +34,8 @@ export function buildMasterSystem(chart: BaziChart, ziwei: ZwChart | null): stri
     `${p.label}${p.gan}${p.zhi}（干${p.ganGod}，支藏${p.cangGan.map((c) => c.gan + c.god).join('/')}，纳音${p.naYin}）`,
   ).join('；')
   const dayun = chart.daYun.slice(0, 8).map((d) => `${d.startAge}岁起${d.ganZhi}(${d.god})`).join('、')
+  const nowYear = new Date().getFullYear()
+  const liunian = liuNianRange(nowYear - 1, 6, chart.dayGan).map((l) => `${l.year}${l.ganZhi}(${l.god}${l.year === nowYear ? '·今年' : ''})`).join('、')
   const shensha = chart.shenSha.map((s) => `${s.where}${s.name}`).join('、') || '无'
   const trace = buildTrace(chart).map((t) => `【${t.title}】${t.result}`).join('\n')
   const zw = ziwei
@@ -57,6 +59,7 @@ export function buildMasterSystem(chart: BaziChart, ziwei: ZwChart | null): stri
     `日主${chart.dayGan}${chart.dayGanWx}，旺衰${chart.strength.level}（${chart.strength.score}分），喜用${chart.favorable.join('、')}，忌${chart.unfavorable.join('、')}`,
     `五行计数：${JSON.stringify(chart.wuxingCount)}`,
     `大运：${chart.qiYunText}；${dayun}`,
+    `流年：${liunian}`,
     `神煞：${shensha}`,
     zw,
     '',
