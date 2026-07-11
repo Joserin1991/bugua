@@ -3,7 +3,7 @@ import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { computeBazi, liuNianRange, type BaziChart } from '../lib/bazi'
 import { computeZiwei, type ZwChart } from '../lib/ziwei'
 import { interpretBazi } from '../lib/interpret'
-import { WUXING_TRAITS, type WuXing } from '../lib/wuxing'
+import type { WuXing } from '../lib/wuxing'
 import { MasterBubble, GuestBubble, Term } from './Master'
 import { RitualOverlay } from './RitualOverlay'
 import { ZiweiChart } from './ZiweiChart'
@@ -42,6 +42,7 @@ export function MasterFlow() {
   const [ziwei, setZiwei] = useState<ZwChart | null>(null)
   const [step, setStep] = useState(0)
   const [typingDone, setTypingDone] = useState(false)
+  const [explained, setExplained] = useState<number[]>([])
   const [dayunIdx, setDayunIdx] = useState(0)
   const [lnYear, setLnYear] = useState<number | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -75,11 +76,12 @@ export function MasterFlow() {
 
   const restart = () => {
     setAsk('gender'); setGender(null); setChart(null); setZiwei(null)
-    setStep(0); setTypingDone(false)
+    setStep(0); setTypingDone(false); setExplained([])
   }
 
   interface RevealStep {
-    speech: ReactNode[]
+    speech: ReactNode[]      // 专业断语（先行）
+    plain?: ReactNode[]      // 白话细解（「此话怎讲？」后展开）
     content?: ReactNode
   }
 
@@ -95,25 +97,38 @@ export function MasterFlow() {
     const list: RevealStep[] = [
       {
         speech: [
-          `唔……农历${chart.lunarText.split(' ')[0]}，${chart.jieQi}之后出生。好，你的`,
+          `唔……${chart.gender === '男' ? '乾造' : '坤造'}，生于农历${chart.lunarText.split(' ')[0]}，${chart.jieQi}之后。`,
           <Term key="t" k="四柱八字" />,
-          `排出来了——${chart.pillars.map((p) => p.gan + p.zhi).join('、')}，一共八个字。`,
-          '别被这几个字唬住，说白了，它就是你落地那一刻，天地间年、月、日、时四股气的一张「快照」。',
-          `其中日柱头一个字「${chart.dayGan}」，就是八字里的「你自己」，命书里称`,
+          `既立：${chart.pillars.map((p) => p.gan + p.zhi).join('　')}。`,
           <Term key="t2" k="日元" />,
-          `，五行属${chart.dayGanWx}——往后所有的解读，都围着这个字转。`,
+          `${chart.dayGan}${chart.dayGanWx}，生于${chart.pillars[1].zhi}月。`,
+        ],
+        plain: [
+          '此话怎讲？不难——这八个字，就是你落地那一刻，天地间年、月、日、时四股气的一张「快照」。',
+          `其中日柱头一个字「${chart.dayGan}」，就是八字里的「你自己」，往后所有解读都围着它转。`,
+          '八字没有好坏之分，只有配得巧不巧。且往下看。',
         ],
         content: <SimplePillars chart={chart} />,
       },
       {
         speech: [
-          '接着看这张细盘。密密麻麻不必怕——每一格，都是那八个字里长出来的细节。',
-          '地支里暗藏的字叫',
+          '细盘在此。地支',
           <Term key="t" k="藏干" />,
-          '，干支对照你自己，就照出了',
+          '映出',
           <Term key="t2" k="十神" />,
-          '——听着玄，其实说的就是：你命里的贵人、财富、才华、压力，各自站在什么位置。',
-          '右边两列，是你正在走的运和今年的年景。红色虚线的词都能点，点开老朽讲给你听，不懂就问，莫客气。',
+          '，柱柱各有',
+          <Term key="t3" k="星运" />,
+          '、',
+          <Term key="t4" k="自坐" />,
+          '、',
+          <Term key="t5" k="空亡" />,
+          '、',
+          <Term key="t6" k="纳音" />,
+          '；右二列为现行大运与流年太岁。红字名目皆可点。',
+        ],
+        plain: [
+          '看着密，其实一点就通：十神说的是你命里的贵人、财富、才华、压力各自站在什么位置；藏干是地支里暗藏的底牌；星运空亡，是每根柱子的气数盛衰。',
+          '不必一次看懂——哪个词不明白，点它，老朽讲到你懂为止。',
         ],
         content: (
           <>
@@ -124,38 +139,60 @@ export function MasterFlow() {
       },
       {
         speech: [
-          `再看五行。你盘中${maxWx}气最足——骨子里自带${WX_PLAIN[maxWx]}的劲儿，这是老天爷给你的本钱。`,
-          `${minWx}气弱了些，但记住：五行弱不是毛病，只是先天带得少，后天补上便是——穿${minWx === '水' ? '蓝黑' : minWx === '木' ? '青绿' : minWx === '火' ? '红' : minWx === '金' ? '白' : '黄'}色、往${WUXING_TRAITS[minWx].direction}走动，都是补法。`,
-          `合起来看，你日主${chart.strength.level}——${strengthPlain}。所以老朽给你取${chart.favorable.join('、')}为`,
+          `五行气数：${(['木', '火', '土', '金', '水'] as WuXing[]).map((w) => `${w}${chart.wuxingCount[w]}`).join('、')}。`,
+          `${maxWx}气当旺，${minWx}气式微。综合得令、得地、得势，日主判「${chart.strength.level}」。`,
+          `扶抑取用，以${chart.favorable.join('、')}为`,
           <Term key="t" k="喜用神" />,
-          '。这两个字请记牢，它们是你一生顺风的方向。',
+          `，忌${chart.unfavorable.join('、')}。`,
+        ],
+        plain: [
+          `白话说：你骨子里${maxWx}的劲儿最足——${WX_PLAIN[maxWx]}，这是老天爷给你的本钱。${minWx}弱了些，但五行弱不是毛病，后天补上便是：穿对颜色、走对方位，都是补法。`,
+          `日主${chart.strength.level}，意思是你${strengthPlain}。`,
+          `「喜用神」这三个字请记牢——${chart.favorable.join('、')}就是你一生顺风的方向，选行业、挑方位、定颜色，都照着它来，错不了。`,
         ],
         content: <WuxingSection chart={chart} />,
       },
       {
         speech: [
-          '你命里还照着几颗星，术数里叫',
+          '再看',
           <Term key="t" k="神煞" />,
-          '。莫紧张——神煞听着吓人，多数其实是护着你的：像天乙贵人，说的是你危难时总有人伸手；驿马，说的是你越走动越有运。',
-          '就算有听着凶的，也别怕。知道它在哪儿，绕开便是——命理从来不是吓唬人，是提前给你递个信儿。',
+          '：',
+          chart.shenSha.length
+            ? chart.shenSha.slice(0, 4).map((s) => `${s.name}临${s.where}`).join('，') + '。吉者当用，凶者当制。'
+            : '四柱清净，无甚神煞——亦是安稳之相。',
+        ],
+        plain: [
+          '神煞听着吓人，多数其实是护着你的：天乙贵人，说的是你危难时总有人伸手；驿马，说的是你越走动越有运；桃花，是人缘魅力。',
+          '就算有听着凶的也别怕——知道它在哪儿，绕开便是。命理从来不是吓唬人，是提前给你递个信儿。',
         ],
         content: <ShenshaSection chart={chart} />,
       },
       {
         speech: [
-          '八字看完，老朽为你铸一面',
           <Term key="t" k="命盘天衡" />,
-          '。红针指着的，就是你今年站的位置。',
-          '往后你点选大运流年，这盘会跟着转。你看着它转，就会明白一件事：命不是刻死的碑，是一年一年流动的水。',
+          '既成。外环十二宫，中列',
+          <Term key="t2" k="十二消息卦" />,
+          '，朱印标四柱本位，红针所指为流年太岁。',
+        ],
+        plain: [
+          '这面盘，就是你的命摊开在天地十二宫里的样子。红针指着的，是你今年站的位置。',
+          '往后你点选大运流年，盘会跟着转——你看着它转，就会明白：命不是刻死的碑，是一年一年流动的水。',
         ],
         content: <WheelSection chart={chart} activeLn={activeLn} />,
       },
       {
         speech: [
-          `命好比船，运好比水。${chart.qiYunText}。`,
-          `你如今行的是${activeDayun?.ganZhi ?? ''}运，今年是${activeLn?.ganZhi ?? ''}年。`,
-          '每十年换一段水路，有顺流也有逆流——顺的时候莫狂，逆的时候莫馁，水总会转弯。',
-          '点下面的格子，老朽给你细讲每一段水路、每一年的年景。',
+          `${chart.qiYunText}。`,
+          `现行${activeDayun?.ganZhi ?? ''}${activeDayun ? `大运（${activeDayun.god}）` : ''}，流年${activeLn?.ganZhi ?? ''}太岁${activeLn ? `（${activeLn.god}）` : ''}。`,
+          '点选任一',
+          <Term key="t" k="大运" />,
+          '与',
+          <Term key="t2" k="流年" />,
+          '，细盘与天衡随之更易。',
+        ],
+        plain: [
+          '命好比船，运好比水——大运就是你十年一段的水路，流年是每一年的风浪。',
+          '有顺流也有逆流：顺的时候莫狂，逆的时候莫馁，水总会转弯。点下面的格子，老朽给你细讲每段水路的吉凶。',
         ],
         content: (
           <DayunSection
@@ -170,17 +207,23 @@ export function MasterFlow() {
       },
       ...(ziwei ? [{
         speech: [
-          '八字论的是气，星盘观的是象。老朽再为你摆一张紫微星盘——把你出生那一刻的星空，安进十二个宫格里，事业、姻缘、财帛、健康，各归各位。',
-          `你是`,
+          '八字论气，斗数观星。紫微星盘布毕——',
           <Term key="t" k="五行局">{ziwei.fiveElementsClass}</Term>,
-          `，命主${ziwei.soul}、身主${ziwei.body}。`,
-          '星名都能点——点开就知道那颗星在你命里管什么事。慢慢看，不急。',
+          `，命主${ziwei.soul}，身主${ziwei.body}。十四正曜各守其垣，`,
+          <Term key="t2" k="四化" />,
+          '飞布，',
+          <Term key="t3" k="大限" />,
+          '十年一宫。',
+        ],
+        plain: [
+          '这张盘，是把你出生那一刻的星空安进十二个宫格里——事业、姻缘、财帛、健康，各归各位，一格管一摊事。',
+          '每颗星名都能点，点开就知道它在你命里管什么。慢慢看，不急——星星等了你几十年，不差这一会儿。',
         ],
         content: <ZiweiChart chart={ziwei} gender={chart.gender} />,
       } satisfies RevealStep] : []),
       {
         speech: [
-          '最后，听老朽把这命从头给你说透——不绕玄话，只说你听得懂的。',
+          '最后，听老朽将此命从头道来——格局、性情、事业、财帛、姻缘、康健，一一剖解。',
         ],
         content: <ReadingSections reading={reading} />,
       },
@@ -283,6 +326,16 @@ export function MasterFlow() {
           />
           {(i < step || typingDone) && s.content && (
             <section className="panel fade-in reveal-panel">{s.content}</section>
+          )}
+          {(i < step || typingDone) && s.plain && !explained.includes(i) && (
+            <div className="explain-row fade-in">
+              <button className="explain-btn" onClick={() => { setExplained((e) => [...e, i]); scrollDown() }}>
+                此话怎讲？
+              </button>
+            </div>
+          )}
+          {s.plain && explained.includes(i) && (
+            <MasterBubble segments={s.plain} onDone={i === step ? scrollDown : undefined} />
           )}
         </div>
       ))}
