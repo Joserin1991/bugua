@@ -180,14 +180,28 @@ export function BaziChat() {
         <ChartMeta chart={c} />
       </CardMsg>,
     )
-    master([
+    const fallbackOpening: ReactNode[] = [
       `你的命盘排好了。日元${c.dayGan}${c.dayGanWx}，生于${c.pillars[1].zhi}月，日主${c.strength.level}，喜`,
       <Term key="t" k="喜用神">{`${c.favorable.join('、')}`}</Term>,
       `。${r.geju.split('。')[2] ?? ''}。`,
-      loadAiConfig()
-        ? '八字、紫微、卦象三盘老朽都替你起好了。不必按套路来——把你近来的境况、心头挂着的事直接说与老朽，老朽结合命盘为你细断；也可点下方话题先看盘。'
-        : '八字、紫微、卦象三盘老朽都替你起好了——点「三盘合参」可看它们是否互相印证。想先了解哪方面？',
-    ])
+      '八字、紫微、卦象三盘老朽都替你起好了——点「三盘合参」可看它们是否互相印证。想先了解哪方面？',
+    ]
+    const cfg = loadAiConfig()
+    if (cfg && aiSystemRef.current) {
+      setAiThinking(true)
+      Promise.all([
+        askMaster(cfg, aiSystemRef.current, [], '【系统指令】命主的命盘刚排好，四柱盘卡已展示在界面上。请作开场解读（180~260字）：报出四柱，点出日主旺衰与格局的关键（引用具体柱位，如「月干戊土食神透出」），用一两句白话讲他的性子，最后请命主说说近来的境况或最挂心的事。'),
+        new Promise((res) => setTimeout(res, 900)),
+      ])
+        .then(([reply]) => {
+          const body = applyAiReply(reply as string, null, null)
+          aiHistoryRef.current.push({ role: 'assistant', content: body })
+        })
+        .catch(() => master(fallbackOpening))
+        .finally(() => { setAiThinking(false); scroll() })
+    } else {
+      master(fallbackOpening)
+    }
   }
 
   const currentLn = (c: BaziChart): LiuNian | null => {
@@ -196,6 +210,47 @@ export function BaziChat() {
   }
 
   // ---------- 话题 ----------
+  // 每张盘卡的数据摘要：交给 AI，让它对着卡上的字解读
+  const topicDigest = (topic: Topic): string => {
+    const c = chartRef.current!
+    const cur = new Date().getFullYear()
+    switch (topic) {
+      case '流年运势': {
+        const years = liuNianRange(cur - 1, 6, c.dayGan)
+        return `流年卡展示六年：${years.map((l) => `${l.year}年${l.ganZhi}(流年${l.god}${l.year === cur ? '·今年·命盘红针所指' : ''})`).join('、')}`
+      }
+      case '大运走势':
+        return `大运卡展示八步（虚岁）：${c.daYun.slice(0, 8).map((d) => `${d.startAge}岁起${d.ganZhi}(${d.god}${cur >= d.startYear && cur <= d.endYear ? '·现行' : ''})`).join('、')}；${c.qiYunText}`
+      case '五行分析':
+        return `五行条形与雷达数据：${(Object.entries(c.wuxingCount) as [string, number][]).map(([w, n]) => `${w}${n}分`).join('、')}；喜用${c.favorable.join('、')}，忌${c.unfavorable.join('、')}`
+      case '十神关系': {
+        const all = c.pillars.flatMap((pp) => [pp.ganGod, ...pp.cangGan.map((g) => g.god)]).filter((g) => g !== '日元')
+        const uniq = [...new Set(all)]
+        const ALL = ['比肩', '劫财', '食神', '伤官', '正财', '偏财', '正官', '七杀', '正印', '偏印']
+        const missing = ALL.filter((g) => !uniq.includes(g))
+        return `十神环绕图：命中所有——${uniq.join('、')}；未见——${missing.join('、') || '无'}；今年流年${currentLn(c)?.god ?? ''}为红圈当值`
+      }
+      case '三盘合参': {
+        const sp = sanpan(c, ziweiRef.current, birthRef.current ?? new Date(2000, 0, 1))
+        return `合参卡四维结论：${sp.dims.map((d) => `${d.key}(${d.verdicts.map((v) => v.system + v.stance).join('/')}→一致度${d.agree}·断${d.final})`).join('；')}`
+      }
+      case '神煞照命':
+        return `神煞卡：${c.shenSha.map((x) => `${x.where}${x.name}`).join('、') || '无神煞'}`
+      case '紫微星盘': {
+        const zw = ziweiRef.current
+        if (!zw) return ''
+        const hua = zw.palaces.flatMap((pp) => [...pp.majorStars, ...pp.minorStars].filter((st) => st.mutagen).map((st) => `${st.name}化${st.mutagen}在${pp.name}`))
+        return `紫微盘：${zw.fiveElementsClass}，命宫${zw.soulZhi}（${zw.palaces.find((pp) => pp.name.includes('命'))?.majorStars.map((st) => st.name).join('、') || '无主星'}），命主${zw.soul}身主${zw.body}；四化：${hua.join('、')}`
+      }
+      case '专业细盘':
+        return `细盘表：四柱${c.pillars.map((pp) => pp.gan + pp.zhi).join('、')}，各柱纳音${c.pillars.map((pp) => pp.naYin).join('、')}；含藏干/星运/自坐/空亡/神煞行`
+      case '事业运势':
+        return `事业五维雷达：${abilityRadarData(c).map((d2) => `${d2.label}${Math.round(d2.value)}`).join('、')}`
+      default:
+        return ''
+    }
+  }
+
   // 各话题的固定开场白与盘面卡（AI 模式下开场白仅作断网保底）
   const buildTopicView = (topic: Topic, ai = false): { intro: ReactNode[]; card: ReactNode | null } => {
     const c = chartRef.current!
@@ -363,7 +418,7 @@ export function BaziChat() {
     const fullText = ['财运走势', '感情运势', '健康提点', '命理总断', '推演解说'].includes(topic)
     const instruction = fullText
       ? `【系统指令】命主想听「${topic}」。据盘面证据作完整解读（200~300字，可分两小段）：先专业断语后白话解释，引用具体柱位与分数，务必扣着他此前说过的处境，结尾一句叮嘱。`
-      : `【系统指令】命主刚点开「${topic}」，界面稍后会展示对应盘面卡。结合盘面证据与他此前聊过的处境，作一段个性化点评（120字以内）：先专业后白话，扣着他说过的事，末尾带一句关怀或指引。不要罗列数据。`
+      : `【系统指令】命主刚点开「${topic}」，界面稍后会展示对应盘面卡。卡片数据：${topicDigest(topic)}。请为命主解读这张卡（150~250字）：把卡上的关键处点到名字（哪一年、哪一步运、哪个五行），先专业断语后白话解释，扣着他此前聊过的处境，末尾一句指引。不要整段复述数据，挑要紧的讲。`
     setAiThinking(true)
     Promise.all([
       askMaster(aiCfg!, aiSystemRef.current, aiHistoryRef.current.slice(-8), instruction),
@@ -387,13 +442,23 @@ export function BaziChat() {
     user(text)
     const cfg = loadAiConfig()
     if (cfg && aiSystemRef.current) {
+      // 问句命中图表话题时：随答案带出盘卡，并把卡片数据交给 AI 点名解读
+      const t = detectTopic(text)
+      const chartTopic = t && !['财运走势', '感情运势', '健康提点', '命理总断', '推演解说'].includes(t) ? t : null
+      let card: ReactNode | null = null
+      let q = text
+      if (chartTopic) {
+        setVisited((v) => [...v, chartTopic])
+        card = buildTopicView(chartTopic, true).card
+        q = `${text}\n【系统指令】界面稍后会展示「${chartTopic}」盘面卡，卡片数据：${topicDigest(chartTopic)}。请结合卡上数据点名解读（150~250字），先答命主所问，扣着他此前的处境。`
+      }
       setAiThinking(true)
       Promise.all([
-        askMaster(cfg, aiSystemRef.current, aiHistoryRef.current.slice(-8), text),
+        askMaster(cfg, aiSystemRef.current, aiHistoryRef.current.slice(-8), q),
         new Promise((res) => setTimeout(res, 900)),
       ])
         .then(([reply]) => {
-          const body = applyAiReply(reply as string, null, null)
+          const body = applyAiReply(reply as string, card, chartTopic)
           aiHistoryRef.current.push({ role: 'user', content: text }, { role: 'assistant', content: body })
         })
         .catch(() => {
