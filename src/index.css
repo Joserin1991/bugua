@@ -1077,6 +1077,41 @@ body {
   margin: 18px 0;
 }
 
+/* ---------- AI 配置 ---------- */
+.ai-config { margin-bottom: 14px; }
+
+.ai-field {
+  display: grid;
+  gap: 4px;
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.08em;
+  margin-top: 10px;
+}
+
+.ai-field input {
+  border: 1px solid var(--card-line);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 9px 11px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  color: var(--ink);
+  outline: none;
+}
+
+.ai-field input:focus { border-color: var(--line-strong); }
+
+.ai-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+.ai-status {
+  margin: 10px 0 0;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  line-height: 1.7;
+  word-break: break-all;
+}
+
 /* ---------- 三盘合参 ---------- */
 .sp-wrap { display: grid; gap: 10px; }
 
