@@ -60,6 +60,25 @@ function detectTopic(text: string): Topic | null {
   return null
 }
 
+// 解析 AI 回复协议：正文 + 可选「卡片：XXX」指令 + 可选「建议：问A｜问B｜问C」动态追问
+function parseAiReply(raw: string): { body: string; card: Topic | null; suggests: string[] } {
+  let body = raw.trim()
+  let card: Topic | null = null
+  const suggests: string[] = []
+  const cardM = body.match(/^卡片[：:]\s*(.+)$/m)
+  if (cardM) {
+    const t = cardM[1].trim()
+    if ((TOPIC_KEYS as readonly string[]).includes(t)) card = t as Topic
+    body = body.replace(cardM[0], '').trim()
+  }
+  const sugM = body.match(/^建议[：:]\s*(.+)$/m)
+  if (sugM) {
+    suggests.push(...sugM[1].split(/[|｜、；;]/).map((x) => x.trim()).filter(Boolean).slice(0, 4))
+    body = body.replace(sugM[0], '').trim()
+  }
+  return { body, card, suggests }
+}
+
 let uid = 1
 
 export function BaziChat() {
@@ -72,7 +91,6 @@ export function BaziChat() {
   const [cityIdx, setCityIdx] = useState(0)
   const [pct, setPct] = useState(0)
   const [chart, setChart] = useState<BaziChart | null>(null)
-  const [ziwei, setZiwei] = useState<ZwChart | null>(null)
   const [visited, setVisited] = useState<Topic[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<BaziChart | null>(null)
@@ -82,6 +100,7 @@ export function BaziChat() {
   const aiHistoryRef = useRef<ChatTurn[]>([])
   const aiSystemRef = useRef<string>('')
   const [aiThinking, setAiThinking] = useState(false)
+  const [aiSuggests, setAiSuggests] = useState<string[]>([])
 
   const reading = useMemo(() => (chart ? interpretBazi(chart) : null), [chart])
   chartRef.current = chart
@@ -133,7 +152,6 @@ export function BaziChat() {
       if (p >= 100) {
         clearInterval(timer)
         setChart(c)
-        setZiwei(zw)
         revealChart(c)
       }
     }, 110)
@@ -172,6 +190,143 @@ export function BaziChat() {
   }
 
   // ---------- 话题 ----------
+  // 各话题的固定开场白与盘面卡（AI 模式下开场白仅作断网保底）
+  const buildTopicView = (topic: Topic): { intro: ReactNode[]; card: ReactNode | null } => {
+    const c = chartRef.current!
+    const r = readingRef.current!
+    const ln = currentLn(c)
+    switch (topic) {
+      case '推演解说':
+        return { intro: traceNarrative(c), card: null }
+      case '三盘合参': {
+        const sp = sanpan(c, ziweiRef.current, birthRef.current ?? new Date(2000, 0, 1))
+        return {
+          intro: ['孤证不立。老朽把八字、紫微、卦象三盘并起，对事业、财帛、姻缘、康健逐一互证——三盘同断者十拿九稳，各执一词者，老朽也给你说分明。'],
+          card: (
+            <CardMsg title="三盘合参" sub="八字 × 紫微 × 卦象 · 交叉印证">
+              <SanpanCard result={sp} />
+            </CardMsg>
+          ),
+        }
+      }
+      case '五行分析':
+        return {
+          intro: ['我们先看你的五行强弱。'],
+          card: (
+            <CardMsg title="五行能量分布">
+              <WuxingPctBars chart={c} />
+              <Radar data={wuxingRadarData(c)} max={100} />
+              <p className="reading-p" style={{ marginTop: 6 }}>{r.personality}</p>
+            </CardMsg>
+          ),
+        }
+      case '十神关系':
+        return {
+          intro: ['十神者，人事之网也——贵人、财富、才华、压力，皆在此图中各居其位。红点为命中所有，红圈为今岁当值。'],
+          card: (
+            <CardMsg title="十神环绕 · 日主居中">
+              <TenGodOrbit chart={c} activeGod={ln ? ln.god : undefined} />
+              <p className="center-note">点<Term k="十神">十神</Term>名可查其义</p>
+            </CardMsg>
+          ),
+        }
+      case '专业细盘':
+        return {
+          intro: ['细盘在此。地支藏干、星运自坐、空亡纳音、神煞，柱柱分明；右二列为现行大运与流年。红字皆可点问。'],
+          card: (
+            <CardMsg title="专业细盘">
+              <ProTable chart={c} activeDayun={c.daYun.find((d) => { const y = new Date().getFullYear(); return y >= d.startYear && y <= d.endYear }) ?? c.daYun[0]} activeLn={ln} />
+            </CardMsg>
+          ),
+        }
+      case '大运走势':
+        return { intro: [`${c.qiYunText}。大运十年一换，如行船换水道——下图便是你一生的水路起伏。`], card: <DayunCard chart={c} /> }
+      case '流年运势':
+        return { intro: ['来看你今年的流年运势。'], card: <LiunianCard chart={c} /> }
+      case '事业运势':
+        return {
+          intro: ['来看你今年的事业运势。'],
+          card: (
+            <CardMsg title="事业五维" sub="由命局十神推得">
+              <Radar data={abilityRadarData(c)} max={100} />
+              <p className="reading-p" style={{ marginTop: 4 }}>{r.career}</p>
+            </CardMsg>
+          ),
+        }
+      case '财运走势':
+        return {
+          intro: ['财帛之事，须看财星与身强身弱相配。'],
+          card: (
+            <CardMsg title="财帛之道">
+              <p className="reading-p">{r.wealth}</p>
+            </CardMsg>
+          ),
+        }
+      case '感情运势':
+        return {
+          intro: ['你的感情格局如下：'],
+          card: (
+            <CardMsg title="姻缘情感">
+              <InkArt name="love" height={140} />
+              <p className="reading-p">{r.love}</p>
+            </CardMsg>
+          ),
+        }
+      case '健康提点':
+        return {
+          intro: ['身体是行运的本钱，且听老朽几句提点。'],
+          card: (
+            <CardMsg title="康健养生">
+              <p className="reading-p">{r.health}</p>
+            </CardMsg>
+          ),
+        }
+      case '神煞照命':
+        return {
+          intro: ['你命里照着这几颗星。吉者当用，凶者知避——不必惧，是提前递给你的信儿。'],
+          card: (
+            <CardMsg title="神煞照命">
+              <ShenshaSection chart={c} />
+            </CardMsg>
+          ),
+        }
+      case '紫微星盘': {
+        const zw = ziweiRef.current
+        if (!zw) return { intro: ['星盘一时布不开，且以八字为凭。'], card: null }
+        return {
+          intro: [`八字论气，斗数观星。你是${zw.fiveElementsClass}，命主${zw.soul}，身主${zw.body}。星名皆可点问。`],
+          card: (
+            <CardMsg title="紫微星盘">
+              <ZiweiChart chart={zw} gender={c.gender} />
+            </CardMsg>
+          ),
+        }
+      }
+      case '命理总断':
+        return {
+          intro: ['最后，老朽将此命从头道来——格局、性情、事业、财帛、姻缘、康健，一一剖解。'],
+          card: (
+            <CardMsg title="命理总断">
+              <ReadingSections reading={r} />
+            </CardMsg>
+          ),
+        }
+    }
+  }
+
+  // AI 回复落地：解析正文/卡片指令/动态追问建议
+  const applyAiReply = (raw: string, alreadyShown: Topic | null) => {
+    const parsed = parseAiReply(raw)
+    master([parsed.body])
+    if (parsed.card && parsed.card !== alreadyShown) {
+      const view = buildTopicView(parsed.card)
+      if (view.card) node(view.card)
+      setVisited((v) => [...v, parsed.card!])
+    }
+    if (parsed.suggests.length) setAiSuggests(parsed.suggests)
+    return parsed.body
+  }
+
   // echoText: 追加的用户气泡文案；传 null 表示用户已通过输入框发过话
   const runTopic = (topic: Topic, echoText: string | null = '') => {
     const c = chartRef.current
@@ -182,147 +337,37 @@ export function BaziChat() {
       user(echoText || (topic.endsWith('势') || topic.endsWith('断') ? `那我的${topic}如何？` : `想看看${topic}。`))
     }
 
-    // 接入 AI 后：卡片照出，点评改为结合上下文的个性化生成；失败回落固定文案
+    const { intro, card } = buildTopicView(topic)
     const aiCfg = loadAiConfig()
-    const speak = (fallback: ReactNode[]) => {
-      if (!aiCfg || !aiSystemRef.current) { master(fallback); return }
+
+    if (!aiCfg || !aiSystemRef.current) {
+      // 无 AI：也要有掐指思忖的节奏，不秒回
       setAiThinking(true)
-      askMaster(
-        aiCfg, aiSystemRef.current, aiHistoryRef.current.slice(-8),
-        `【系统指令】命主刚点开「${topic}」。结合盘面证据与他此前聊过的处境，作一段个性化点评（120字以内）：先专业后白话，务必扣着他说过的事，末尾带一句关怀或指引。不要罗列数据，像大师看着盘随口道来。`,
-      )
-        .then((reply) => {
-          aiHistoryRef.current.push({ role: 'user', content: `（点开了「${topic}」）` }, { role: 'assistant', content: reply })
-          master([reply])
-        })
-        .catch(() => master(fallback))
-        .finally(() => { setAiThinking(false); scroll() })
+      setTimeout(() => {
+        setAiThinking(false)
+        master(intro)
+        if (card) node(card)
+        scroll()
+      }, 900 + Math.random() * 900)
+      return
     }
 
-    const ln = currentLn(c)
-    switch (topic) {
-      case '推演解说': {
-        speak(traceNarrative(c))
-        break
-      }
-      case '三盘合参': {
-        const sp = sanpan(c, ziweiRef.current, birthRef.current ?? new Date(2000, 0, 1))
-        speak(['孤证不立。老朽把八字、紫微、卦象三盘并起，对事业、财帛、姻缘、康健逐一互证——三盘同断者十拿九稳，各执一词者，老朽也给你说分明。'])
-        node(
-          <CardMsg title="三盘合参" sub="八字 × 紫微 × 卦象 · 交叉印证">
-            <SanpanCard result={sp} />
-          </CardMsg>,
-        )
-        break
-      }
-      case '五行分析': {
-        speak(['我们先看你的五行强弱。'])
-        node(
-          <CardMsg title="五行能量分布">
-            <WuxingPctBars chart={c} />
-            <Radar data={wuxingRadarData(c)} max={100} />
-            <p className="reading-p" style={{ marginTop: 6 }}>{r.personality}</p>
-          </CardMsg>,
-        )
-        break
-      }
-      case '十神关系': {
-        const lnGod = ln ? ln.god : undefined
-        speak(['十神者，人事之网也——贵人、财富、才华、压力，皆在此图中各居其位。红点为命中所有，红圈为今岁当值。'])
-        node(
-          <CardMsg title="十神环绕 · 日主居中">
-            <TenGodOrbit chart={c} activeGod={lnGod} />
-            <p className="center-note">点<Term k="十神">十神</Term>名可查其义</p>
-          </CardMsg>,
-        )
-        break
-      }
-      case '专业细盘': {
-        speak(['细盘在此。地支藏干、星运自坐、空亡纳音、神煞，柱柱分明；右二列为现行大运与流年。红字皆可点问。'])
-        node(
-          <CardMsg title="专业细盘">
-            <ProTable chart={c} activeDayun={c.daYun.find((d) => { const y = new Date().getFullYear(); return y >= d.startYear && y <= d.endYear }) ?? c.daYun[0]} activeLn={ln} />
-          </CardMsg>,
-        )
-        break
-      }
-      case '大运走势': {
-        speak([`${c.qiYunText}。大运十年一换，如行船换水道——下图便是你一生的水路起伏。`])
-        node(<DayunCard chart={c} />)
-        break
-      }
-      case '流年运势': {
-        speak(['来看你今年的流年运势。'])
-        node(<LiunianCard chart={c} />)
-        break
-      }
-      case '事业运势': {
-        speak(['来看你今年的事业运势。'])
-        node(
-          <CardMsg title="事业五维" sub="由命局十神推得">
-            <Radar data={abilityRadarData(c)} max={100} />
-            <p className="reading-p" style={{ marginTop: 4 }}>{r.career}</p>
-          </CardMsg>,
-        )
-        break
-      }
-      case '财运走势': {
-        speak(['财帛之事，须看财星与身强身弱相配。'])
-        node(
-          <CardMsg title="财帛之道">
-            <p className="reading-p">{r.wealth}</p>
-          </CardMsg>,
-        )
-        break
-      }
-      case '感情运势': {
-        speak(['你的感情格局如下：'])
-        node(
-          <CardMsg title="姻缘情感">
-            <InkArt name="love" height={140} />
-            <p className="reading-p">{r.love}</p>
-          </CardMsg>,
-        )
-        break
-      }
-      case '健康提点': {
-        speak(['身体是行运的本钱，且听老朽几句提点。'])
-        node(
-          <CardMsg title="康健养生">
-            <p className="reading-p">{r.health}</p>
-          </CardMsg>,
-        )
-        break
-      }
-      case '神煞照命': {
-        speak(['你命里照着这几颗星。吉者当用，凶者知避——不必惧，是提前递给你的信儿。'])
-        node(
-          <CardMsg title="神煞照命">
-            <ShenshaSection chart={c} />
-          </CardMsg>,
-        )
-        break
-      }
-      case '紫微星盘': {
-        if (!ziwei) { master(['星盘一时布不开，且以八字为凭。']); break }
-        speak([`八字论气，斗数观星。你是${ziwei.fiveElementsClass}，命主${ziwei.soul}，身主${ziwei.body}。星名皆可点问。`])
-        node(
-          <CardMsg title="紫微星盘">
-            <ZiweiChart chart={ziwei} gender={c.gender} />
-          </CardMsg>,
-        )
-        break
-      }
-      case '命理总断': {
-        speak(['最后，老朽将此命从头道来——格局、性情、事业、财帛、姻缘、康健，一一剖解。'])
-        node(
-          <CardMsg title="命理总断">
-            <ReadingSections reading={r} />
-          </CardMsg>,
-        )
-        break
-      }
-    }
+    // AI 模式：卡先出，点评由 AI 结合上下文生成
+    if (card) node(card)
+    setAiThinking(true)
+    Promise.all([
+      askMaster(
+        aiCfg, aiSystemRef.current, aiHistoryRef.current.slice(-8),
+        `【系统指令】命主刚点开「${topic}」，对应盘面卡已展示。结合盘面证据与他此前聊过的处境，作一段个性化点评（120字以内）：先专业后白话，务必扣着他说过的事，末尾带一句关怀或指引。不要罗列数据，像大师看着盘随口道来。`,
+      ),
+      new Promise((res) => setTimeout(res, 900)),
+    ])
+      .then(([reply]) => {
+        const body = applyAiReply(reply as string, topic)
+        aiHistoryRef.current.push({ role: 'user', content: `（点开了「${topic}」）` }, { role: 'assistant', content: body })
+      })
+      .catch(() => master(intro))
+      .finally(() => { setAiThinking(false); scroll() })
   }
 
   // 底部自由提问：配置了 AI 走大模型（带上下文），否则回落规则引擎
@@ -336,10 +381,13 @@ export function BaziChat() {
     const cfg = loadAiConfig()
     if (cfg && aiSystemRef.current) {
       setAiThinking(true)
-      askMaster(cfg, aiSystemRef.current, aiHistoryRef.current.slice(-8), text)
-        .then((reply) => {
-          aiHistoryRef.current.push({ role: 'user', content: text }, { role: 'assistant', content: reply })
-          master([reply])
+      Promise.all([
+        askMaster(cfg, aiSystemRef.current, aiHistoryRef.current.slice(-8), text),
+        new Promise((res) => setTimeout(res, 900)),
+      ])
+        .then(([reply]) => {
+          const body = applyAiReply(reply as string, null)
+          aiHistoryRef.current.push({ role: 'user', content: text }, { role: 'assistant', content: body })
         })
         .catch(() => {
           const topic = detectTopic(text)
@@ -358,7 +406,7 @@ export function BaziChat() {
   }
 
   const suggestions: string[] = stage === 'ready'
-    ? TOPIC_KEYS.filter((t) => !visited.includes(t)).slice(0, 4)
+    ? (aiSuggests.length ? aiSuggests : TOPIC_KEYS.filter((t) => !visited.includes(t)).slice(0, 4))
     : []
 
   return (
@@ -416,7 +464,7 @@ export function BaziChat() {
         )}
         {stage === 'computing' && pct > 0 && <ProgressEnso label="排盘中" pct={pct} />}
         {!busy && stage === 'ready' && suggestions.length > 0 && (
-          <Chips items={suggestions} onPick={(v) => runTopic(v as Topic)} />
+          <Chips items={suggestions} onPick={(v) => { if (aiSuggests.includes(v)) onAsk(v); else runTopic(v as Topic) }} />
         )}
         <div ref={bottomRef} />
       </div>
