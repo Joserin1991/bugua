@@ -7,8 +7,9 @@ import { tenGod } from '../lib/wuxing'
 import { saveRecord } from '../lib/records'
 import { MasterMsg, UserMsg, CardMsg, Chips, ProgressEnso, InputBar, InkArt } from './ChatUI'
 import { CITIES } from '../lib/cities'
-import { buildTrace } from '../lib/trace'
-import { TraceCard } from './TraceCard'
+import { traceNarrative } from '../lib/trace'
+import { sanpan } from '../lib/sanpan'
+import { SanpanCard } from './SanpanCard'
 import { PillarCards, WuxingPctBars, Radar, wuxingRadarData, abilityRadarData, TenGodOrbit, DayunLineChart } from './InfoGraphics'
 import { ProTable, ChartMeta, ShenshaSection, WheelSection, ReadingSections } from './ChartSections'
 import { ZiweiChart } from './ZiweiChart'
@@ -33,8 +34,9 @@ type Item = NewItem & { id: number }
 
 type Stage = 'gender' | 'date' | 'hour' | 'city' | 'computing' | 'ready'
 
-const TOPIC_KEYS = ['推演过程', '五行分析', '十神关系', '大运走势', '流年运势', '事业运势', '财运走势', '感情运势', '健康提点', '神煞照命', '专业细盘', '紫微星盘', '命理总断'] as const
-type Topic = typeof TOPIC_KEYS[number]
+const TOPIC_KEYS = ['三盘合参', '五行分析', '十神关系', '大运走势', '流年运势', '事业运势', '财运走势', '感情运势', '健康提点', '神煞照命', '专业细盘', '紫微星盘', '命理总断'] as const
+// 「推演解说」不上胶囊栏：推理链留在引擎内部，用户问起时由大师口述带过
+type Topic = typeof TOPIC_KEYS[number] | '推演解说'
 
 function detectTopic(text: string): Topic | null {
   const rules: [Topic, RegExp][] = [
@@ -45,7 +47,8 @@ function detectTopic(text: string): Topic | null {
     ['大运走势', /(大运)/],
     ['流年运势', /(流年|今年|明年|运势)/],
     ['五行分析', /(五行|喜用|缺什么)/],
-    ['推演过程', /(怎么算|为什么|推演|过程|依据|凭什么|原理)/],
+    ['三盘合参', /(合参|三盘|印证|交叉|准不准|靠谱)/],
+    ['推演解说', /(怎么算|为什么|推演|依据|凭什么|原理)/],
     ['十神关系', /(十神)/],
     ['神煞照命', /(神煞|贵人|桃花星|驿马)/],
     ['紫微星盘', /(紫微|星盘|斗数)/],
@@ -73,6 +76,8 @@ export function BaziChat() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<BaziChart | null>(null)
   const readingRef = useRef<BaziReading | null>(null)
+  const ziweiRef = useRef<ZwChart | null>(null)
+  const birthRef = useRef<Date | null>(null)
 
   const reading = useMemo(() => (chart ? interpretBazi(chart) : null), [chart])
   chartRef.current = chart
@@ -113,6 +118,8 @@ export function BaziChat() {
     const c = computeBazi(y, m, d, clockH, clockM, gender, city)
     let zw: ZwChart | null = null
     try { zw = computeZiwei(y, m, d, hour, gender) } catch { /* 忽略 */ }
+    ziweiRef.current = zw
+    birthRef.current = new Date(y, m - 1, d, clockH, clockM)
     // 进度动画
     let p = 0
     const timer = setInterval(() => {
@@ -148,7 +155,7 @@ export function BaziChat() {
       `你的命盘排好了。日元${c.dayGan}${c.dayGanWx}，生于${c.pillars[1].zhi}月，日主${c.strength.level}，喜`,
       <Term key="t" k="喜用神">{`${c.favorable.join('、')}`}</Term>,
       `。${r.geju.split('。')[2] ?? ''}。`,
-      '这盘每一步怎么算的，老朽都可以摊开给你看——点「推演过程」便知。想先了解哪方面？',
+      '八字、紫微、卦象三盘老朽都替你起好了——点「三盘合参」可看它们是否互相印证。想先了解哪方面？',
     ])
   }
 
@@ -170,11 +177,16 @@ export function BaziChat() {
 
     const ln = currentLn(c)
     switch (topic) {
-      case '推演过程': {
-        master(['不藏私——这盘从校时到取用，每一步的规则、证据、结论都在这里，逐条点开看。'])
+      case '推演解说': {
+        master(traceNarrative(c))
+        break
+      }
+      case '三盘合参': {
+        const sp = sanpan(c, ziweiRef.current, birthRef.current ?? new Date(2000, 0, 1))
+        master(['孤证不立。老朽把八字、紫微、卦象三盘并起，对事业、财帛、姻缘、康健逐一互证——三盘同断者十拿九稳，各执一词者，老朽也给你说分明。'])
         node(
-          <CardMsg title="推演过程" sub="法 · 证 · 断 三段式，点步骤展开">
-            <TraceCard steps={buildTrace(c)} />
+          <CardMsg title="三盘合参" sub="八字 × 紫微 × 卦象 · 交叉印证">
+            <SanpanCard result={sp} />
           </CardMsg>,
         )
         break

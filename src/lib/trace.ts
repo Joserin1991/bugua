@@ -26,6 +26,17 @@ function tenGodReason(dayGan: string, other: string): string {
   return `${other}（${GAN_YINYANG[other]}${it}）对日主${dayGan}（${GAN_YINYANG[dayGan]}${me}）：${rel}，阴阳${same} → ${god}`
 }
 
+// 口语化推演叙述：完整推理链留在引擎内部，前端只由大师用三两句话带过
+export function traceNarrative(chart: BaziChart): string[] {
+  const c = chart.solarCorrection
+  const first = c
+    ? `不藏私——头一步是校时：你生在${c.city}（东经${c.lng}°），钟表时间${c.offsetMin > 0 ? '加' : '减'}${Math.abs(c.offsetMin)}分钟才是当地真太阳时，故老朽以 ${c.trueText} 为你定的时辰。`
+    : '你未报出生地，老朽按钟表时间为你定的时辰——若生在中西部，补个城市重排更准。'
+  const second = `而后定四柱：年以立春为界、月随节气「${chart.jieQi}」、日按六十甲子连推、时干用五鼠遁自日干${chart.dayGan}推得——四柱即 ${chart.pillars.map((p) => p.gan + p.zhi).join('　')}。`
+  const third = `最后给日主打分：${chart.strengthSteps.map((s) => `${s.name}${s.score > 0 ? `得${s.score}分` : '无分'}`).join('、')}，合计${chart.strength.score}分判「${chart.strength.level}」，故取${chart.favorable.join('、')}为喜用。哪一步想细究，尽管问老朽。`
+  return [first, second, third]
+}
+
 export function buildTrace(chart: BaziChart): TraceStep[] {
   const steps: TraceStep[] = []
   const [yp, mp, dp, tp] = chart.pillars
