@@ -1112,6 +1112,30 @@ body {
   word-break: break-all;
 }
 
+.ai-models {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.ai-model-chip {
+  appearance: none;
+  border: 1px solid var(--card-line);
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 0.7rem;
+  font-family: inherit;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.ai-model-chip.on {
+  border-color: var(--seal);
+  color: var(--seal);
+}
+
 /* ---------- 三盘合参 ---------- */
 .sp-wrap { display: grid; gap: 10px; }
 

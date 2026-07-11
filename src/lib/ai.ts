@@ -115,6 +115,17 @@ export async function askMaster(
   }
 }
 
+// 拉取中转站可用模型列表（OpenAI 兼容 GET /models）
+export async function listModels(baseUrl: string, apiKey: string): Promise<string[]> {
+  const base = baseUrl.replace(/\/+$/, '')
+  const res = await fetch(`${base}/models`, { headers: { authorization: `Bearer ${apiKey}` } })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const d = await res.json()
+  const ids = (d.data ?? d.models ?? []).map((m: { id?: string; name?: string }) => m.id ?? m.name ?? '').filter(Boolean)
+  if (!ids.length) throw new Error('返回为空')
+  return ids as string[]
+}
+
 // 连接自测：把浏览器层面的失败翻译成人话
 export async function testAi(cfg: AiConfig): Promise<{ ok: boolean; msg: string }> {
   try {
