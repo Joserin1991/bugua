@@ -1,29 +1,10 @@
-// 排盘展示区块：供「大师问命」流程逐步揭示复用
+// 复用盘面区块：专业细盘、命盘天衡、神煞、命理总断
 import { useMemo } from 'react'
 import { columnDetail, type BaziChart, type ColumnDetail, type DaYunItem, type LiuNian } from '../lib/bazi'
-import { interpretLiuNian, type BaziReading } from '../lib/interpret'
-import { WUXING_COLOR, WUXING_LIST } from '../lib/wuxing'
+import type { BaziReading } from '../lib/interpret'
 import { DestinyWheel } from './DestinyWheel'
 import { Term } from './Master'
-import { CloudDivider } from './Decor'
 
-// 四柱简盘（初现天机：只有干支）
-export function SimplePillars({ chart }: { chart: BaziChart }) {
-  return (
-    <div className="pillars-scroll">
-      <div className="pillars-grid pillars-simple">
-        <div className="pg-rowlabel"></div>
-        {chart.pillars.map((p) => <div key={p.label} className="pg-head">{p.label}</div>)}
-        <div className="pg-rowlabel">天干</div>
-        {chart.pillars.map((p) => <div key={p.label} className={`pg-gan wx-${p.ganWx}`}>{p.gan}</div>)}
-        <div className="pg-rowlabel">地支</div>
-        {chart.pillars.map((p) => <div key={p.label} className={`pg-zhi wx-${p.zhiWx}`}>{p.zhi}</div>)}
-      </div>
-    </div>
-  )
-}
-
-// 专业细盘（含大运流年列）
 export function ProTable({
   chart, activeDayun, activeLn,
 }: {
@@ -65,13 +46,18 @@ export function ProTable({
       : <span style={{ opacity: 0.4 }}>—</span>],
   ]
 
+  const cellClass: Record<string, string> = {
+    十神: 'pg-shishen', 天干: 'pg-gan', 地支: 'pg-zhi', 藏干: 'pg-canggan',
+    星运: 'pg-small', 自坐: 'pg-small', 空亡: 'pg-small', 纳音: 'pg-nayin', 神煞: 'pg-shensha',
+  }
+
   return (
     <div className="pillars-scroll">
-      <div className="pillars-grid" style={{ gridTemplateColumns: `72px repeat(${columns.length}, minmax(96px, 1fr))` }}>
+      <div className="pillars-grid" style={{ gridTemplateColumns: `64px repeat(${columns.length}, minmax(84px, 1fr))` }}>
         <div className="pg-rowlabel"></div>
         {columns.map((c) => <div key={c.label} className={`pg-head ${c.lu ? 'pg-lucol' : ''}`}>{c.label}</div>)}
         {rows.map(([label, termKey, render]) => (
-          <RowGroup key={label} label={label} termKey={termKey} columns={columns} render={render} />
+          <RowGroup key={label} label={label} termKey={termKey} columns={columns} render={render} cellClass={cellClass[label]} />
         ))}
       </div>
     </div>
@@ -79,50 +65,30 @@ export function ProTable({
 }
 
 function RowGroup({
-  label, termKey, columns, render,
+  label, termKey, columns, render, cellClass,
 }: {
   label: string
   termKey: string
   columns: { label: string; detail: ColumnDetail }[]
   render: (c: { label: string; detail: ColumnDetail }) => React.ReactNode
+  cellClass: string
 }) {
-  const cellClass: Record<string, string> = {
-    十神: 'pg-shishen', 天干: 'pg-gan', 地支: 'pg-zhi', 藏干: 'pg-canggan',
-    星运: 'pg-small', 自坐: 'pg-small', 空亡: 'pg-small', 纳音: 'pg-nayin', 神煞: 'pg-shensha',
-  }
   return (
     <>
       <div className="pg-rowlabel">{termKey ? <Term k={termKey}>{label}</Term> : label}</div>
-      {columns.map((c) => <div key={c.label} className={cellClass[label]}>{render(c)}</div>)}
+      {columns.map((c) => <div key={c.label} className={cellClass}>{render(c)}</div>)}
     </>
   )
 }
 
 export function ChartMeta({ chart }: { chart: BaziChart }) {
   return (
-    <div className="tag-row" style={{ marginTop: 16, justifyContent: 'center' }}>
+    <div className="tag-row">
       <span className="mystic-tag"><Term k="命宫">命宫</Term> {chart.mingGong}</span>
       <span className="mystic-tag"><Term k="胎元">胎元</Term> {chart.taiYuan}</span>
       <span className="mystic-tag"><Term k="身强身弱">日主</Term> {chart.dayGan}{chart.dayGanWx} · {chart.strength.level}</span>
       <span className="mystic-tag"><Term k="喜用神">喜用</Term> {chart.favorable.join(' ')}</span>
       <span className="mystic-tag"><Term k="忌神">忌神</Term> {chart.unfavorable.join(' ')}</span>
-    </div>
-  )
-}
-
-export function WuxingSection({ chart }: { chart: BaziChart }) {
-  const maxWx = Math.max(...WUXING_LIST.map((w) => chart.wuxingCount[w]), 1)
-  return (
-    <div className="wuxing-bars">
-      {WUXING_LIST.map((w) => (
-        <div key={w} className="wx-bar-row">
-          <span className={`wx-bar-label wx-${w}`}>{w}{chart.favorable.includes(w) ? ' ✦' : ''}</span>
-          <div className="wx-bar-track">
-            <div className="wx-bar-fill" style={{ width: `${(chart.wuxingCount[w] / maxWx) * 100}%`, color: WUXING_COLOR[w] }} />
-          </div>
-          <span className="wx-bar-count">{chart.wuxingCount[w]}</span>
-        </div>
-      ))}
     </div>
   )
 }
@@ -143,7 +109,7 @@ export function ShenshaSection({ chart }: { chart: BaziChart }) {
 
 export function WheelSection({ chart, activeLn }: { chart: BaziChart; activeLn: LiuNian | null }) {
   return (
-    <div className="wheel-stage">
+    <div>
       <DestinyWheel
         chart={chart}
         highlightZhi={activeLn?.zhi ?? chart.pillars[0].zhi}
@@ -153,57 +119,6 @@ export function WheelSection({ chart, activeLn }: { chart: BaziChart; activeLn: 
         外为<Term k="命盘天衡">地支十二宫</Term> · 中为<Term k="十二消息卦">十二消息卦</Term> · 内为月建 · 朱印标注四柱本位
       </span>
     </div>
-  )
-}
-
-export function DayunSection({
-  chart, dayunIdx, lnYear, liuNians, onSelectDayun, onSelectYear,
-}: {
-  chart: BaziChart
-  dayunIdx: number
-  lnYear: number | null
-  liuNians: LiuNian[]
-  onSelectDayun: (i: number) => void
-  onSelectYear: (y: number) => void
-}) {
-  const activeLn = liuNians.find((l) => l.year === lnYear) ?? null
-  const lnReading = activeLn ? interpretLiuNian(activeLn, chart) : null
-  return (
-    <>
-      <p className="panel-caption" style={{ marginBottom: 10 }}>{chart.qiYunText}</p>
-      <div className="dayun-strip">
-        {chart.daYun.map((d, i) => (
-          <div
-            key={d.ganZhi + d.startYear}
-            className={`dayun-cell ${i === dayunIdx ? 'active' : ''}`}
-            onClick={() => onSelectDayun(i)}
-          >
-            <div className="dayun-gz">{d.ganZhi}</div>
-            <div className="dayun-age">{d.startAge}岁起<br />{d.startYear}—{d.endYear}</div>
-            <div className="pg-shishen" style={{ marginTop: 4 }}>{d.god}运</div>
-          </div>
-        ))}
-      </div>
-      <div className="liunian-grid">
-        {liuNians.map((l) => (
-          <div
-            key={l.year}
-            className={`liunian-cell ${l.year === lnYear ? 'active' : ''}`}
-            onClick={() => onSelectYear(l.year)}
-          >
-            <div className="liunian-gz">{l.ganZhi}</div>
-            <div className="liunian-year">{l.year} · {l.god}</div>
-          </div>
-        ))}
-      </div>
-      {lnReading && (
-        <div className="reading-section fade-in" key={lnYear}>
-          <h3 className="reading-h">{lnReading.theme}</h3>
-          <p className="reading-p">{lnReading.text}</p>
-          {lnReading.extra && <p className="reading-p" style={{ color: 'var(--seal)' }}>⚑ {lnReading.extra}。</p>}
-        </div>
-      )}
-    </>
   )
 }
 
@@ -218,8 +133,7 @@ export function ReadingSections({ reading }: { reading: BaziReading }) {
     ['趋吉之道', reading.advice],
   ]
   return (
-    <div className="reading-section">
-      <CloudDivider />
+    <div>
       {items.map(([h, t]) => (
         <div key={h}>
           <h3 className="reading-h">{h}</h3>

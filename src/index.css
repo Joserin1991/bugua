@@ -1,17 +1,16 @@
 :root {
-  /* 水墨国风主题 */
-  --paper: #f6f6f3;
-  --paper-2: #efefec;
-  --card: rgba(253, 253, 252, 0.85);
-  --card-solid: #fbfbfa;
-  --ink: #171717;
-  --ink-soft: #3b3b38;
-  --ink-faint: #7f7f7a;
-  --line: rgba(23, 23, 23, 0.28);
-  --line-strong: rgba(23, 23, 23, 0.55);
-  --vermilion: #b03a2a;
-  --vermilion-bright: #c74a35;
+  /* 水墨纸本主题（对话版） */
+  --paper: #edeae0;
+  --paper-deep: #e3dfd2;
+  --card: #f7f5ee;
+  --card-line: rgba(30, 28, 24, 0.16);
+  --ink: #1e1c18;
+  --ink-soft: #45423a;
+  --ink-faint: #8b8779;
+  --line: rgba(30, 28, 24, 0.22);
+  --line-strong: rgba(30, 28, 24, 0.5);
   --seal: #a8382b;
+  --seal-soft: rgba(168, 56, 43, 0.09);
   --wood: #4f7359;
   --fire: #9c4636;
   --earth: #86754d;
@@ -21,1136 +20,682 @@
   color: var(--ink);
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-html {
-  background: var(--paper);
-}
+html { background: #dcd8ca; }
 
 body {
   min-height: 100vh;
   color: var(--ink);
-  /* 生成水墨山水背景图后，取消下一行注释并将其置于 background 列表首位（见 ASSETS.md 三）
-     url("/bg/ink-landscape.jpg") center top / cover no-repeat fixed, */
-  background:
-    radial-gradient(ellipse 70% 45% at 12% -6%, rgba(23, 23, 23, 0.10), transparent 62%),
-    radial-gradient(ellipse 55% 40% at 96% 104%, rgba(23, 23, 23, 0.12), transparent 60%),
-    radial-gradient(ellipse 40% 26% at 84% 8%, rgba(23, 23, 23, 0.04), transparent 60%),
-    linear-gradient(180deg, #f7f7f4 0%, #f2f2f0 48%, #ececea 100%);
-  background-attachment: fixed;
-  overflow-x: hidden;
+  background: #dcd8ca;
 }
 
-/* 宣纸纹理 */
-body::before {
+::selection { background: rgba(168, 56, 43, 0.22); }
+
+/* ---------- 手机壳 ---------- */
+.phone {
+  position: relative;
+  max-width: 460px;
+  margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background:
+    radial-gradient(ellipse 90% 30% at 50% -4%, rgba(30, 28, 24, 0.06), transparent 70%),
+    linear-gradient(180deg, #efece2 0%, #ece9de 55%, #e7e3d6 100%);
+  box-shadow: 0 0 60px rgba(30, 28, 24, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 纸纹 */
+.phone::before {
   content: "";
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.5;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23p)'/%3E%3C/svg%3E");
+  opacity: 0.55;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.12 0 0 0 0 0.11 0 0 0 0 0.09 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23p)'/%3E%3C/svg%3E");
 }
 
-::selection {
-  background: rgba(176, 58, 42, 0.25);
+.phone > * { position: relative; z-index: 1; }
+
+/* ---------- 屏头 ---------- */
+.screen-head {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  padding: 14px 10px 10px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: linear-gradient(180deg, rgba(238, 235, 226, 0.96), rgba(238, 235, 226, 0.85));
+  backdrop-filter: blur(6px);
 }
 
-/* ---------- 布局 ---------- */
-.app-shell {
+.head-btn {
+  appearance: none;
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: var(--ink);
+  cursor: pointer;
+  width: 44px;
+  height: 36px;
+}
+
+.screen-title {
+  text-align: center;
+  font-family: "ZCOOL XiaoWei", "STKaiti", serif;
+  font-size: 1.15rem;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  color: var(--ink);
+}
+
+/* ---------- 首页 ---------- */
+.home {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 22px 0;
+  overflow-y: auto;
+}
+
+.home-hero {
+  position: relative;
+  flex: 1;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.home-art img,
+.home-art svg { width: 100%; height: 100%; object-fit: contain; }
+
+.home-title-wrap {
   position: relative;
   z-index: 1;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 20px 80px;
-}
-
-.site-header {
-  text-align: center;
-  padding: 46px 0 14px;
-  position: relative;
-}
-
-.site-title {
-  font-family: "Ma Shan Zheng", "STKaiti", "KaiTi", cursive;
-  font-size: clamp(2.8rem, 6vw, 4.2rem);
-  font-weight: 400;
-  letter-spacing: 0.16em;
-  color: var(--ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
-}
-
-.site-subtitle {
-  margin-top: 8px;
-  color: var(--ink-soft);
-  letter-spacing: 0.55em;
-  text-indent: 0.55em;
-  font-size: 0.95rem;
-  font-weight: 300;
-}
-
-.header-seal {
-  display: inline-block;
-  margin-top: 14px;
-  padding: 4px 10px;
-  border: 1.6px solid var(--seal);
-  color: var(--seal);
-  font-family: "ZCOOL XiaoWei", "STKaiti", serif;
-  font-size: 0.78rem;
-  letter-spacing: 0.3em;
-  text-indent: 0.3em;
-  border-radius: 3px;
-  transform: rotate(-3deg);
-  background: rgba(168, 56, 43, 0.06);
-}
-
-/* ---------- 导航 ---------- */
-.nav-tabs {
   display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin: 24px auto 34px;
-  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 0 0 8px;
 }
 
-.nav-tab {
-  appearance: none;
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--ink-soft);
-  font-family: inherit;
-  font-size: 1rem;
-  letter-spacing: 0.24em;
-  text-indent: 0.24em;
-  padding: 10px 26px;
-  border-radius: 4px 14px 4px 14px;
-  cursor: pointer;
-  transition: all 0.35s ease;
-}
-
-.nav-tab:hover {
-  border-color: var(--line-strong);
-  color: var(--ink);
-}
-
-.nav-tab.active {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: #f5f5f3;
-  box-shadow: 2px 3px 0 rgba(23, 23, 23, 0.25);
-}
-
-/* ---------- 面板 ---------- */
-.panel {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 28px;
-  margin-bottom: 26px;
-  backdrop-filter: blur(4px);
-  position: relative;
-  box-shadow: 0 8px 26px rgba(23, 23, 23, 0.10);
-}
-
-.panel::before {
-  content: "";
-  position: absolute;
-  inset: 5px;
-  border: 1px solid rgba(23, 23, 23, 0.12);
-  border-radius: 3px;
-  pointer-events: none;
-}
-
-/* 面板右上朱砂角印 */
-.panel::after {
-  content: "";
-  position: absolute;
-  top: -5px;
-  right: 18px;
-  width: 10px;
-  height: 22px;
-  background: var(--seal);
-  opacity: 0.85;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
-}
-
-.panel-title {
-  font-family: "Ma Shan Zheng", "STKaiti", "KaiTi", serif;
-  font-size: 1.6rem;
+.home-title-col {
+  margin: 0;
   font-weight: 400;
-  color: var(--ink);
-  letter-spacing: 0.3em;
-  text-indent: 0.3em;
-  text-align: center;
-  margin-bottom: 6px;
-}
-
-.panel-caption {
-  text-align: center;
-  color: var(--ink-faint);
-  font-size: 0.82rem;
-  letter-spacing: 0.15em;
-  margin-bottom: 22px;
-}
-
-.title-ornament {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
-  color: var(--ink-faint);
-  margin-bottom: 18px;
+  gap: 12px;
 }
 
-/* ---------- 表单 ---------- */
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 18px;
-  margin-bottom: 22px;
-}
-
-.field label {
+.home-title-col .ht-text {
   display: block;
-  color: var(--ink-soft);
-  font-size: 0.85rem;
-  letter-spacing: 0.2em;
-  margin-bottom: 8px;
-}
-
-.field input,
-.field select,
-.oracle-input textarea {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.75);
-  border: 1px solid var(--line);
-  border-radius: 4px;
+  font-family: "Ma Shan Zheng", "STKaiti", cursive;
+  font-size: 3rem;
+  line-height: 1.22;
   color: var(--ink);
-  font-family: inherit;
-  font-size: 1rem;
-  padding: 10px 12px;
-  outline: none;
-  transition: border-color 0.3s, box-shadow 0.3s;
-  color-scheme: light;
-}
-
-.field input:focus,
-.field select:focus,
-.oracle-input textarea:focus {
-  border-color: var(--vermilion);
-  box-shadow: 0 0 0 3px rgba(176, 58, 42, 0.12);
-}
-
-.btn-gold {
-  appearance: none;
-  display: inline-block;
-  background: var(--ink);
-  color: #f5f5f3;
-  border: none;
-  font-family: "ZCOOL XiaoWei", "STKaiti", serif;
-  font-size: 1.1rem;
-  letter-spacing: 0.35em;
-  text-indent: 0.35em;
-  padding: 12px 42px;
-  border-radius: 4px 16px 4px 16px;
-  cursor: pointer;
-  box-shadow: 3px 4px 0 rgba(23, 23, 23, 0.22);
-  transition: transform 0.25s, box-shadow 0.25s;
-  position: relative;
-}
-
-.btn-gold:hover {
-  transform: translateY(-2px);
-  box-shadow: 4px 6px 0 rgba(23, 23, 23, 0.25);
-}
-
-.btn-gold:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.btn-ghost {
-  appearance: none;
-  background: transparent;
-  border: 1px solid var(--line-strong);
-  color: var(--ink-soft);
-  font-family: inherit;
-  font-size: 0.92rem;
-  letter-spacing: 0.2em;
-  text-indent: 0.2em;
-  padding: 9px 24px;
-  border-radius: 4px 14px 4px 14px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-ghost:hover {
-  background: rgba(23, 23, 23, 0.06);
-}
-
-.form-actions {
+  width: 1.3em;
   text-align: center;
-  margin-top: 6px;
+  word-break: break-all;
 }
 
-/* ---------- 四柱排盘表（专业版） ---------- */
-.pillars-scroll {
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--ink-faint) transparent;
+.home-title-col .seal-dot {
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  background: var(--seal);
+  color: #f4f2ea;
+  padding: 4px 5px;
+  border-radius: 2px;
+  font-family: "ZCOOL XiaoWei", serif;
+  writing-mode: vertical-rl;
 }
 
-.pillars-grid {
-  display: grid;
-  grid-template-columns: 72px repeat(6, minmax(96px, 1fr));
-  gap: 1.5px;
-  border: 1.5px solid var(--ink);
-  border-radius: 4px;
-  overflow: hidden;
-  background: rgba(23, 23, 23, 0.35);
-  min-width: 720px;
-}
-
-.pillars-grid.pillars-simple {
-  grid-template-columns: 72px repeat(4, minmax(80px, 1fr));
-  min-width: 420px;
-}
-
-.pillars-grid > div {
-  background: var(--card-solid);
-  padding: 10px 6px;
-  text-align: center;
-}
-
-.pg-rowlabel {
-  color: #f5f5f3;
-  background: var(--ink) !important;
-  font-size: 0.78rem;
-  letter-spacing: 0.22em;
+.home-slogan {
   display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 10px;
+}
+
+.home-slogan span {
+  display: block;
+  width: 1.1em;
+  word-break: break-all;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  line-height: 1.9;
+  letter-spacing: 0.05em;
+}
+
+.home-entries {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-around;
+  gap: 10px;
+  padding: 18px 0 20px;
+}
+
+.entry-ring {
+  appearance: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-family: "ZCOOL XiaoWei", serif;
+  gap: 4px;
+  color: var(--ink);
+  transition: transform 0.25s;
 }
 
-.pg-head {
-  color: #f5f5f3;
-  background: var(--ink) !important;
-  font-family: "ZCOOL XiaoWei", serif;
-  letter-spacing: 0.28em;
-  text-indent: 0.28em;
-  font-size: 1rem;
-  padding: 12px 6px !important;
-}
+.entry-ring:hover { transform: translateY(-3px); }
 
-.pg-head.pg-lucol {
-  color: #e8b8ad;
-}
+.entry-ring svg.ring { position: absolute; inset: 0; }
 
-.pg-gan,
-.pg-zhi {
-  font-family: "Ma Shan Zheng", "STKaiti", cursive;
-  font-size: 2.05rem;
-  line-height: 1.12;
-}
-
-.pg-shishen {
-  color: var(--ink-soft);
-  font-size: 0.82rem;
+.entry-ring .en-name {
+  font-family: "Ma Shan Zheng", "STKaiti", serif;
+  font-size: 1.3rem;
   letter-spacing: 0.1em;
 }
 
-.pg-canggan {
-  font-size: 0.76rem;
+.entry-ring .en-sub {
+  font-size: 0.66rem;
   color: var(--ink-faint);
-  line-height: 1.7;
+  letter-spacing: 0.12em;
 }
 
-.pg-nayin {
-  color: var(--ink-soft);
-  font-size: 0.8rem;
-}
-
-.pg-small {
-  color: var(--ink-soft);
-  font-size: 0.8rem;
-  letter-spacing: 0.08em;
-}
-
-.pg-shensha {
-  font-size: 0.72rem;
-  color: var(--seal);
-  line-height: 1.8;
-  letter-spacing: 0.05em;
-}
-
-.wx-木 { color: var(--wood); }
-.wx-火 { color: var(--fire); }
-.wx-土 { color: var(--earth); }
-.wx-金 { color: var(--metal); }
-.wx-水 { color: var(--water); }
-
-/* ---------- 五行条 ---------- */
-.wuxing-bars {
+/* ---------- 底部导航 ---------- */
+.bottom-nav {
   display: grid;
-  gap: 12px;
-  margin-top: 10px;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--card-line);
+  background: rgba(240, 237, 228, 0.95);
+  padding: 8px 0 12px;
 }
 
-.wx-bar-row {
-  display: grid;
-  grid-template-columns: 52px 1fr 40px;
+.bnav-item {
+  appearance: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-}
-
-.wx-bar-label {
-  font-family: "ZCOOL XiaoWei", serif;
-  font-size: 1.05rem;
-  letter-spacing: 0.2em;
-}
-
-.wx-bar-track {
-  height: 10px;
-  background: rgba(23, 23, 23, 0.08);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.wx-bar-fill {
-  height: 100%;
-  border-radius: 2px;
-  background: currentColor;
-  opacity: 0.85;
-  transition: width 1s ease;
-}
-
-.wx-bar-count {
-  text-align: right;
+  gap: 3px;
   color: var(--ink-faint);
-  font-size: 0.85rem;
+  font-family: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
 }
 
-/* ---------- 大运流年 ---------- */
-.dayun-strip {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(86px, 1fr);
-  gap: 8px;
-  overflow-x: auto;
-  padding: 6px 2px 14px;
+.bnav-item.active { color: var(--ink); }
+.bnav-item .bicon { font-size: 1.05rem; }
+
+/* ---------- 聊天流 ---------- */
+.chat-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px 16px;
   scrollbar-width: thin;
   scrollbar-color: var(--ink-faint) transparent;
 }
 
-.dayun-cell {
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 12px 6px;
-  text-align: center;
-  background: rgba(255, 255, 255, 0.6);
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.dayun-cell:hover {
-  border-color: var(--line-strong);
-}
-
-.dayun-cell.active {
-  border-color: var(--vermilion);
-  background: rgba(176, 58, 42, 0.07);
-  box-shadow: 2px 2px 0 rgba(176, 58, 42, 0.25);
-}
-
-.dayun-gz {
-  font-family: "Ma Shan Zheng", "STKaiti", cursive;
-  font-size: 1.4rem;
-  line-height: 1.2;
-  color: var(--ink);
-}
-
-.dayun-age {
-  color: var(--ink-faint);
-  font-size: 0.72rem;
-  margin-top: 6px;
-  letter-spacing: 0.05em;
-}
-
-.liunian-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.liunian-cell {
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  text-align: center;
-  padding: 9px 4px;
-  background: rgba(255, 255, 255, 0.6);
-  cursor: pointer;
-  transition: all 0.25s;
-  font-size: 0.85rem;
-}
-
-.liunian-cell:hover { border-color: var(--line-strong); }
-
-.liunian-cell.active {
-  border-color: var(--vermilion);
-  background: rgba(176, 58, 42, 0.08);
-  color: var(--vermilion);
-}
-
-.liunian-gz {
-  font-family: "ZCOOL XiaoWei", "STKaiti", serif;
-  font-size: 1.05rem;
-}
-
-.liunian-year { color: var(--ink-faint); font-size: 0.72rem; }
-
-/* ---------- 命盘天衡（转动命盘） ---------- */
-.wheel-stage {
+.msg-row {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 0 2px;
-}
-
-.wheel-hint {
-  color: var(--ink-faint);
-  font-size: 0.78rem;
-  letter-spacing: 0.2em;
-}
-
-.destiny-wheel-wrap {
-  position: relative;
-  width: min(480px, 92vw);
-}
-
-.destiny-wheel-wrap .pointer {
-  position: absolute;
-  top: -4px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 9px solid transparent;
-  border-right: 9px solid transparent;
-  border-top: 14px solid var(--vermilion);
-  filter: drop-shadow(0 2px 2px rgba(23, 23, 23, 0.3));
-  z-index: 3;
-}
-
-.wheel-rotor {
-  transition: transform 1.4s cubic-bezier(0.22, 0.8, 0.24, 1);
-  transform-origin: 50% 50%;
-}
-
-.enso-slow {
-  animation: ensospin 90s linear infinite;
-  transform-origin: 50% 50%;
-}
-
-@keyframes ensospin {
-  to { transform: rotate(360deg); }
-}
-
-/* ---------- 解读文本 ---------- */
-.reading-section { margin-top: 18px; }
-
-.reading-h {
-  color: var(--ink);
-  font-family: "ZCOOL XiaoWei", serif;
-  font-size: 1.08rem;
-  letter-spacing: 0.25em;
-  margin: 20px 0 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.reading-h::before {
-  content: "";
-  width: 9px;
-  height: 9px;
-  background: var(--seal);
-  transform: rotate(45deg);
-  flex: none;
-}
-
-.reading-p {
-  color: var(--ink-soft);
-  line-height: 2.05;
-  font-size: 0.95rem;
-  text-align: justify;
-  font-weight: 300;
-}
-
-.tag-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 8px 0 4px;
-}
-
-.mystic-tag {
-  border: 1px solid rgba(168, 56, 43, 0.55);
-  color: var(--seal);
-  border-radius: 3px;
-  font-size: 0.78rem;
-  padding: 3px 12px;
-  letter-spacing: 0.12em;
-  background: rgba(168, 56, 43, 0.05);
-}
-
-/* ---------- 卦象 ---------- */
-.divine-stage {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 22px;
-  padding: 10px 0 6px;
-}
-
-.coins-row {
-  display: flex;
-  gap: 26px;
-  height: 84px;
-  align-items: center;
-}
-
-.coin {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 34% 30%, #f0f0ee, #d8d8d4 55%, #ababa5);
-  border: 2px solid var(--ink-soft);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ink-soft);
-  font-family: "ZCOOL XiaoWei", serif;
-  letter-spacing: 0.08em;
-  box-shadow: 2px 4px 10px rgba(23, 23, 23, 0.3), inset 0 0 10px rgba(255, 250, 235, 0.7);
-  position: relative;
-}
-
-.coin .hole {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  background: var(--paper);
-  border: 1.5px solid var(--ink-soft);
-}
-
-.coin span { position: relative; z-index: 1; font-size: 0.72rem; }
-.coin.tail { filter: brightness(0.86) saturate(0.7); }
-
-.coin.tossing {
-  animation: cointoss 0.75s cubic-bezier(0.3, 0.6, 0.4, 1) infinite;
-}
-
-@keyframes cointoss {
-  0% { transform: translateY(0) rotateX(0); }
-  40% { transform: translateY(-46px) rotateX(360deg); }
-  100% { transform: translateY(0) rotateX(720deg); }
-}
-
-.hexagram-figure {
-  display: flex;
-  flex-direction: column-reverse;
   gap: 9px;
-  align-items: center;
-}
-
-.yao-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.yao {
-  width: 150px;
-  height: 14px;
-  display: flex;
-  justify-content: space-between;
-}
-
-.yao .bar {
-  height: 100%;
-  border-radius: 2px;
-  background: var(--ink);
-  animation: yaoglow 0.5s ease;
-}
-
-@keyframes yaoglow {
-  from { opacity: 0.2; transform: scaleX(0.6); }
-  to { opacity: 1; transform: scaleX(1); }
-}
-
-.yao.yang .bar { width: 100%; }
-.yao.yin .bar { width: 44%; }
-
-.yao-mark {
-  width: 46px;
-  font-size: 0.72rem;
-  color: var(--vermilion);
-  letter-spacing: 0.08em;
-}
-
-.yao-name {
-  width: 34px;
-  text-align: right;
-  color: var(--ink-faint);
-  font-size: 0.72rem;
-}
-
-.gua-duo {
-  display: flex;
-  gap: 44px;
-  justify-content: center;
-  flex-wrap: wrap;
   align-items: flex-start;
+  margin: 14px 0;
 }
 
-.gua-card {
-  text-align: center;
-}
+.msg-avatar { flex: none; margin-top: 2px; }
 
-.gua-card .gua-symbol {
-  font-size: 4.2rem;
-  line-height: 1;
-  color: var(--ink);
-}
-
-.gua-card .gua-name {
-  font-family: "ZCOOL XiaoWei", serif;
-  font-size: 1.15rem;
-  color: var(--ink);
-  margin-top: 10px;
-  letter-spacing: 0.12em;
-}
-
-.gua-card .gua-role {
-  color: var(--seal);
-  font-size: 0.78rem;
-  letter-spacing: 0.3em;
-  margin-top: 4px;
-}
-
-.gua-arrow {
-  align-self: center;
-  color: var(--ink-faint);
-  font-size: 1.6rem;
-}
-
-.guaci-block {
-  margin-top: 18px;
-  border-left: 3px solid var(--seal);
-  padding: 4px 0 4px 16px;
-}
-
-.guaci-original {
-  font-family: "ZCOOL XiaoWei", "STKaiti", serif;
-  color: var(--ink);
-  font-size: 1.02rem;
-  letter-spacing: 0.15em;
-  line-height: 1.9;
-}
-
-/* ---------- 问卦 ---------- */
-.oracle-input { position: relative; margin-bottom: 16px; }
-
-.oracle-input textarea {
-  min-height: 88px;
-  resize: vertical;
-  line-height: 1.8;
-}
-
-.category-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 18px;
-  justify-content: center;
-}
-
-.category-chip {
-  appearance: none;
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--ink-soft);
-  border-radius: 3px;
-  font-family: inherit;
-  font-size: 0.85rem;
-  padding: 6px 16px;
-  letter-spacing: 0.15em;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.category-chip.active {
-  border-color: var(--seal);
-  color: var(--seal);
-  background: rgba(168, 56, 43, 0.07);
-}
-
-/* ---------- 背景与装饰 ---------- */
-.ink-atmosphere {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.mist-blob {
-  position: absolute;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
-  filter: blur(30px);
-  animation: mistdrift 26s ease-in-out infinite alternate;
-}
-
-@keyframes mistdrift {
-  from { transform: translate3d(-4%, 0, 0) scale(1); opacity: 0.5; }
-  to { transform: translate3d(5%, -3%, 0) scale(1.15); opacity: 0.85; }
-}
-
-.bagua-bg {
-  position: fixed;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.07;
-  animation: slowspin 240s linear infinite;
-}
-
-.bagua-bg.tl { top: -180px; left: -180px; }
-.bagua-bg.br { bottom: -220px; right: -220px; animation-direction: reverse; }
-
-@keyframes slowspin {
-  to { transform: rotate(360deg); }
-}
-
-.cloud-divider {
-  display: block;
-  margin: 0 auto;
-  opacity: 0.7;
-}
-
-.footer-note {
-  text-align: center;
-  color: var(--ink-faint);
-  font-size: 0.75rem;
-  letter-spacing: 0.25em;
-  margin-top: 40px;
-  line-height: 2.2;
-}
-
-/* ---------- 排盘仪式动画 ---------- */
-.ritual-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 30px;
-  background:
-    radial-gradient(ellipse 60% 45% at 50% 42%, rgba(255, 255, 255, 0.55), transparent 70%),
-    linear-gradient(180deg, #f7f7f4, #ececea);
-  animation: fadein 0.6s ease both;
-}
-
-.ritual-overlay.leaving {
-  animation: ritualleave 1s ease both;
-}
-
-@keyframes ritualleave {
-  to { opacity: 0; filter: blur(6px); }
-}
-
-.ritual-stage {
-  position: relative;
-  width: min(420px, 86vw);
-  aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ritual-taiji {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: taijiritual 2.6s cubic-bezier(0.5, 0.05, 0.4, 1) infinite;
-}
-
-@keyframes taijiritual {
-  to { transform: rotate(360deg); }
-}
-
-.ritual-taiji.dissolving {
-  animation: taijidissolve 1.15s ease forwards;
-}
-
-@keyframes taijidissolve {
-  0% { opacity: 1; filter: blur(0); transform: rotate(0) scale(1); }
-  100% { opacity: 0; filter: blur(22px); transform: rotate(140deg) scale(1.5); }
-}
-
-.ritual-video {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  mix-blend-mode: multiply; /* 白底视频融入宣纸 */
-}
-
-.ritual-video.dissolving {
-  animation: taijidissolve 1.15s ease forwards;
-}
-
-.ritual-mist {
-  position: absolute;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(240, 240, 238, 0.95), rgba(240, 240, 238, 0));
-  filter: blur(18px);
-  animation: ritualmist 3.2s ease-in-out infinite alternate;
-}
-
-.ritual-mist.dissolving {
-  animation: mistgone 1.1s ease forwards;
-}
-
-@keyframes ritualmist {
-  from { transform: translate(-6%, 2%) scale(1); opacity: 0.75; }
-  to { transform: translate(7%, -5%) scale(1.25); opacity: 1; }
-}
-
-@keyframes mistgone {
-  to { transform: scale(2.1); opacity: 0; filter: blur(40px); }
-}
-
-.ritual-wheel {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: wheelreveal 1.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
-}
-
-@keyframes wheelreveal {
-  0% { opacity: 0; transform: rotate(-160deg) scale(0.55); filter: blur(14px); }
-  100% { opacity: 1; transform: rotate(0) scale(1); filter: blur(0); }
-}
-
-.ritual-caption {
-  color: var(--ink-soft);
-  letter-spacing: 0.5em;
-  text-indent: 0.5em;
-  font-size: 0.95rem;
-  font-family: "ZCOOL XiaoWei", serif;
-  animation: captionpulse 2.4s ease-in-out infinite;
-}
-
-@keyframes captionpulse {
-  0%, 100% { opacity: 0.45; }
-  50% { opacity: 1; }
-}
-
-/* ---------- 加载中占卜动画 ---------- */
-.consulting {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-  padding: 30px 0;
-  color: var(--ink-soft);
-  letter-spacing: 0.3em;
-  font-size: 0.9rem;
-}
-
-.taiji-spin {
-  animation: taijispin 3.2s linear infinite;
-}
-
-@keyframes taijispin {
-  to { transform: rotate(360deg); }
-}
-
-.fade-in {
-  animation: fadein 0.9s ease both;
-}
-
-@keyframes fadein {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.shensha-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.shensha-item {
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.6);
-}
-
-.shensha-item .ss-name {
-  color: var(--seal);
+.msg-bubble {
+  background: var(--card);
+  border: 1px solid var(--card-line);
+  border-radius: 3px 14px 14px 14px;
+  padding: 11px 14px;
+  max-width: 82%;
+  line-height: 1.95;
   font-size: 0.92rem;
-  letter-spacing: 0.15em;
-}
-
-.shensha-item .ss-desc {
-  color: var(--ink-faint);
-  font-size: 0.75rem;
-  margin-top: 4px;
-  line-height: 1.6;
-}
-
-@media (max-width: 640px) {
-  .panel { padding: 20px 14px; }
-  .pg-gan, .pg-zhi { font-size: 1.5rem; }
-  .yao { width: 110px; }
-}
-
-/* ---------- 大师问命对话 ---------- */
-.master-dialog {
-  max-width: 980px;
-  margin: 0 auto;
-}
-
-.master-row {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  margin: 18px 0 6px;
-}
-
-.master-avatar-svg {
-  flex: none;
-  margin-top: 2px;
-  filter: drop-shadow(1px 2px 0 rgba(23, 23, 23, 0.15));
-}
-
-.master-bubble {
-  background: var(--card-solid);
-  border: 1px solid var(--line-strong);
-  border-radius: 2px 14px 14px 14px;
-  padding: 14px 18px;
-  max-width: 720px;
-  line-height: 2.05;
-  font-size: 0.96rem;
   color: var(--ink-soft);
-  box-shadow: 2px 3px 0 rgba(23, 23, 23, 0.12);
-  position: relative;
+  box-shadow: 1px 2px 0 rgba(30, 28, 24, 0.08);
 }
 
-.master-bubble.typing {
-  cursor: pointer;
-}
+.msg-bubble.typing { cursor: pointer; }
 
-.master-bubble .caret {
+.msg-bubble .caret {
   color: var(--seal);
   animation: caretblink 0.8s steps(1) infinite;
   font-size: 0.8em;
 }
 
-@keyframes caretblink {
-  50% { opacity: 0; }
-}
+@keyframes caretblink { 50% { opacity: 0; } }
 
-.guest-row {
+.user-row {
   display: flex;
   justify-content: flex-end;
-  margin: 10px 0;
+  margin: 12px 0;
 }
 
-.guest-bubble {
+.user-pill {
   background: var(--ink);
-  color: #f4f4f2;
-  border-radius: 14px 2px 14px 14px;
-  padding: 9px 16px;
-  font-size: 0.92rem;
-  letter-spacing: 0.08em;
-  max-width: 70%;
-  box-shadow: 2px 3px 0 rgba(23, 23, 23, 0.2);
+  color: #f4f2ea;
+  border-radius: 14px 3px 14px 14px;
+  padding: 8px 15px;
+  font-size: 0.88rem;
+  letter-spacing: 0.06em;
+  max-width: 75%;
+  box-shadow: 1px 2px 0 rgba(30, 28, 24, 0.18);
 }
 
-.master-actions {
+/* 卡片消息 */
+.card-msg {
+  margin: 6px 0 14px 41px;
+  background: var(--card);
+  border: 1px solid var(--card-line);
+  border-radius: 10px;
+  padding: 16px 14px;
+  box-shadow: 1px 2px 0 rgba(30, 28, 24, 0.08);
+  overflow: hidden;
+}
+
+.card-msg .card-title {
+  text-align: center;
+  font-family: "ZCOOL XiaoWei", "STKaiti", serif;
+  font-size: 1.02rem;
+  letter-spacing: 0.25em;
+  text-indent: 0.25em;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.card-msg .card-sub {
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 480px) {
+  .card-msg { margin-left: 0; }
+}
+
+/* 快捷追问 */
+.chips-row {
   display: flex;
-  gap: 12px;
-  justify-content: center;
-  align-items: center;
-  margin: 18px 0 8px;
   flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 14px 41px;
 }
 
-.master-input {
-  background: rgba(255, 255, 255, 0.85);
+.chip {
+  appearance: none;
+  border: none;
+  background: var(--ink);
+  color: #f4f2ea;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  padding: 7px 15px;
+  cursor: pointer;
+  box-shadow: 1px 2px 0 rgba(30, 28, 24, 0.18);
+  transition: transform 0.2s;
+}
+
+.chip:hover { transform: translateY(-1px); }
+
+.chip.chip-ghost {
+  background: transparent;
+  color: var(--ink-soft);
   border: 1px solid var(--line-strong);
-  border-radius: 4px;
+  box-shadow: none;
+}
+
+.chip.chip-seal { background: var(--seal); }
+
+/* 内联输入 */
+.inline-input-row {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 14px 41px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.inline-input-row input,
+.inline-input-row select {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
+  border-radius: 8px;
   color: var(--ink);
   font-family: inherit;
-  font-size: 1rem;
-  padding: 10px 14px;
+  font-size: 0.95rem;
+  padding: 9px 12px;
   outline: none;
   color-scheme: light;
-  min-width: 220px;
+  min-width: 200px;
 }
 
-.master-input:focus {
-  border-color: var(--vermilion);
-  box-shadow: 0 0 0 3px rgba(176, 58, 42, 0.12);
+.inline-input-row input:focus,
+.inline-input-row select:focus {
+  border-color: var(--seal);
+  box-shadow: 0 0 0 3px var(--seal-soft);
 }
 
-.reveal-panel {
-  margin-top: 14px;
-  margin-left: 58px;
+/* ---------- 底部输入栏 ---------- */
+.input-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--card-line);
+  background: rgba(240, 237, 228, 0.97);
 }
 
-@media (max-width: 720px) {
-  .reveal-panel { margin-left: 0; }
+.input-bar input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--ink);
+  outline: none;
 }
 
-/* ---------- 术语点解 ---------- */
+.input-bar input:focus { border-color: var(--line-strong); }
+
+.input-bar .send-btn {
+  appearance: none;
+  border: none;
+  background: var(--ink);
+  color: #f4f2ea;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.95rem;
+  flex: none;
+}
+
+/* ---------- 进度墨圈 ---------- */
+.progress-enso {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 18px auto;
+}
+
+.progress-enso .pe-stage { position: relative; width: 150px; height: 150px; }
+
+.progress-enso .pe-stage > svg,
+.progress-enso .pe-stage > .pe-center {
+  position: absolute;
+  inset: 0;
+}
+
+.pe-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.pe-label {
+  font-family: "ZCOOL XiaoWei", serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.2em;
+  color: var(--ink-soft);
+}
+
+.pe-pct {
+  font-size: 1.25rem;
+  font-family: "Ma Shan Zheng", serif;
+  color: var(--ink);
+}
+
+.enso-rotate { animation: ensospin 7s linear infinite; transform-origin: 50% 50%; }
+@keyframes ensospin { to { transform: rotate(360deg); } }
+
+/* ---------- 四柱卡片 ---------- */
+.pillar-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 6px 0 4px;
+}
+
+.pcard {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--card-line);
+  border-radius: 8px;
+  text-align: center;
+  padding: 10px 4px 8px;
+}
+
+.pcard .pc-tag { font-size: 0.66rem; color: var(--ink-faint); letter-spacing: 0.2em; }
+
+.pcard .pc-gz {
+  font-family: "Ma Shan Zheng", "STKaiti", cursive;
+  font-size: 1.7rem;
+  line-height: 1.25;
+  margin: 4px 0 2px;
+}
+
+.pcard .pc-ny { font-size: 0.64rem; color: var(--ink-faint); }
+
+/* ---------- 五行条(百分比) ---------- */
+.wx-pct-rows { display: grid; gap: 10px; margin: 8px 0; }
+
+.wx-pct-row {
+  display: grid;
+  grid-template-columns: 30px 1fr 44px;
+  align-items: center;
+  gap: 10px;
+}
+
+.wx-pct-row .label { font-family: "ZCOOL XiaoWei", serif; font-size: 0.98rem; }
+
+.wx-pct-row .track {
+  height: 8px;
+  background: rgba(30, 28, 24, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.wx-pct-row .fill { height: 100%; background: var(--ink); opacity: 0.85; border-radius: 2px; transition: width 0.9s ease; }
+.wx-pct-row .pct { text-align: right; color: var(--ink-faint); font-size: 0.78rem; }
+.wx-pct-row.fav .fill { background: var(--seal); }
+
+/* ---------- 徽章行(宜/忌/时机 吉凶 概率) ---------- */
+.badge-rows { display: grid; gap: 8px; margin-top: 10px; }
+
+.badge-row { display: flex; gap: 10px; align-items: baseline; }
+
+.badge-key {
+  flex: none;
+  background: var(--ink);
+  color: #f4f2ea;
+  font-size: 0.7rem;
+  padding: 2.5px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.15em;
+  font-family: "ZCOOL XiaoWei", serif;
+}
+
+.badge-row.ji .badge-key { background: var(--seal); }
+.badge-row .badge-val { color: var(--ink-soft); font-size: 0.85rem; line-height: 1.8; }
+
+.stat-badges { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 12px; }
+
+.stat-badge {
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.stat-badge b { color: var(--seal); font-weight: 600; margin-left: 4px; }
+
+/* ---------- 六爻步进 ---------- */
+.yao-steps {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 12px;
+}
+
+.yao-step {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.yao-step.done { background: var(--ink); border-color: var(--ink); color: #f4f2ea; }
+.yao-step.now { border-color: var(--seal); color: var(--seal); }
+.yao-step-line { width: 16px; height: 1px; background: var(--line-strong); }
+
+.yao-list { display: grid; gap: 7px; margin: 10px auto; max-width: 250px; }
+
+.yao-line-row {
+  display: grid;
+  grid-template-columns: 36px 1fr 58px;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
+.yao-line-row .glyph { display: flex; justify-content: space-between; height: 11px; }
+.yao-line-row .glyph .b { background: var(--ink); border-radius: 2px; height: 100%; }
+.yao-line-row.changing .glyph .b { background: var(--seal); }
+.yao-line-row .glyph.yang .b { width: 100%; }
+.yao-line-row .glyph.yin .b { width: 44%; }
+.yao-line-row .yl-val { color: var(--seal); text-align: right; }
+.yao-line-row .pending { height: 5px; border-bottom: 1px dotted var(--line-strong); }
+
+/* 卦tabs */
+.gua-tabs { display: flex; justify-content: center; gap: 4px; margin-bottom: 12px; }
+
+.gua-tab {
+  appearance: none;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-family: "ZCOOL XiaoWei", serif;
+  font-size: 0.92rem;
+  letter-spacing: 0.2em;
+  color: var(--ink-faint);
+  padding: 5px 14px;
+  cursor: pointer;
+}
+
+.gua-tab.active { color: var(--ink); border-bottom-color: var(--seal); }
+
+.gua-figure-block { text-align: center; margin: 8px 0; }
+
+.gua-figure-block .gf-name {
+  font-family: "Ma Shan Zheng", serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+
+.gua-figure-block .gf-symbol { font-size: 3.6rem; line-height: 1.1; }
+
+.gua-figure-block .gf-ci {
+  font-family: "ZCOOL XiaoWei", serif;
+  color: var(--seal);
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  margin-top: 8px;
+}
+
+.gua-figure-block .gf-text {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  line-height: 1.95;
+  text-align: justify;
+  margin-top: 8px;
+}
+
+/* ---------- 记录页 ---------- */
+.records-list { padding: 6px 16px 20px; display: grid; gap: 10px; overflow-y: auto; flex: 1; }
+
+.record-item {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--card-line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.record-item .r-title { font-family: "ZCOOL XiaoWei", serif; font-size: 0.95rem; color: var(--ink); }
+.record-item .r-sub { font-size: 0.75rem; color: var(--ink-faint); margin-top: 3px; line-height: 1.6; }
+.record-item .r-date { font-size: 0.7rem; color: var(--ink-faint); }
+
+.records-empty {
+  text-align: center;
+  color: var(--ink-faint);
+  padding: 60px 20px;
+  letter-spacing: 0.2em;
+  line-height: 2.4;
+}
+
+/* ---------- 复用：术语/典 ---------- */
 .term {
   color: var(--seal);
   border-bottom: 1px dotted var(--seal);
   cursor: pointer;
   padding-bottom: 1px;
-  transition: background 0.2s;
 }
 
-.term:hover {
-  background: rgba(168, 56, 43, 0.08);
-}
+.term:hover { background: var(--seal-soft); }
 
 .glossary-overlay {
   position: fixed;
   inset: 0;
   z-index: 80;
-  background: rgba(23, 23, 23, 0.35);
+  background: rgba(30, 28, 24, 0.4);
   backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
@@ -1159,13 +704,13 @@ body::before {
 }
 
 .glossary-modal {
-  background: var(--card-solid);
+  background: var(--card);
   border: 1.5px solid var(--ink);
-  border-radius: 6px;
-  max-width: 520px;
+  border-radius: 8px;
+  max-width: 460px;
   width: 100%;
-  padding: 26px 28px 20px;
-  box-shadow: 6px 8px 0 rgba(23, 23, 23, 0.25);
+  padding: 26px 24px 18px;
+  box-shadow: 5px 7px 0 rgba(30, 28, 24, 0.3);
   position: relative;
 }
 
@@ -1175,143 +720,240 @@ body::before {
   top: -14px;
   left: 22px;
   background: var(--seal);
-  color: #f4f4f2;
+  color: #f4f2ea;
   font-family: "ZCOOL XiaoWei", serif;
   font-size: 0.82rem;
   padding: 4px 8px;
   border-radius: 3px;
-  letter-spacing: 0.1em;
 }
 
 .glossary-title {
   font-family: "Ma Shan Zheng", "STKaiti", serif;
-  font-size: 1.4rem;
-  color: var(--ink);
+  font-size: 1.35rem;
   letter-spacing: 0.15em;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   text-align: center;
 }
 
-.glossary-text {
-  color: var(--ink-soft);
-  line-height: 2.05;
-  font-size: 0.92rem;
-  text-align: justify;
-}
+.glossary-text { color: var(--ink-soft); line-height: 2; font-size: 0.9rem; text-align: justify; }
 
 .glossary-close {
-  margin-top: 16px;
+  margin-top: 14px;
   text-align: center;
   color: var(--seal);
   letter-spacing: 0.3em;
   text-indent: 0.3em;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   cursor: pointer;
-  border-top: 1px solid var(--line);
-  padding-top: 12px;
+  border-top: 1px solid var(--card-line);
+  padding-top: 10px;
 }
 
-/* ---------- 紫微斗数盘 ---------- */
-.zw-scroll {
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--ink-faint) transparent;
+/* ---------- 复用：专业细盘表 ---------- */
+.pillars-scroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--ink-faint) transparent; }
+
+.pillars-grid {
+  display: grid;
+  gap: 1.5px;
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(30, 28, 24, 0.35);
+  min-width: 640px;
 }
+
+.pillars-grid > div { background: var(--card); padding: 9px 5px; text-align: center; }
+
+.pg-rowlabel {
+  color: #f4f2ea;
+  background: var(--ink) !important;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "ZCOOL XiaoWei", serif;
+}
+
+.pg-rowlabel .term { color: #e8b8ad; border-bottom-color: #e8b8ad; }
+
+.pg-head {
+  color: #f4f2ea;
+  background: var(--ink) !important;
+  font-family: "ZCOOL XiaoWei", serif;
+  letter-spacing: 0.24em;
+  text-indent: 0.24em;
+  font-size: 0.9rem;
+  padding: 10px 5px !important;
+}
+
+.pg-head.pg-lucol { color: #e8b8ad; }
+
+.pg-gan, .pg-zhi {
+  font-family: "Ma Shan Zheng", "STKaiti", cursive;
+  font-size: 1.7rem;
+  line-height: 1.1;
+}
+
+.pg-shishen { color: var(--ink-soft); font-size: 0.76rem; }
+.pg-canggan { font-size: 0.7rem; color: var(--ink-faint); line-height: 1.7; }
+.pg-small { color: var(--ink-soft); font-size: 0.74rem; }
+.pg-nayin { color: var(--ink-soft); font-size: 0.74rem; }
+.pg-shensha { font-size: 0.66rem; color: var(--seal); line-height: 1.8; }
+
+.wx-木 { color: var(--wood); }
+.wx-火 { color: var(--fire); }
+.wx-土 { color: var(--earth); }
+.wx-金 { color: var(--metal); }
+.wx-水 { color: var(--water); }
+
+.tag-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; justify-content: center; }
+
+.mystic-tag {
+  border: 1px solid rgba(168, 56, 43, 0.5);
+  color: var(--seal);
+  border-radius: 4px;
+  font-size: 0.72rem;
+  padding: 3px 10px;
+  letter-spacing: 0.1em;
+  background: var(--seal-soft);
+}
+
+/* ---------- 复用：命盘天衡 ---------- */
+.destiny-wheel-wrap { position: relative; width: min(330px, 84vw); margin: 0 auto; }
+
+.destiny-wheel-wrap .pointer {
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 12px solid var(--seal);
+  z-index: 3;
+}
+
+.wheel-rotor { transition: transform 1.4s cubic-bezier(0.22, 0.8, 0.24, 1); transform-origin: 50% 50%; }
+.enso-slow { animation: ensospin 90s linear infinite; transform-origin: 50% 50%; }
+
+.wheel-hint {
+  display: block;
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  margin-top: 8px;
+  line-height: 1.9;
+}
+
+/* ---------- 复用：神煞/解读 ---------- */
+.shensha-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+
+.shensha-item { border: 1px solid var(--card-line); border-radius: 6px; padding: 9px 11px; background: rgba(255, 255, 255, 0.5); }
+.shensha-item .ss-name { color: var(--seal); font-size: 0.85rem; letter-spacing: 0.1em; }
+.shensha-item .ss-desc { color: var(--ink-faint); font-size: 0.7rem; margin-top: 3px; line-height: 1.6; }
+
+.reading-h {
+  color: var(--ink);
+  font-family: "ZCOOL XiaoWei", serif;
+  font-size: 0.98rem;
+  letter-spacing: 0.2em;
+  margin: 16px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reading-h::before { content: ""; width: 8px; height: 8px; background: var(--seal); transform: rotate(45deg); flex: none; }
+
+.reading-p { color: var(--ink-soft); line-height: 2; font-size: 0.88rem; text-align: justify; }
+
+/* ---------- 复用：大运/流年 cell ---------- */
+.dayun-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(72px, 1fr);
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 2px 10px;
+  scrollbar-width: thin;
+}
+
+.dayun-cell {
+  border: 1px solid var(--card-line);
+  border-radius: 6px;
+  padding: 9px 4px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.dayun-cell.active { border-color: var(--seal); background: var(--seal-soft); }
+.dayun-gz { font-family: "Ma Shan Zheng", serif; font-size: 1.15rem; }
+.dayun-age { color: var(--ink-faint); font-size: 0.62rem; margin-top: 3px; }
+
+.liunian-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; margin-top: 10px; }
+
+.liunian-cell {
+  border: 1px solid var(--card-line);
+  border-radius: 6px;
+  text-align: center;
+  padding: 7px 3px;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.liunian-cell.active { border-color: var(--seal); background: var(--seal-soft); color: var(--seal); }
+.liunian-gz { font-family: "ZCOOL XiaoWei", serif; font-size: 0.92rem; }
+.liunian-year { color: var(--ink-faint); font-size: 0.64rem; }
+
+/* ---------- 复用：紫微盘 ---------- */
+.zw-scroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--ink-faint) transparent; }
 
 .zw-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(4, minmax(148px, auto));
+  grid-template-rows: repeat(4, minmax(140px, auto));
   grid-template-areas:
     "si   wu     wei    shen"
     "chen center center you"
     "mao  center center xu"
     "yin  chou   zi     hai";
   gap: 1.5px;
-  background: rgba(23, 23, 23, 0.4);
+  background: rgba(30, 28, 24, 0.4);
   border: 1.5px solid var(--ink);
   border-radius: 4px;
   overflow: hidden;
-  min-width: 720px;
+  min-width: 680px;
 }
 
 .zw-palace {
-  background: var(--card-solid);
+  background: var(--card);
   padding: 8px 9px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  cursor: pointer;
-  transition: background 0.25s;
-  min-height: 148px;
+  min-height: 140px;
 }
 
-.zw-palace:hover {
-  background: #f3f3f0;
-}
-
-.zw-palace.active {
-  background: rgba(176, 58, 42, 0.06);
-  box-shadow: inset 0 0 0 1.5px var(--seal);
-}
-
-.zw-stars-major {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 10px;
-  margin-bottom: 4px;
-}
-
-.zw-star {
-  display: inline-flex;
-  align-items: flex-start;
-  gap: 1px;
-  white-space: nowrap;
-}
-
-.zw-major {
-  font-family: "ZCOOL XiaoWei", "STKaiti", serif;
-  font-size: 1.06rem;
-  color: var(--ink);
-  letter-spacing: 0.05em;
-}
-
-.zw-minor {
-  font-size: 0.8rem;
-  color: var(--ink-soft);
-}
-
-.zw-stars-minor {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 8px;
-  margin-bottom: 3px;
-}
-
-.zw-stars-adj {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 7px;
-  font-size: 0.68rem;
-  color: var(--ink-faint);
-}
-
-.zw-bright {
-  font-style: normal;
-  font-size: 0.62em;
-  color: var(--ink-faint);
-  margin-left: 1px;
-}
+.zw-stars-major { display: flex; flex-wrap: wrap; gap: 7px 9px; margin-bottom: 4px; }
+.zw-star { display: inline-flex; align-items: flex-start; gap: 1px; white-space: nowrap; }
+.zw-major { font-family: "ZCOOL XiaoWei", serif; font-size: 1rem; color: var(--ink); }
+.zw-minor { font-size: 0.76rem; color: var(--ink-soft); }
+.zw-stars-minor { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-bottom: 3px; }
+.zw-stars-adj { display: flex; flex-wrap: wrap; gap: 2px 6px; font-size: 0.64rem; color: var(--ink-faint); }
+.zw-bright { font-style: normal; font-size: 0.6em; color: var(--ink-faint); }
 
 .zw-mut {
   font-style: normal;
   font-weight: 400;
-  font-size: 0.62rem;
-  color: #f4f4f2;
+  font-size: 0.58rem;
+  color: #f4f2ea;
   border-radius: 2px;
   padding: 0.5px 3px;
   margin-left: 2px;
-  line-height: 1.4;
 }
 
 .mut-lu { background: #4f7359; }
@@ -1319,147 +961,118 @@ body::before {
 .mut-ke { background: #47657f; }
 .mut-ji { background: #a8382b; }
 
-.zw-empty {
-  font-size: 0.72rem;
-  color: var(--ink-faint);
-}
+.zw-empty { font-size: 0.68rem; color: var(--ink-faint); }
 
 .zw-foot {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 4px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--card-line);
   padding-top: 5px;
   margin-top: 6px;
 }
 
-.zw-cs {
-  font-size: 0.66rem;
-  color: var(--ink-faint);
-  line-height: 1.5;
-}
-
+.zw-cs { font-size: 0.62rem; color: var(--ink-faint); line-height: 1.5; }
 .zw-cs i { font-style: normal; opacity: 0.75; }
 
-.zw-name {
-  font-family: "ZCOOL XiaoWei", serif;
-  color: var(--seal);
-  font-size: 0.92rem;
-  letter-spacing: 0.1em;
-  text-align: center;
-  line-height: 1.3;
-}
-
-.zw-name .zw-range {
-  display: block;
-  font-style: normal;
-  font-size: 0.62rem;
-  color: var(--ink-faint);
-  letter-spacing: 0.02em;
-}
+.zw-name { font-family: "ZCOOL XiaoWei", serif; color: var(--seal); font-size: 0.85rem; text-align: center; line-height: 1.3; }
+.zw-name .zw-range { display: block; font-style: normal; font-size: 0.58rem; color: var(--ink-faint); }
 
 .zw-body {
   font-style: normal;
   background: var(--ink);
-  color: #f4f4f2;
-  font-size: 0.6rem;
+  color: #f4f2ea;
+  font-size: 0.56rem;
   border-radius: 2px;
   padding: 1px 3px;
   margin-left: 3px;
   vertical-align: 2px;
 }
 
-.zw-gz {
-  font-family: "Ma Shan Zheng", "STKaiti", serif;
-  font-size: 0.95rem;
-  color: var(--ink);
-  text-align: right;
-  line-height: 1.25;
-}
+.zw-gz { font-family: "Ma Shan Zheng", serif; font-size: 0.88rem; text-align: right; line-height: 1.25; }
 
 .zw-center {
   grid-area: center;
-  background: var(--card-solid);
+  background: var(--card);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  padding: 18px;
+  gap: 6px;
+  padding: 14px;
   text-align: center;
 }
 
-.zw-center-title {
-  font-family: "Ma Shan Zheng", "STKaiti", serif;
-  font-size: 1.5rem;
-  letter-spacing: 0.2em;
-  color: var(--ink);
-}
-
-.zw-center-row {
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-  letter-spacing: 0.08em;
-}
-
-.zw-bazi {
-  font-family: "ZCOOL XiaoWei", serif;
-  font-size: 1.05rem;
-  color: var(--ink);
-  letter-spacing: 0.25em;
-}
-
-.zw-center-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: center;
-  margin-top: 4px;
-}
+.zw-center-title { font-family: "Ma Shan Zheng", serif; font-size: 1.3rem; letter-spacing: 0.18em; }
+.zw-center-row { font-size: 0.78rem; color: var(--ink-soft); }
+.zw-bazi { font-family: "ZCOOL XiaoWei", serif; font-size: 0.95rem; letter-spacing: 0.2em; }
+.zw-center-tags { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 3px; }
 
 .zw-center-tags span {
-  border: 1px solid rgba(168, 56, 43, 0.55);
+  border: 1px solid rgba(168, 56, 43, 0.5);
   color: var(--seal);
   border-radius: 3px;
-  font-size: 0.75rem;
-  padding: 2px 9px;
-  letter-spacing: 0.08em;
+  font-size: 0.68rem;
+  padding: 2px 8px;
 }
 
-.zw-legend {
+.zw-legend { display: flex; align-items: center; gap: 5px; font-size: 0.66rem; color: var(--ink-faint); margin-top: 5px; }
+
+/* ---------- 铜钱 ---------- */
+.coins-stage { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 8px 0; }
+
+.coins-in-enso { position: relative; width: 190px; height: 190px; }
+.coins-in-enso > svg.enso-ring { position: absolute; inset: 0; }
+
+.coins-tri {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.72rem;
-  color: var(--ink-faint);
-  margin-top: 6px;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 52px;
 }
 
-/* 「此话怎讲？」追问 */
-.explain-row {
-  margin: 6px 0 4px 58px;
+.coin {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #efece0, #d6d2c2 55%, #b3ae9c);
+  border: 1.6px solid var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 1px 3px 7px rgba(30, 28, 24, 0.3), inset 0 0 8px rgba(255, 252, 240, 0.7);
 }
 
-.explain-btn {
-  appearance: none;
-  background: transparent;
-  border: 1px dashed rgba(168, 56, 43, 0.5);
-  color: var(--seal);
-  border-radius: 999px;
-  font-family: inherit;
-  font-size: 0.82rem;
-  letter-spacing: 0.15em;
-  padding: 5px 16px;
-  cursor: pointer;
-  transition: all 0.25s;
+.coin .hole { position: absolute; width: 11px; height: 11px; background: var(--paper); border: 1.2px solid var(--ink-soft); }
+.coin span { position: relative; z-index: 1; font-size: 0.5rem; color: var(--ink-soft); }
+.coin.tail { filter: brightness(0.86) saturate(0.7); }
+.coin.tossing { animation: cointoss 0.7s cubic-bezier(0.3, 0.6, 0.4, 1) infinite; }
+
+@keyframes cointoss {
+  0% { transform: translateY(0) rotateX(0); }
+  40% { transform: translateY(-30px) rotateX(360deg); }
+  100% { transform: translateY(0) rotateX(720deg); }
 }
 
-.explain-btn:hover {
-  background: rgba(168, 56, 43, 0.07);
-  border-style: solid;
-}
+.toss-caption { color: var(--ink-faint); font-size: 0.78rem; letter-spacing: 0.2em; }
 
-@media (max-width: 720px) {
-  .explain-row { margin-left: 0; }
+/* ---------- 通用 ---------- */
+.taiji-spin { animation: taijispin 3.2s linear infinite; }
+@keyframes taijispin { to { transform: rotate(360deg); } }
+
+.fade-in { animation: fadein 0.7s ease both; }
+@keyframes fadein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.center-note { text-align: center; color: var(--ink-faint); font-size: 0.72rem; letter-spacing: 0.15em; margin: 8px 0; }
+
+.divider-ink {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+  margin: 12px 0;
 }
