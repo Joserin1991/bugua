@@ -160,7 +160,9 @@ export function BaziChat() {
       `你的命盘排好了。日元${c.dayGan}${c.dayGanWx}，生于${c.pillars[1].zhi}月，日主${c.strength.level}，喜`,
       <Term key="t" k="喜用神">{`${c.favorable.join('、')}`}</Term>,
       `。${r.geju.split('。')[2] ?? ''}。`,
-      '八字、紫微、卦象三盘老朽都替你起好了——点「三盘合参」可看它们是否互相印证。想先了解哪方面？',
+      loadAiConfig()
+        ? '八字、紫微、卦象三盘老朽都替你起好了。不必按套路来——把你近来的境况、心头挂着的事直接说与老朽，老朽结合命盘为你细断；也可点下方话题先看盘。'
+        : '八字、紫微、卦象三盘老朽都替你起好了——点「三盘合参」可看它们是否互相印证。想先了解哪方面？',
     ])
   }
 
@@ -180,15 +182,32 @@ export function BaziChat() {
       user(echoText || (topic.endsWith('势') || topic.endsWith('断') ? `那我的${topic}如何？` : `想看看${topic}。`))
     }
 
+    // 接入 AI 后：卡片照出，点评改为结合上下文的个性化生成；失败回落固定文案
+    const aiCfg = loadAiConfig()
+    const speak = (fallback: ReactNode[]) => {
+      if (!aiCfg || !aiSystemRef.current) { master(fallback); return }
+      setAiThinking(true)
+      askMaster(
+        aiCfg, aiSystemRef.current, aiHistoryRef.current.slice(-8),
+        `【系统指令】命主刚点开「${topic}」。结合盘面证据与他此前聊过的处境，作一段个性化点评（120字以内）：先专业后白话，务必扣着他说过的事，末尾带一句关怀或指引。不要罗列数据，像大师看着盘随口道来。`,
+      )
+        .then((reply) => {
+          aiHistoryRef.current.push({ role: 'user', content: `（点开了「${topic}」）` }, { role: 'assistant', content: reply })
+          master([reply])
+        })
+        .catch(() => master(fallback))
+        .finally(() => { setAiThinking(false); scroll() })
+    }
+
     const ln = currentLn(c)
     switch (topic) {
       case '推演解说': {
-        master(traceNarrative(c))
+        speak(traceNarrative(c))
         break
       }
       case '三盘合参': {
         const sp = sanpan(c, ziweiRef.current, birthRef.current ?? new Date(2000, 0, 1))
-        master(['孤证不立。老朽把八字、紫微、卦象三盘并起，对事业、财帛、姻缘、康健逐一互证——三盘同断者十拿九稳，各执一词者，老朽也给你说分明。'])
+        speak(['孤证不立。老朽把八字、紫微、卦象三盘并起，对事业、财帛、姻缘、康健逐一互证——三盘同断者十拿九稳，各执一词者，老朽也给你说分明。'])
         node(
           <CardMsg title="三盘合参" sub="八字 × 紫微 × 卦象 · 交叉印证">
             <SanpanCard result={sp} />
@@ -197,7 +216,7 @@ export function BaziChat() {
         break
       }
       case '五行分析': {
-        master(['我们先看你的五行强弱。'])
+        speak(['我们先看你的五行强弱。'])
         node(
           <CardMsg title="五行能量分布">
             <WuxingPctBars chart={c} />
@@ -209,7 +228,7 @@ export function BaziChat() {
       }
       case '十神关系': {
         const lnGod = ln ? ln.god : undefined
-        master(['十神者，人事之网也——贵人、财富、才华、压力，皆在此图中各居其位。红点为命中所有，红圈为今岁当值。'])
+        speak(['十神者，人事之网也——贵人、财富、才华、压力，皆在此图中各居其位。红点为命中所有，红圈为今岁当值。'])
         node(
           <CardMsg title="十神环绕 · 日主居中">
             <TenGodOrbit chart={c} activeGod={lnGod} />
@@ -219,7 +238,7 @@ export function BaziChat() {
         break
       }
       case '专业细盘': {
-        master(['细盘在此。地支藏干、星运自坐、空亡纳音、神煞，柱柱分明；右二列为现行大运与流年。红字皆可点问。'])
+        speak(['细盘在此。地支藏干、星运自坐、空亡纳音、神煞，柱柱分明；右二列为现行大运与流年。红字皆可点问。'])
         node(
           <CardMsg title="专业细盘">
             <ProTable chart={c} activeDayun={c.daYun.find((d) => { const y = new Date().getFullYear(); return y >= d.startYear && y <= d.endYear }) ?? c.daYun[0]} activeLn={ln} />
@@ -228,17 +247,17 @@ export function BaziChat() {
         break
       }
       case '大运走势': {
-        master([`${c.qiYunText}。大运十年一换，如行船换水道——下图便是你一生的水路起伏。`])
+        speak([`${c.qiYunText}。大运十年一换，如行船换水道——下图便是你一生的水路起伏。`])
         node(<DayunCard chart={c} />)
         break
       }
       case '流年运势': {
-        master(['来看你今年的流年运势。'])
+        speak(['来看你今年的流年运势。'])
         node(<LiunianCard chart={c} />)
         break
       }
       case '事业运势': {
-        master(['来看你今年的事业运势。'])
+        speak(['来看你今年的事业运势。'])
         node(
           <CardMsg title="事业五维" sub="由命局十神推得">
             <Radar data={abilityRadarData(c)} max={100} />
@@ -248,7 +267,7 @@ export function BaziChat() {
         break
       }
       case '财运走势': {
-        master(['财帛之事，须看财星与身强身弱相配。'])
+        speak(['财帛之事，须看财星与身强身弱相配。'])
         node(
           <CardMsg title="财帛之道">
             <p className="reading-p">{r.wealth}</p>
@@ -257,7 +276,7 @@ export function BaziChat() {
         break
       }
       case '感情运势': {
-        master(['你的感情格局如下：'])
+        speak(['你的感情格局如下：'])
         node(
           <CardMsg title="姻缘情感">
             <InkArt name="love" height={140} />
@@ -267,7 +286,7 @@ export function BaziChat() {
         break
       }
       case '健康提点': {
-        master(['身体是行运的本钱，且听老朽几句提点。'])
+        speak(['身体是行运的本钱，且听老朽几句提点。'])
         node(
           <CardMsg title="康健养生">
             <p className="reading-p">{r.health}</p>
@@ -276,7 +295,7 @@ export function BaziChat() {
         break
       }
       case '神煞照命': {
-        master(['你命里照着这几颗星。吉者当用，凶者知避——不必惧，是提前递给你的信儿。'])
+        speak(['你命里照着这几颗星。吉者当用，凶者知避——不必惧，是提前递给你的信儿。'])
         node(
           <CardMsg title="神煞照命">
             <ShenshaSection chart={c} />
@@ -286,7 +305,7 @@ export function BaziChat() {
       }
       case '紫微星盘': {
         if (!ziwei) { master(['星盘一时布不开，且以八字为凭。']); break }
-        master([`八字论气，斗数观星。你是${ziwei.fiveElementsClass}，命主${ziwei.soul}，身主${ziwei.body}。星名皆可点问。`])
+        speak([`八字论气，斗数观星。你是${ziwei.fiveElementsClass}，命主${ziwei.soul}，身主${ziwei.body}。星名皆可点问。`])
         node(
           <CardMsg title="紫微星盘">
             <ZiweiChart chart={ziwei} gender={c.gender} />
@@ -295,7 +314,7 @@ export function BaziChat() {
         break
       }
       case '命理总断': {
-        master(['最后，老朽将此命从头道来——格局、性情、事业、财帛、姻缘、康健，一一剖解。'])
+        speak(['最后，老朽将此命从头道来——格局、性情、事业、财帛、姻缘、康健，一一剖解。'])
         node(
           <CardMsg title="命理总断">
             <ReadingSections reading={r} />
