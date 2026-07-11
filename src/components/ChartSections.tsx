@@ -2,7 +2,8 @@
 import { useMemo } from 'react'
 import { columnDetail, type BaziChart, type ColumnDetail, type DaYunItem, type LiuNian } from '../lib/bazi'
 import type { BaziReading } from '../lib/interpret'
-import { DestinyWheel } from './DestinyWheel'
+import { WheelEngine } from './WheelEngine'
+import { baziToWheel } from '../engine/wheel'
 import { Term } from './Master'
 
 export function ProTable({
@@ -110,13 +111,10 @@ export function ShenshaSection({ chart }: { chart: BaziChart }) {
 export function WheelSection({ chart, activeLn }: { chart: BaziChart; activeLn: LiuNian | null }) {
   return (
     <div>
-      <DestinyWheel
-        chart={chart}
-        highlightZhi={activeLn?.zhi ?? chart.pillars[0].zhi}
-        highlightLabel={activeLn ? `流年 ${activeLn.ganZhi} · ${activeLn.year}` : undefined}
-      />
+      <WheelEngine config={baziToWheel(chart, activeLn)} />
       <span className="wheel-hint">
-        外为<Term k="命盘天衡">地支十二宫</Term> · 中为<Term k="十二消息卦">十二消息卦</Term> · 内为月建 · 朱印标注四柱本位
+        自内而外：太极 · <Term k="命盘天衡">十二宫</Term> · <Term k="星运">十二长生</Term> · 地支 · <Term k="藏干">藏干本气</Term> · 流年 · <Term k="大运">大运</Term>
+        <br />朱印标四柱本位 · 红针所指为当前流年
       </span>
     </div>
   )

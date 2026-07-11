@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ZiweiChart · 紫微十二宫盘",
+  "type": "object",
+  "properties": {
+    "fiveElementsClass": { "type": "string" }, "soul": { "type": "string" }, "body": { "type": "string" },
+    "solarDate": { "type": "string" }, "lunarDate": { "type": "string" }, "chineseDate": { "type": "string" },
+    "zodiac": { "type": "string" }, "sign": { "type": "string" },
+    "palaces": {
+      "type": "array", "minItems": 12, "maxItems": 12,
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "命宫/兄弟/夫妻…" },
+          "isBodyPalace": { "type": "boolean" },
+          "gan": { "type": "string" }, "zhi": { "type": "string" },
+          "majorStars": { "type": "array", "items": { "$ref": "#/$defs/star" } },
+          "minorStars": { "type": "array", "items": { "$ref": "#/$defs/star" } },
+          "adjectiveStars": { "type": "array", "items": { "type": "string" } },
+          "changsheng": { "type": "string" }, "boshi": { "type": "string" },
+          "decadal": { "type": "array", "items": { "type": "integer" }, "minItems": 2, "maxItems": 2 }
+        },
+        "required": ["name", "gan", "zhi", "majorStars"]
+      }
+    }
+  },
+  "required": ["palaces"],
+  "$defs": {
+    "star": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "brightness": { "type": "string", "description": "庙旺得利平陷" },
+        "mutagen": { "type": "string", "enum": ["禄","权","科","忌",""] }
+      },
+      "required": ["name"]
+    }
+  }
+}

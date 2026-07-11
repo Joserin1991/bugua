@@ -1,0 +1,7 @@
+{
+  "fiveElementsClass": "土五局", "soul": "文曲", "body": "天机",
+  "palaces": [
+    { "name": "命宫", "gan": "己", "zhi": "卯", "majorStars": [], "minorStars": [{ "name": "禄存" }], "changsheng": "衰", "decadal": [5, 14] },
+    { "name": "兄弟", "gan": "戊", "zhi": "寅", "majorStars": [{ "name": "廉贞", "brightness": "庙" }], "minorStars": [{ "name": "火星" }], "changsheng": "病", "decadal": [15, 24] }
+  ]
+}

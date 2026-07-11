@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WheelConfig · 命盘圆盘引擎输入",
+  "type": "object",
+  "properties": {
+    "rotateToZhi": { "type": "string", "description": "转至正上方（红针所指）的地支", "enum": ["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"] },
+    "centerLabel": { "type": "string", "description": "中宫太极下方文字" },
+    "rings": {
+      "type": "array", "description": "环（内→外）",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string", "description": "图例名" },
+          "radius": { "type": "number", "minimum": 0.2, "maximum": 0.95, "description": "相对半径" },
+          "fontScale": { "type": "number" },
+          "brush": { "type": "boolean", "description": "是否用毛笔字体" },
+          "items": {
+            "type": "array", "minItems": 12, "maxItems": 12,
+            "description": "12 项，索引=地支序（子=0）",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": { "type": "string" },
+                "sub": { "type": "string" },
+                "color": { "type": "string" },
+                "highlight": { "type": "boolean" },
+                "marks": { "type": "array", "items": { "type": "string" } }
+              },
+              "required": ["label"]
+            }
+          }
+        },
+        "required": ["id", "name", "radius", "items"]
+      }
+    }
+  },
+  "required": ["rings"]
+}

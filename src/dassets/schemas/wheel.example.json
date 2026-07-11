@@ -1,0 +1,10 @@
+{
+  "rotateToZhi": "巳",
+  "centerLabel": "流年 乙巳 · 2025",
+  "rings": [
+    { "id": "gong", "name": "十二宫", "radius": 0.33, "fontScale": 0.72,
+      "items": [{"label":"子女"},{"label":"田宅"},{"label":"兄弟"},{"label":"财帛"},{"label":"命宫","highlight":true},{"label":"相貌"},{"label":"福德"},{"label":"官禄"},{"label":"迁移"},{"label":"疾厄"},{"label":"夫妻"},{"label":"奴仆"}] },
+    { "id": "zhi", "name": "十二地支", "radius": 0.585, "fontScale": 1.5, "brush": true,
+      "items": [{"label":"子","color":"#47657f"},{"label":"丑","color":"#86754d"},{"label":"寅","color":"#4f7359"},{"label":"卯","color":"#4f7359","marks":["日"]},{"label":"辰","color":"#86754d"},{"label":"巳","color":"#9c4636","highlight":true,"marks":["时"]},{"label":"午","color":"#9c4636"},{"label":"未","color":"#86754d"},{"label":"申","color":"#6d6d68","marks":["月"]},{"label":"酉","color":"#6d6d68"},{"label":"戌","color":"#86754d"},{"label":"亥","color":"#47657f","marks":["年"]}] }
+  ]
+}
