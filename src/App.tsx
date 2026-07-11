@@ -5,7 +5,7 @@ import { BaziChat } from './components/BaziChat'
 import { DivineChat } from './components/DivineChat'
 import { OracleChat } from './components/OracleChat'
 import { loadRecords, type RecordItem } from './lib/records'
-import { loadAiConfig, saveAiConfig, testAi } from './lib/ai'
+import { loadAiConfig, saveAiConfig, testAi, listModels } from './lib/ai'
 
 type Screen = 'home' | 'bazi' | 'divine' | 'oracle' | 'records' | 'me'
 
@@ -179,6 +179,7 @@ function MeScreen() {
   const [model, setModel] = useState(saved?.model ?? '')
   const [status, setStatus] = useState(saved ? '已接入 AI（密钥仅存本机）' : '未接入 · 大师问答走本地规则引擎')
   const [testing, setTesting] = useState(false)
+  const [models, setModels] = useState<string[]>([])
 
   const save = () => {
     if (!baseUrl.trim() || !apiKey.trim() || !model.trim()) {
@@ -200,6 +201,24 @@ function MeScreen() {
     setTesting(false)
   }
 
+  const fetchModels = async () => {
+    if (!baseUrl.trim() || !apiKey.trim()) { setStatus('先填接口地址和 Key 再查'); return }
+    setTesting(true)
+    setStatus('查询模型中…')
+    try {
+      const ids = await listModels(baseUrl.trim(), apiKey.trim())
+      setModels(ids.slice(0, 30))
+      setStatus(`该站共 ${ids.length} 个模型，点下方名字自动填入`)
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : String(e)
+      setModels([])
+      setStatus(/load failed|failed to fetch/i.test(raw) || e instanceof TypeError
+        ? '查询失败：请求被浏览器拦下——该站大概率未开放网页跨域（CORS），网页无法直连'
+        : `查询失败：${raw}`)
+    }
+    setTesting(false)
+  }
+
   return (
     <div className="records-list">
       <div className="ai-config card-msg">
@@ -211,8 +230,16 @@ function MeScreen() {
         <div className="ai-actions">
           <button className="chip" onClick={save}>保存</button>
           <button className="chip chip-ghost" onClick={test} disabled={testing}>测试连接</button>
+          <button className="chip chip-ghost" onClick={fetchModels} disabled={testing}>查可用模型</button>
         </div>
         <p className="ai-status">{status}</p>
+        {models.length > 0 && (
+          <div className="ai-models">
+            {models.map((m) => (
+              <button key={m} className={`ai-model-chip ${m === model ? 'on' : ''}`} onClick={() => { setModel(m); setStatus(`已选 ${m}，记得点保存`) }}>{m}</button>
+            ))}
+          </div>
+        )}
       </div>
       <div className="records-empty">
         玄机阁 · 卜卦问道
