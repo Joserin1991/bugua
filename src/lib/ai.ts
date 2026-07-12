@@ -80,7 +80,7 @@ export function buildMasterSystem(chart: BaziChart, ziwei: ZwChart | null, memor
 
 // 调用大模型（OpenAI 兼容 / Anthropic 双格式），非流式，由前端打字机呈现
 export async function askMaster(
-  cfg: AiConfig, system: string, history: ChatTurn[], question: string, timeoutMs = 45000,
+  cfg: AiConfig, system: string, history: ChatTurn[], question: string, timeoutMs = 90000,
 ): Promise<string> {
   const base = cfg.baseUrl.replace(/\/+$/, '')
   const ctrl = new AbortController()
@@ -130,6 +130,29 @@ export async function askMaster(
   }
 }
 
+// 失败原因翻译成人话
+export function explainAiError(e: unknown): string {
+  const raw = e instanceof Error ? e.message : String(e)
+  if (e instanceof TypeError || /load failed|failed to fetch/i.test(raw)) return '请求被浏览器拦下——接口未开放网页跨域(CORS)或网络不通'
+  if (/abort/i.test(raw)) return '等待超时（90秒无响应）'
+  if (/HTTP 401|HTTP 403/.test(raw)) return `${raw}（密钥无效或无权限）`
+  if (/HTTP 404/.test(raw)) return `${raw}（接口路径或模型名不对）`
+  if (/HTTP 429/.test(raw)) return `${raw}（请求过频或额度用尽）`
+  return raw
+}
+
+// 失败自动重试一次（多等一会儿也要 AI）
+export async function askMasterRetry(
+  cfg: AiConfig, system: string, history: ChatTurn[], question: string,
+): Promise<string> {
+  try {
+    return await askMaster(cfg, system, history, question)
+  } catch {
+    await new Promise((r) => setTimeout(r, 1500))
+    return await askMaster(cfg, system, history, question)
+  }
+}
+
 // 拉取中转站可用模型列表（OpenAI 兼容 GET /models）
 export async function listModels(baseUrl: string, apiKey: string): Promise<string[]> {
   const base = baseUrl.replace(/\/+$/, '')
@@ -147,15 +170,6 @@ export async function testAi(cfg: AiConfig): Promise<{ ok: boolean; msg: string 
     const t = await askMaster(cfg, '你是测试助手，收到消息回复"通"一个字。', [], '测试', 15000)
     return { ok: true, msg: `连接成功：${t.slice(0, 20)}` }
   } catch (e) {
-    const raw = e instanceof Error ? e.message : String(e)
-    if (e instanceof TypeError || /load failed|failed to fetch/i.test(raw)) {
-      return {
-        ok: false,
-        msg: '连接失败：请求被浏览器拦下（Load failed）。多为该接口未开放网页跨域（CORS）——中转站只允许服务器/App 调用时，网页无法直连；也可能是地址打错或网络不通。可换支持网页调用的接口，或找服务商确认是否开 CORS。',
-      }
-    }
-    if (/HTTP 401|HTTP 403/.test(raw)) return { ok: false, msg: `连接失败：${raw}（密钥无效或无权限）` }
-    if (/HTTP 404/.test(raw)) return { ok: false, msg: `连接失败：${raw}（接口路径不对——确认地址是否需要 /v1 结尾，或该站是否提供 chat/completions）` }
-    return { ok: false, msg: `连接失败：${raw}` }
+    return { ok: false, msg: `连接失败：${explainAiError(e)}` }
   }
 }
