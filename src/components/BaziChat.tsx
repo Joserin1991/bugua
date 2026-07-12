@@ -398,6 +398,7 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
           intro: ['孤证不立。老朽把八字、紫微、卦象三盘并起，对事业、财帛、姻缘、康健逐一互证——三盘同断者十拿九稳，各执一词者，老朽也给你说分明。'],
           card: (
             <CardMsg title="三盘合参" sub="八字 × 紫微 × 卦象 · 交叉印证">
+              <InkArt name="sanpan" height={110} />
               {aiProse}
               <SanpanCard result={sp} />
               {aiZhupi}
@@ -451,6 +452,7 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
           intro: ['来看你今年的事业运势。'],
           card: (
             <CardMsg title="事业五维" sub="由命局十神推得">
+              <InkArt name="career" height={110} />
               {aiProse}
               <Radar data={abilityRadarData(c)} max={100} />
               {!ai && <p className="reading-p" style={{ marginTop: 4 }}>{r.career}</p>}
@@ -462,9 +464,10 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
         return {
           intro: ['财帛之事，须看财星与身强身弱相配。'],
           card: ai
-            ? (aiProse ? <CardMsg title="财帛之道">{aiProse}{aiZhupi}</CardMsg> : null)
+            ? (aiProse ? <CardMsg title="财帛之道"><InkArt name="wealth" height={110} />{aiProse}{aiZhupi}</CardMsg> : null)
             : (
               <CardMsg title="财帛之道">
+                <InkArt name="wealth" height={110} />
                 <p className="reading-p">{r.wealth}</p>
               </CardMsg>
             ),
@@ -485,9 +488,10 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
         return {
           intro: ['身体是行运的本钱，且听老朽几句提点。'],
           card: ai
-            ? (aiProse ? <CardMsg title="康健养生">{aiProse}{aiZhupi}</CardMsg> : null)
+            ? (aiProse ? <CardMsg title="康健养生"><InkArt name="health" height={110} />{aiProse}{aiZhupi}</CardMsg> : null)
             : (
               <CardMsg title="康健养生">
+                <InkArt name="health" height={110} />
                 <p className="reading-p">{r.health}</p>
               </CardMsg>
             ),
@@ -811,6 +815,7 @@ function DayunCard({ chart, prose = true, extraTop = null, extraBottom = null, a
   const bottomNode = !aiAsk || idx === init ? extraBottom : (aiCache[idx]?.note ? aiZhupiNode(aiCache[idx].note) : null)
   return (
     <CardMsg title="大运排盘" sub="每十年一运 · 岁数为虚岁 · 点节点切换即时解读">
+      <InkArt name="dayun" height={100} />
       {topNode}
       {loadingIdx === idx && <div className="card-loading">老朽正在推算此运…</div>}
       <div className="dayun-strip">

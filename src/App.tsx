@@ -169,7 +169,10 @@ function RecordsScreen({ onResume }: { onResume: (pid: string) => void }) {
         ))}
       </div>
       {shown.length === 0 && (
-        <div className="records-empty">尚无记录<br />排一次盘、问一次卦，缘分自会留痕</div>
+        <div className="records-empty">
+          <img src="/fx/empty-records.png" alt="" style={{ width: '70%', maxWidth: 300, opacity: 0.9, display: 'block', margin: '0 auto 10px' }} />
+          尚无记录<br />排一次盘、问一次卦，缘分自会留痕
+        </div>
       )}
       {shown.map((r) => (
         <div
