@@ -29,7 +29,7 @@ export function saveAiConfig(c: AiConfig | null) {
 export interface ChatTurn { role: 'user' | 'assistant'; content: string }
 
 // 盘面全量证据 → 系统提示词
-export function buildMasterSystem(chart: BaziChart, ziwei: ZwChart | null): string {
+export function buildMasterSystem(chart: BaziChart, ziwei: ZwChart | null, memories: string[] = [], returning = false): string {
   const pillars = chart.pillars.map((p) =>
     `${p.label}${p.gan}${p.zhi}（干${p.ganGod}，支藏${p.cangGan.map((c) => c.gan + c.god).join('/')}，纳音${p.naYin}）`,
   ).join('；')
@@ -51,6 +51,8 @@ export function buildMasterSystem(chart: BaziChart, ziwei: ZwChart | null): stri
     '5. 单次回答控制在 120~220 字，命主追问再展开；不要用列表和标题，像说话一样成段。',
     '6. 每次回答的最后必须另起一行写「建议：问A｜问B｜问C」——站在命主角度最可能追问的三个短问题（各不超过12字，要贴着当前对话走，不许重复已答内容，不许总是那几个）。',
     '7. 若某张盘面卡有助于当前话题，可在建议行之前单独一行写「卡片：五行分析」，可选值仅限：三盘合参、五行分析、十神关系、大运走势、流年运势、事业运势、财运走势、感情运势、健康提点、神煞照命、专业细盘、紫微星盘、命理总断。不需要就不写，同一张卡不要反复调。',
+    '8. 界面将展示盘面卡时（系统指令会告知），另起一行写「卡注：一句话」——不超过26字的朱批，点破这张卡对命主最要紧的一处，会印在卡片下方。',
+    '9. 当命主透露值得长期记住的个人情况（职业、婚恋状态、重大变故或打算），另起一行写「记档：一句话概括」，会存入他的档案；日常寒暄不记。',
     '',
     '=== 命主盘面（你的一切判断只能基于此） ===',
     `${chart.gender}命，${chart.solarText}，农历${chart.lunarText}，属${chart.animal}`,
@@ -63,6 +65,14 @@ export function buildMasterSystem(chart: BaziChart, ziwei: ZwChart | null): stri
     `神煞：${shensha}`,
     zw,
     '',
+    ...(memories.length || returning
+      ? [
+        '=== 命主档案（老朽此前的记录，相关时自然引用，勿逐条背诵） ===',
+        returning ? '这位命主是回头客，开场宜自然接上旧话。' : '',
+        ...memories.map((m) => `· ${m}`),
+        '',
+      ]
+      : []),
     '=== 排盘推理链（命主问"怎么算的"时据此口述，不列表格） ===',
     trace,
   ].join('\n')
