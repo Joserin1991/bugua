@@ -6,6 +6,7 @@ import { DivineChat } from './components/DivineChat'
 import { OracleChat } from './components/OracleChat'
 import { loadRecords, type RecordItem } from './lib/records'
 import { loadAiConfig, saveAiConfig, testAi, listModels } from './lib/ai'
+import { loadSyncConfig, saveSyncConfig, syncUpload, syncRestore } from './lib/sync'
 
 type Screen = 'home' | 'bazi' | 'divine' | 'oracle' | 'records' | 'me'
 
@@ -259,7 +260,7 @@ function MeScreen() {
       </div>
       <div className="ai-config card-msg">
         <div className="card-title">大师 AI 接入</div>
-        <div className="card-sub">配置后自由提问由大模型实时分析（排盘计算不变）；留空保存即关闭</div>
+        <div className="card-sub">配置后自由提问由大模型实时分析（排盘计算不变）；留空保存即关闭。可直连中转站，也可填自建 Worker 代理（密钥不进浏览器，见仓库 worker/README.md）</div>
         <label className="ai-field">接口地址<input value={baseUrl} placeholder="https://api.openai.com/v1 或 Anthropic/中转地址" onChange={(e) => setBaseUrl(e.target.value)} /></label>
         <label className="ai-field">API Key<input type="password" value={apiKey} placeholder="sk-…（只存这台设备）" onChange={(e) => setApiKey(e.target.value)} /></label>
         <label className="ai-field">模型<input value={model} placeholder="如 claude-sonnet-5 / gpt-4o" onChange={(e) => setModel(e.target.value)} /></label>
@@ -280,6 +281,7 @@ function MeScreen() {
           </div>
         )}
       </div>
+      <SyncCard />
       <div className="about-card card-msg">
         <div className="card-title">关于与免责声明</div>
         <ul className="about-list">
@@ -287,7 +289,7 @@ function MeScreen() {
           <li>本应用内容<b>不构成</b>医疗、健康、投资、理财、法律、婚恋等任何专业建议。涉及健康请就医，涉及钱财与重大决定请咨询持牌专业人士，切勿以卦断代替理性判断。</li>
           <li>接入 AI 后，回答由大模型基于盘面生成，可能存在错漏，请自行甄别；未接入时为本地规则引擎按古籍体例生成的模板断语。</li>
           <li>未成年人请在监护人陪同下使用，请勿沉迷占测。</li>
-          <li><b>隐私</b>：出生信息、对话记录、命主档案、AI 密钥全部只保存在你这台设备的浏览器里，不会上传到任何服务器；清除浏览器数据或点上方「清除本机记录与档案」即可抹除。AI 问答会把盘面数据发给你自己配置的模型服务商，请选择你信任的服务商。</li>
+          <li><b>隐私</b>：出生信息、对话记录、命主档案、AI 密钥全部只保存在你这台设备的浏览器里，不会自动上传；清除浏览器数据或点上方「清除本机记录与档案」即可抹除。只有你主动点「备份到云端」时，档案与记录才会凭口令存到你自建的同步服务（密钥永不上云）。AI 问答会把盘面数据发给你配置的模型服务商，请选择你信任的服务商。</li>
           <li>命自我立，福自己求——卦为镜，路在人。</li>
         </ul>
       </div>
@@ -298,6 +300,51 @@ function MeScreen() {
         <br />
         <span style={{ fontSize: '0.68rem' }}>内容基于传统术数体例生成 · 仅供参考 · 命自我立</span>
       </div>
+    </div>
+  )
+}
+
+// 云同步：备份/恢复档案与记录到自建 Worker（部署方法见仓库 worker/README.md）
+function SyncCard() {
+  const saved = loadSyncConfig()
+  const [url, setUrl] = useState(saved?.url ?? '')
+  const [code, setCode] = useState(saved?.code ?? '')
+  const [status, setStatus] = useState(saved ? '已配置同步服务' : '未配置 · 数据只在本机')
+  const [working, setWorking] = useState(false)
+
+  const withConfig = (): { url: string; code: string } | null => {
+    const u = url.trim(), c = code.trim()
+    if (!u || !c) { setStatus('先填同步服务地址和口令'); return null }
+    if (c.length < 6) { setStatus('同步口令至少 6 位'); return null }
+    const cfg = { url: u, code: c }
+    saveSyncConfig(cfg)
+    return cfg
+  }
+
+  const run = async (fn: (cfg: { url: string; code: string }) => Promise<string>) => {
+    const cfg = withConfig()
+    if (!cfg) return
+    setWorking(true)
+    setStatus('连接云端…')
+    try {
+      setStatus(await fn(cfg))
+    } catch (e) {
+      setStatus(`失败：${e instanceof Error ? e.message : String(e)}`)
+    }
+    setWorking(false)
+  }
+
+  return (
+    <div className="ai-config card-msg">
+      <div className="card-title">云同步（自建 Worker）</div>
+      <div className="card-sub">备份命主档案与问卦记录，换设备用同一口令恢复；AI 密钥不上云。部署见仓库 worker/README.md</div>
+      <label className="ai-field">同步服务地址<input value={url} placeholder="https://xuanjige-api.xxx.workers.dev" onChange={(e) => setUrl(e.target.value)} /></label>
+      <label className="ai-field">同步口令<input type="password" value={code} placeholder="自定 ≥6 位，两台设备填同一个" onChange={(e) => setCode(e.target.value)} /></label>
+      <div className="ai-actions">
+        <button className="chip" onClick={() => run(syncUpload)} disabled={working}>备份到云端</button>
+        <button className="chip chip-ghost" onClick={() => run(syncRestore)} disabled={working}>从云端恢复</button>
+      </div>
+      <p className="ai-status">{status}</p>
     </div>
   )
 }
