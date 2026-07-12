@@ -86,13 +86,13 @@ function parseAiReply(raw: string): { body: string; card: Topic | null; note: st
   return { body, card, note, suggests, memo }
 }
 
-// 朱批并入卡体：卡片与批语连成一体，批语是卡的落款
-function withNote(card: ReactNode, note?: string): ReactNode {
-  if (!card || !note) return card
+// AI 解读块：印在卡片内部（正文段落 + 朱批），是卡的一部分
+function aiOnCard(body: string, note: string): ReactNode {
+  if (!body && !note) return null
   return (
-    <div className="card-with-note">
-      {card}
-      <div className="card-ai-note">批：{note}</div>
+    <div className="ai-on-card">
+      {body.split(/\n+/).filter(Boolean).map((t, i) => <p className="reading-p" key={i}>{t}</p>)}
+      {note && <div className="card-zhupi">批：{note}</div>}
     </div>
   )
 }
@@ -218,11 +218,11 @@ export function BaziChat() {
     if (cfg && aiSystemRef.current) {
       setAiThinking(true)
       Promise.all([
-        askMaster(cfg, aiSystemRef.current, aiHistoryRef.current.slice(-6), `【系统指令】命主的命盘刚排好，四柱盘卡已展示在界面上。${aiHistoryRef.current.length ? '这位是回头客（档案见系统提示），开场先自然接上旧话，再点盘。' : ''}请作开场解读（180~260字）：报出四柱，点出日主旺衰与格局的关键（引用具体柱位，如「月干戊土食神透出」），用一两句白话讲他的性子，最后请命主说说近来的境况或最挂心的事。并按规则写一行「卡注」。`),
+        askMaster(cfg, aiSystemRef.current, aiHistoryRef.current.slice(-6), `【系统指令】命主的命盘刚排好，四柱盘卡已展示在界面上。${aiHistoryRef.current.length ? '这位是回头客（档案见系统提示），开场先自然接上旧话，再点盘。' : ''}请作开场解读（180~260字）：报出四柱，点出日主旺衰与格局的关键（引用具体柱位，如「月干戊土食神透出」），用一两句白话讲他的性子，最后请命主说说近来的境况或最挂心的事。`),
         new Promise((res) => setTimeout(res, 900)),
       ])
         .then(([reply]) => {
-          const body = applyAiReply(reply as string, null, null)
+          const body = applyChatReply(reply as string)
           aiHistoryRef.current.push({ role: 'assistant', content: body })
           if (profileIdRef.current) appendHistory(profileIdRef.current, [{ role: 'assistant', content: body }])
         })
@@ -281,7 +281,7 @@ export function BaziChat() {
   }
 
   // 各话题的固定开场白与盘面卡（AI 模式下开场白仅作断网保底）
-  const buildTopicView = (topic: Topic, ai = false): { intro: ReactNode[]; card: ReactNode | null } => {
+  const buildTopicView = (topic: Topic, ai = false, aiExtra: ReactNode = null): { intro: ReactNode[]; card: ReactNode | null } => {
     const c = chartRef.current!
     const r = readingRef.current!
     const ln = currentLn(c)
@@ -295,6 +295,7 @@ export function BaziChat() {
           card: (
             <CardMsg title="三盘合参" sub="八字 × 紫微 × 卦象 · 交叉印证">
               <SanpanCard result={sp} />
+              {aiExtra}
             </CardMsg>
           ),
         }
@@ -307,6 +308,7 @@ export function BaziChat() {
               <WuxingPctBars chart={c} />
               <Radar data={wuxingRadarData(c)} max={100} />
               {!ai && <p className="reading-p" style={{ marginTop: 6 }}>{r.personality}</p>}
+              {aiExtra}
             </CardMsg>
           ),
         }
@@ -317,6 +319,7 @@ export function BaziChat() {
             <CardMsg title="十神环绕 · 日主居中">
               <TenGodOrbit chart={c} activeGod={ln ? ln.god : undefined} />
               <p className="center-note">点<Term k="十神">十神</Term>名可查其义</p>
+              {aiExtra}
             </CardMsg>
           ),
         }
@@ -326,13 +329,14 @@ export function BaziChat() {
           card: (
             <CardMsg title="专业细盘">
               <ProTable chart={c} activeDayun={c.daYun.find((d) => { const y = new Date().getFullYear(); return y >= d.startYear && y <= d.endYear }) ?? c.daYun[0]} activeLn={ln} />
+              {aiExtra}
             </CardMsg>
           ),
         }
       case '大运走势':
-        return { intro: [`${c.qiYunText}。大运十年一换，如行船换水道——下图便是你一生的水路起伏。`], card: <DayunCard chart={c} prose={!ai} /> }
+        return { intro: [`${c.qiYunText}。大运十年一换，如行船换水道——下图便是你一生的水路起伏。`], card: <DayunCard chart={c} prose={!ai} extra={aiExtra} /> }
       case '流年运势':
-        return { intro: ['来看你今年的流年运势。'], card: <LiunianCard chart={c} prose={!ai} /> }
+        return { intro: ['来看你今年的流年运势。'], card: <LiunianCard chart={c} prose={!ai} extra={aiExtra} /> }
       case '事业运势':
         return {
           intro: ['来看你今年的事业运势。'],
@@ -340,17 +344,20 @@ export function BaziChat() {
             <CardMsg title="事业五维" sub="由命局十神推得">
               <Radar data={abilityRadarData(c)} max={100} />
               {!ai && <p className="reading-p" style={{ marginTop: 4 }}>{r.career}</p>}
+              {aiExtra}
             </CardMsg>
           ),
         }
       case '财运走势':
         return {
           intro: ['财帛之事，须看财星与身强身弱相配。'],
-          card: ai ? null : (
-            <CardMsg title="财帛之道">
-              <p className="reading-p">{r.wealth}</p>
-            </CardMsg>
-          ),
+          card: ai
+            ? (aiExtra ? <CardMsg title="财帛之道">{aiExtra}</CardMsg> : null)
+            : (
+              <CardMsg title="财帛之道">
+                <p className="reading-p">{r.wealth}</p>
+              </CardMsg>
+            ),
         }
       case '感情运势':
         return {
@@ -359,17 +366,20 @@ export function BaziChat() {
             <CardMsg title="姻缘情感">
               <InkArt name="love" height={140} />
               {!ai && <p className="reading-p">{r.love}</p>}
+              {aiExtra}
             </CardMsg>
           ),
         }
       case '健康提点':
         return {
           intro: ['身体是行运的本钱，且听老朽几句提点。'],
-          card: ai ? null : (
-            <CardMsg title="康健养生">
-              <p className="reading-p">{r.health}</p>
-            </CardMsg>
-          ),
+          card: ai
+            ? (aiExtra ? <CardMsg title="康健养生">{aiExtra}</CardMsg> : null)
+            : (
+              <CardMsg title="康健养生">
+                <p className="reading-p">{r.health}</p>
+              </CardMsg>
+            ),
         }
       case '神煞照命':
         return {
@@ -377,6 +387,7 @@ export function BaziChat() {
           card: (
             <CardMsg title="神煞照命">
               <ShenshaSection chart={c} />
+              {aiExtra}
             </CardMsg>
           ),
         }
@@ -388,6 +399,7 @@ export function BaziChat() {
           card: (
             <CardMsg title="紫微星盘">
               <ZiweiChart chart={zw} gender={c.gender} />
+              {aiExtra}
             </CardMsg>
           ),
         }
@@ -395,30 +407,52 @@ export function BaziChat() {
       case '命理总断':
         return {
           intro: ['最后，老朽将此命从头道来——格局、性情、事业、财帛、姻缘、康健，一一剖解。'],
-          card: ai ? null : (
-            <CardMsg title="命理总断">
-              <ReadingSections reading={r} />
-            </CardMsg>
-          ),
+          card: ai
+            ? (aiExtra ? <CardMsg title="命理总断">{aiExtra}</CardMsg> : null)
+            : (
+              <CardMsg title="命理总断">
+                <ReadingSections reading={r} />
+              </CardMsg>
+            ),
         }
     }
   }
 
-  // AI 回复落地：正文与卡同现，朱批印卡下，记档入库，建议换胶囊
-  const applyAiReply = (raw: string, topicCard: ReactNode | null, alreadyShown: Topic | null) => {
-    const parsed = parseAiReply(raw)
-    const cards: (ReactNode | null)[] = [withNote(topicCard, parsed.note)]
-    if (parsed.card && parsed.card !== alreadyShown) {
-      const view = buildTopicView(parsed.card, true)
-      cards.push(topicCard ? view.card : withNote(view.card, parsed.note))
-      setVisited((v) => [...v, parsed.card!])
-    } else if (!topicCard && parsed.note) {
-      // 无新卡可挂时（如开场解读四柱卡已在屏上），朱批单独落款
-      cards.push(<div className="card-ai-note solo card-reveal">批：{parsed.note}</div>)
-    }
-    masterThenCard([parsed.body], ...cards)
+  // 通用后处理：建议换胶囊、记档入库
+  const applyMeta = (parsed: ReturnType<typeof parseAiReply>) => {
     if (parsed.suggests.length) setAiSuggests(parsed.suggests)
     if (parsed.memo && profileIdRef.current) addMemory(profileIdRef.current, parsed.memo)
+  }
+
+  // 聊天路：正文走气泡；模型点名的指令卡（含朱批印卡内）压在话后
+  const applyChatReply = (raw: string): string => {
+    const parsed = parseAiReply(raw)
+    const cards: (ReactNode | null)[] = []
+    if (parsed.card) {
+      const view = buildTopicView(parsed.card, true, parsed.note ? aiOnCard('', parsed.note) : null)
+      cards.push(view.card)
+      setVisited((v) => [...v, parsed.card!])
+    }
+    masterThenCard([parsed.body], ...cards)
+    applyMeta(parsed)
+    return parsed.body
+  }
+
+  // 卡路：AI 返回后才开始布盘，解读正文与朱批全部印在卡片内部
+  const applyCardReply = (topic: Topic, raw: string): string => {
+    const parsed = parseAiReply(raw)
+    const view = buildTopicView(topic, true, aiOnCard(parsed.body, parsed.note))
+    if (view.card) {
+      setCardCasting(true)
+      setTimeout(() => {
+        setCardCasting(false)
+        node(view.card)
+        scroll()
+      }, 1400)
+    } else {
+      master([parsed.body])
+    }
+    applyMeta(parsed)
     return parsed.body
   }
 
@@ -447,18 +481,32 @@ export function BaziChat() {
       return
     }
 
-    // AI 模式：解读全由 AI 生成，图表卡压在话后浮现
-    const fullText = ['财运走势', '感情运势', '健康提点', '命理总断', '推演解说'].includes(topic)
-    const instruction = fullText
-      ? `【系统指令】命主想听「${topic}」。据盘面证据作完整解读（200~300字，可分两小段）：先专业断语后白话解释，引用具体柱位与分数，务必扣着他此前说过的处境，结尾一句叮嘱。`
-      : `【系统指令】命主刚点开「${topic}」，界面稍后会展示对应盘面卡。卡片数据：${topicDigest(topic)}。请为命主解读这张卡（150~250字）：把卡上的关键处点到名字（哪一年、哪一步运、哪个五行），先专业断语后白话解释，扣着他此前聊过的处境，末尾一句指引。不要整段复述数据，挑要紧的讲。并按规则写一行「卡注」。`
+    // AI 模式：等 AI 返回后布盘出卡，解读正文直接印在卡上（推演解说走气泡口述）
+    if (topic === '推演解说') {
+      setAiThinking(true)
+      Promise.all([
+        askMaster(aiCfg!, aiSystemRef.current, aiHistoryRef.current.slice(-8), '【系统指令】命主想知道这盘怎么算的。据推理链口述（150~220字），像说话一样，不列表格。'),
+        new Promise((res) => setTimeout(res, 900)),
+      ])
+        .then(([reply]) => {
+          const body = applyChatReply(reply as string)
+          const turns: ChatTurn[] = [{ role: 'user', content: '（问推演过程）' }, { role: 'assistant', content: body }]
+          aiHistoryRef.current.push(...turns)
+          if (profileIdRef.current) appendHistory(profileIdRef.current, turns)
+        })
+        .catch(() => master(intro))
+        .finally(() => { setAiThinking(false); scroll() })
+      return
+    }
+    const digest = topicDigest(topic)
+    const instruction = `【系统指令】命主刚点开「${topic}」。你的解读正文将直接印在这张盘面卡内部（图表下方），朱批印在卡底——所以直接以解读开头，不要寒暄。${digest ? `卡片数据：${digest}。` : ''}请解读（150~260字）：把卡上的关键处点到名字（哪一年、哪一步运、哪个五行），先专业断语后白话解释，扣着他此前聊过的处境，末尾一句指引；并按规则写一行「卡注」。`
     setAiThinking(true)
     Promise.all([
       askMaster(aiCfg!, aiSystemRef.current, aiHistoryRef.current.slice(-8), instruction),
       new Promise((res) => setTimeout(res, 900)),
     ])
       .then(([reply]) => {
-        const body = applyAiReply(reply as string, card, topic)
+        const body = applyCardReply(topic, reply as string)
         const turns: ChatTurn[] = [{ role: 'user', content: `（点开了「${topic}」）` }, { role: 'assistant', content: body }]
         aiHistoryRef.current.push(...turns)
         if (profileIdRef.current) appendHistory(profileIdRef.current, turns)
@@ -477,15 +525,14 @@ export function BaziChat() {
     user(text)
     const cfg = loadAiConfig()
     if (cfg && aiSystemRef.current) {
-      // 问句命中图表话题时：随答案带出盘卡，并把卡片数据交给 AI 点名解读
+      // 问句命中话题 → 卡路（解读印卡上）；否则聊天路（气泡）
       const t = detectTopic(text)
-      const chartTopic = t && !['财运走势', '感情运势', '健康提点', '命理总断', '推演解说'].includes(t) ? t : null
-      let card: ReactNode | null = null
+      const cardTopic = t && t !== '推演解说' ? t : null
       let q = text
-      if (chartTopic) {
-        setVisited((v) => [...v, chartTopic])
-        card = buildTopicView(chartTopic, true).card
-        q = `${text}\n【系统指令】界面稍后会展示「${chartTopic}」盘面卡，卡片数据：${topicDigest(chartTopic)}。请结合卡上数据点名解读（150~250字），先答命主所问，扣着他此前的处境。并按规则写一行「卡注」。`
+      if (cardTopic) {
+        setVisited((v) => [...v, cardTopic])
+        const digest = topicDigest(cardTopic)
+        q = `${text}\n【系统指令】你的解读正文将直接印在「${cardTopic}」盘面卡内部——直接以解读开头，不要寒暄。${digest ? `卡片数据：${digest}。` : ''}结合卡上数据点名解读（150~260字），先答命主所问，扣着他此前的处境；并按规则写一行「卡注」。`
       }
       setAiThinking(true)
       Promise.all([
@@ -493,7 +540,7 @@ export function BaziChat() {
         new Promise((res) => setTimeout(res, 900)),
       ])
         .then(([reply]) => {
-          const body = applyAiReply(reply as string, card, chartTopic)
+          const body = cardTopic ? applyCardReply(cardTopic, reply as string) : applyChatReply(reply as string)
           const turns: ChatTurn[] = [{ role: 'user', content: text }, { role: 'assistant', content: body }]
           aiHistoryRef.current.push(...turns)
           if (profileIdRef.current) appendHistory(profileIdRef.current, turns)
@@ -606,7 +653,7 @@ export function BaziChat() {
 }
 
 // ---------- 大运卡（内部可交互） ----------
-function DayunCard({ chart, prose = true }: { chart: BaziChart; prose?: boolean }) {
+function DayunCard({ chart, prose = true, extra = null }: { chart: BaziChart; prose?: boolean; extra?: ReactNode }) {
   const now = new Date().getFullYear()
   const init = Math.max(0, chart.daYun.findIndex((d) => now >= d.startYear && now <= d.endYear))
   const [idx, setIdx] = useState(init)
@@ -631,12 +678,13 @@ function DayunCard({ chart, prose = true }: { chart: BaziChart; prose?: boolean 
             ? '此运动星当值，压力与机遇并存，敢闯者得势，唯忌意气用事。'
             : '此运气象平顺，宜按部就班经营，勿贪快求变。'}
       </p>}
+      {extra}
     </CardMsg>
   )
 }
 
 // ---------- 流年卡（内部可交互） ----------
-function LiunianCard({ chart, prose = true }: { chart: BaziChart; prose?: boolean }) {
+function LiunianCard({ chart, prose = true, extra = null }: { chart: BaziChart; prose?: boolean; extra?: ReactNode }) {
   const now = new Date().getFullYear()
   const years = useMemo(() => liuNianRange(now - 1, 6, chart.dayGan), [chart, now])
   const [year, setYear] = useState(now)
@@ -661,6 +709,7 @@ function LiunianCard({ chart, prose = true }: { chart: BaziChart; prose?: boolea
           <div className="badge-row ji"><span className="badge-key">提点</span><span className="badge-val">{r.extra}。</span></div>
         </div>
       )}
+      {extra}
     </CardMsg>
   )
 }

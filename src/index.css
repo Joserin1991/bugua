@@ -1101,6 +1101,25 @@ body {
 .card-msg.card-reveal > *:nth-child(7) { animation-delay: 4.1s; }
 .card-msg.card-reveal > *:nth-child(n+8) { animation-delay: 4.5s; }
 
+/* AI 解读印卡内：正文段落 + 朱批 */
+.ai-on-card {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--card-line);
+}
+
+.ai-on-card .reading-p { margin-bottom: 8px; }
+
+.card-zhupi {
+  margin-top: 10px;
+  font-size: 0.82rem;
+  line-height: 1.9;
+  color: var(--seal);
+  font-family: "Ma Shan Zheng", "ZCOOL XiaoWei", serif;
+  border-left: 2px solid var(--seal);
+  padding-left: 10px;
+}
+
 /* AI 朱批：作为卡片落款，与卡体连成一张 */
 .card-with-note { margin: 8px 0 20px 42px; }
 
