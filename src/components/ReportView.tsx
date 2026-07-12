@@ -42,6 +42,7 @@ export function ReportView({ chart, memories, onClose }: { chart: BaziChart; mem
           <>
             <div ref={ref} style={{ background: '#f6f2e6', padding: '4px 2px' }}>
               <div className="report-head">
+                <img src="/fx/report-header.png" alt="" style={{ width: '100%', marginBottom: 6 }} />
                 <h2>玄机阁 · 命盘报告</h2>
                 <div className="rp-sub">{chart.gender === '男' ? '乾造' : '坤造'} {chart.solarText} ｜ 农历 {chart.lunarText} ｜ 属{chart.animal}</div>
                 {chart.solarCorrection && <div className="rp-sub">真太阳时 {chart.solarCorrection.trueText}（{chart.solarCorrection.city}）</div>}

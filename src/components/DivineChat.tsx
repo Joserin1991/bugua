@@ -157,7 +157,7 @@ function TossCard({ onDone }: { onDone: (lines: CastLine[]) => void }) {
           <EnsoRing size={190} className={tossing ? 'enso-rotate' : ''} stroke={7} />
           <div className="coins-tri">
             {[0, 1, 2].map((i) => (
-              <div key={i} className={`coin ${tossing ? 'tossing' : ''} ${!tossing && !coins[i] ? 'tail' : ''}`} style={{ animationDelay: `${i * 0.1}s` }}>
+              <div key={i} className={`coin coin-img ${tossing ? 'tossing' : ''} ${!tossing && !coins[i] ? 'tail' : ''}`} style={{ animationDelay: `${i * 0.1}s`, backgroundImage: `url(/fx/${!tossing && !coins[i] ? 'coin-back' : 'coin-front'}.png)` }}>
                 <span className="hole" />
                 <span>{tossing ? '' : coins[i] ? '字' : '背'}</span>
               </div>
