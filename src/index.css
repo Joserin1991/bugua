@@ -1638,6 +1638,17 @@ body {
 }
 .backup-code .bc-hint { color: var(--seal); opacity: 0.85; }
 
+/* 记录回放 */
+.chat-replay { opacity: 0.82; }
+.replay-divider {
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.25em;
+  margin: 16px 0 4px;
+}
+.replay-head { margin-right: 0; }
+
 /* 关于与免责 */
 .about-card { margin-top: 12px; }
 .about-list {

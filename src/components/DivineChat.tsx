@@ -4,7 +4,7 @@ import { useRef, useState, type ReactNode } from 'react'
 import { buildResult, hexUnicode, tossOnce, YAO_NAMES, type CastLine, type CastResult } from '../lib/hexagram'
 import { interpretOracle, detectCategory, type OracleCategory } from '../lib/interpret'
 import type { HexagramInfo } from '../data/hexagrams'
-import { saveRecord } from '../lib/records'
+import { saveRecord, updateRecordChat, type ChatLine } from '../lib/records'
 import { MasterMsg, UserMsg, CardMsg, Chips, EnsoRing, InputBar } from './ChatUI'
 import { loadAiConfig, buildGuaSystem, parseSuggestReply, askMasterRetry, explainAiError, type ChatTurn, type GuaInfo } from '../lib/ai'
 import { YAO_NAMES as YAO_NAMES_AI } from '../lib/hexagram'
@@ -77,8 +77,16 @@ export function DivineChat() {
 
   const scroll = () => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100)
   const push = (item: NewItem) => { setItems((a) => [...a, { ...item, id: uid++ }]); scroll() }
-  const master = (segs: ReactNode[]) => { setBusy(true); push({ kind: 'master', segs }) }
-  const user = (t: string) => push({ kind: 'user', text: t })
+  // 对话全程记档：随聊随存进当条记录
+  const chatLogRef = useRef<ChatLine[]>([])
+  const recordIdRef = useRef<string | null>(null)
+  const log = (r: 'm' | 'u', t: string) => {
+    if (!t) return
+    chatLogRef.current.push({ r, t })
+    if (recordIdRef.current) updateRecordChat(recordIdRef.current, chatLogRef.current)
+  }
+  const master = (segs: ReactNode[]) => { setBusy(true); push({ kind: 'master', segs }); log('m', segs.filter((x) => typeof x === 'string').join('')) }
+  const user = (t: string) => { push({ kind: 'user', text: t }); log('u', t) }
   const node = (n: ReactNode) => push({ kind: 'node', node: n })
 
   const startToss = () => {
@@ -94,10 +102,13 @@ export function DivineChat() {
     const q = question || '心中所念之事'
     const cat = detectCategory(question || '综合运势')
     const reading = interpretOracle(result, q, cat)
-    saveRecord({
+    log('m', `〔卦象卡〕本卦 ${result.original.fullName}${result.changed ? `，动爻${result.changingIndexes.length}处，变卦 ${result.changed.fullName}` : '，六爻安静'}；互卦 ${result.mutual.fullName}。`)
+    recordIdRef.current = saveRecord({
       type: '六爻问事',
       title: `问：${q.slice(0, 18)}`,
       summary: `本卦 ${result.original.fullName}${result.changed ? ` · 变 ${result.changed.fullName}` : ''} · ${reading.luckLabel}`,
+      chat: chatLogRef.current,
+      gua: { info: guaInfoOf(result, '六爻摇卦'), question: q, category: cat },
     })
     master([`卦象已成，来看本卦——${result.original.fullName}。${result.original.brief}。`])
     node(<GuaCard result={result} question={q} category={cat} />)

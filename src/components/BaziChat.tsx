@@ -5,7 +5,7 @@ import { computeBazi, liuNianRange, type BaziChart, type LiuNian } from '../lib/
 import { computeZiwei, type ZwChart } from '../lib/ziwei'
 import { interpretBazi, interpretLiuNian, type BaziReading } from '../lib/interpret'
 import { tenGod } from '../lib/wuxing'
-import { saveRecord } from '../lib/records'
+import { saveRecord, updateRecordChat, type ChatLine } from '../lib/records'
 import { MasterMsg, UserMsg, CardMsg, Chips, InputBar, InkArt } from './ChatUI'
 import { CITIES } from '../lib/cities'
 import { traceNarrative } from '../lib/trace'
@@ -202,7 +202,15 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
     setItems((arr) => [...arr, { ...item, id: uid++ }])
     scroll()
   }
-  const master = (segs: ReactNode[]) => { setBusy(true); push({ kind: 'master', segs }) }
+  // 对话全程记档：随聊随存进当条记录
+  const chatLogRef = useRef<ChatLine[]>([])
+  const recordIdRef = useRef<string | null>(null)
+  const log = (r: 'm' | 'u', t: string) => {
+    if (!t) return
+    chatLogRef.current.push({ r, t })
+    if (recordIdRef.current) updateRecordChat(recordIdRef.current, chatLogRef.current)
+  }
+  const master = (segs: ReactNode[]) => { setBusy(true); push({ kind: 'master', segs }); log('m', segs.filter((x) => typeof x === 'string').join('')) }
   // 时序：大师话音（打字机）落定 → 「布盘」转圈动效 → 卡片研墨显形
   const pendingCardsRef = useRef<ReactNode[]>([])
   const [cardCasting, setCardCasting] = useState(false)
@@ -210,12 +218,15 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
     pendingCardsRef.current.push(...cards.filter(Boolean))
     master(segs)
   }
-  const user = (text: string) => push({ kind: 'user', text })
+  const user = (text: string) => { push({ kind: 'user', text }); log('u', text) }
   const node = (n: ReactNode) => push({ kind: 'node', node: n })
 
   const archives = useMemo(() => listProfiles(3), [])
 
+  const bootRef = useRef(false)
   useEffect(() => {
+    if (bootRef.current) return // StrictMode 双跑守卫，防止重复起盘/重复记录
+    bootRef.current = true
     if (resumePid) {
       const d = draftFromPid(resumePid)
       if (d) {
@@ -297,12 +308,28 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
     setStage('ready')
     setPct(0)
     const r = interpretBazi(c)
-    saveRecord({
+    log('m', `〔命盘卡〕${c.gender === '男' ? '乾造' : '坤造'} ${c.solarText}，四柱 ${c.pillars.map((pl) => pl.gan + pl.zhi).join(' ')}，日主${c.dayGan}${c.dayGanWx}·${c.strength.level}。`)
+    recordIdRef.current = saveRecord({
       type: '八字排盘',
       title: `${c.gender === '男' ? '乾造' : '坤造'} ${c.solarText}`,
       summary: `日主${c.dayGan}${c.dayGanWx} · ${c.strength.level} · 喜${c.favorable.join('')}`,
       pid: profileIdRef.current,
+      chat: chatLogRef.current,
     })
+    // 续盘：把上回对话可见地回放在命盘卡之前
+    if (resumePid && aiHistoryRef.current.length) {
+      node(
+        <div className="chat-replay">
+          <div className="replay-divider">— 上回聊到 —</div>
+          {aiHistoryRef.current.slice(-8).map((t, i) => (
+            t.role === 'user'
+              ? <UserMsg key={i}>{t.content}</UserMsg>
+              : <MasterMsg key={i} segments={[t.content]} done />
+          ))}
+          <div className="replay-divider">— 接着说 —</div>
+        </div>,
+      )
+    }
     node(
       <CardMsg title="四柱八字" sub={`${c.solarCorrection ? `真太阳时 ${c.solarCorrection.trueText}（${c.solarCorrection.city} ${c.solarCorrection.offsetMin > 0 ? '+' : ''}${c.solarCorrection.offsetMin} 分）｜ ` : ''}农历 ${c.lunarText} ｜ 属${c.animal}`}>
         <PillarCards chart={c} />
