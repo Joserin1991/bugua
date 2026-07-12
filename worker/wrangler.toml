@@ -7,11 +7,11 @@ compatibility_date = "2026-01-01"
 # 把命令输出的 id 填到下面（不填则 /sync 返回 500，AI 代理不受影响）
 [[kv_namespaces]]
 binding = "SYNC_KV"
-id = "请替换为你的KV命名空间ID"
+id = "e2055f5e97db45aaa72b14afaba890ae"
 
 [vars]
 # 上游 OpenAI 兼容接口（不含 /chat/completions）
-UPSTREAM_BASE = "https://api.apilio.ai/v1"
+UPSTREAM_BASE = "https://api.hao.ai/v1"
 # 固定使用的模型（前端填什么都以这里为准）
 UPSTREAM_MODEL = "claude-sonnet-5"
 # 允许的网页来源；上线后建议收紧为 "https://joserin1991.github.io"
