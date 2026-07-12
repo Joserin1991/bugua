@@ -1101,18 +1101,54 @@ body {
 .card-msg.card-reveal > *:nth-child(7) { animation-delay: 4.1s; }
 .card-msg.card-reveal > *:nth-child(n+8) { animation-delay: 4.5s; }
 
-/* AI 朱批：印在卡片下方 */
+/* AI 朱批：作为卡片落款，与卡体连成一张 */
+.card-with-note { margin: 8px 0 20px 42px; }
+
+.card-with-note .card-msg {
+  margin: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
+}
+
 .card-ai-note {
-  margin: -6px 2px 0;
-  padding: 8px 12px;
-  font-size: 0.78rem;
-  line-height: 1.8;
+  background: var(--card);
+  border: 1px solid var(--card-line);
+  border-top: 1px dashed var(--card-line);
+  border-radius: 0 0 12px 12px;
+  box-shadow: 1px 2px 0 rgba(30, 28, 24, 0.08);
+  padding: 10px 18px 12px;
+  font-size: 0.82rem;
+  line-height: 1.9;
   color: var(--seal);
   font-family: "Ma Shan Zheng", "ZCOOL XiaoWei", serif;
-  border-left: 2px solid var(--seal);
-  opacity: 0.92;
-  animation-delay: 1.2s !important;
 }
+
+.card-ai-note.solo {
+  margin: 8px 0 20px 42px;
+  border-radius: 12px;
+  border-top: 1px solid var(--card-line);
+}
+
+/* 布盘动效：话音落定后，双环转动如拨盘 */
+.casting-fx {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0 14px 42px;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  letter-spacing: 0.28em;
+}
+
+.casting-ring {
+  width: 36px;
+  height: 36px;
+  color: var(--ink);
+  animation: castspin 1.4s cubic-bezier(0.45, 0.1, 0.55, 0.9) infinite;
+}
+
+@keyframes castspin { to { transform: rotate(360deg); } }
 
 /* ---------- AI 配置 ---------- */
 .ai-config { margin-bottom: 14px; }

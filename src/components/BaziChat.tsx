@@ -86,13 +86,13 @@ function parseAiReply(raw: string): { body: string; card: Topic | null; note: st
   return { body, card, note, suggests, memo }
 }
 
-// 卡下朱批
+// 朱批并入卡体：卡片与批语连成一体，批语是卡的落款
 function withNote(card: ReactNode, note?: string): ReactNode {
   if (!card || !note) return card
   return (
-    <div>
+    <div className="card-with-note">
       {card}
-      <div className="card-ai-note card-reveal">批：{note}</div>
+      <div className="card-ai-note">批：{note}</div>
     </div>
   )
 }
@@ -132,10 +132,12 @@ export function BaziChat() {
     scroll()
   }
   const master = (segs: ReactNode[]) => { setBusy(true); push({ kind: 'master', segs }) }
-  // 卡随话同现：大师开口的同时卡片入场，卡内元素按次序研墨般显形
+  // 时序：大师话音（打字机）落定 → 「布盘」转圈动效 → 卡片研墨显形
+  const pendingCardsRef = useRef<ReactNode[]>([])
+  const [cardCasting, setCardCasting] = useState(false)
   const masterThenCard = (segs: ReactNode[], ...cards: (ReactNode | null)[]) => {
+    pendingCardsRef.current.push(...cards.filter(Boolean))
     master(segs)
-    cards.filter(Boolean).forEach((cd) => node(cd))
   }
   const user = (text: string) => push({ kind: 'user', text })
   const node = (n: ReactNode) => push({ kind: 'node', node: n })
@@ -412,7 +414,7 @@ export function BaziChat() {
       setVisited((v) => [...v, parsed.card!])
     } else if (!topicCard && parsed.note) {
       // 无新卡可挂时（如开场解读四柱卡已在屏上），朱批单独落款
-      cards.push(<div className="card-ai-note card-reveal" style={{ marginLeft: 42 }}>批：{parsed.note}</div>)
+      cards.push(<div className="card-ai-note solo card-reveal">批：{parsed.note}</div>)
     }
     masterThenCard([parsed.body], ...cards)
     if (parsed.suggests.length) setAiSuggests(parsed.suggests)
@@ -449,7 +451,7 @@ export function BaziChat() {
     const fullText = ['财运走势', '感情运势', '健康提点', '命理总断', '推演解说'].includes(topic)
     const instruction = fullText
       ? `【系统指令】命主想听「${topic}」。据盘面证据作完整解读（200~300字，可分两小段）：先专业断语后白话解释，引用具体柱位与分数，务必扣着他此前说过的处境，结尾一句叮嘱。`
-      : `【系统指令】命主刚点开「${topic}」，界面稍后会展示对应盘面卡。卡片数据：${topicDigest(topic)}。请为命主解读这张卡（150~250字）：把卡上的关键处点到名字（哪一年、哪一步运、哪个五行），先专业断语后白话解释，扣着他此前聊过的处境，末尾一句指引。不要整段复述数据，挑要紧的讲。`
+      : `【系统指令】命主刚点开「${topic}」，界面稍后会展示对应盘面卡。卡片数据：${topicDigest(topic)}。请为命主解读这张卡（150~250字）：把卡上的关键处点到名字（哪一年、哪一步运、哪个五行），先专业断语后白话解释，扣着他此前聊过的处境，末尾一句指引。不要整段复述数据，挑要紧的讲。并按规则写一行「卡注」。`
     setAiThinking(true)
     Promise.all([
       askMaster(aiCfg!, aiSystemRef.current, aiHistoryRef.current.slice(-8), instruction),
@@ -483,7 +485,7 @@ export function BaziChat() {
       if (chartTopic) {
         setVisited((v) => [...v, chartTopic])
         card = buildTopicView(chartTopic, true).card
-        q = `${text}\n【系统指令】界面稍后会展示「${chartTopic}」盘面卡，卡片数据：${topicDigest(chartTopic)}。请结合卡上数据点名解读（150~250字），先答命主所问，扣着他此前的处境。`
+        q = `${text}\n【系统指令】界面稍后会展示「${chartTopic}」盘面卡，卡片数据：${topicDigest(chartTopic)}。请结合卡上数据点名解读（150~250字），先答命主所问，扣着他此前的处境。并按规则写一行「卡注」。`
       }
       setAiThinking(true)
       Promise.all([
@@ -521,7 +523,21 @@ export function BaziChat() {
       <div className="chat-scroll">
         {items.map((it) => {
           if (it.kind === 'master') {
-            return <MasterMsg key={it.id} segments={it.segs} onDone={() => { setBusy(false); scroll() }} />
+            return (
+              <MasterMsg key={it.id} segments={it.segs} onDone={() => {
+                setBusy(false)
+                const pcs = pendingCardsRef.current.splice(0)
+                if (pcs.length) {
+                  setCardCasting(true)
+                  setTimeout(() => {
+                    setCardCasting(false)
+                    pcs.forEach((pc) => node(pc))
+                    scroll()
+                  }, 1500)
+                }
+                scroll()
+              }} />
+            )
           }
           if (it.kind === 'user') return <UserMsg key={it.id}>{it.text}</UserMsg>
           return <div key={it.id}>{it.node}</div>
@@ -567,6 +583,15 @@ export function BaziChat() {
         {aiThinking && (
           <div className="msg-row fade-in">
             <div className="msg-bubble typing" style={{ marginLeft: 44 }}>老朽正在掐指推算<span className="caret">▌</span></div>
+          </div>
+        )}
+        {cardCasting && (
+          <div className="casting-fx fade-in">
+            <svg viewBox="0 0 60 60" className="casting-ring">
+              <circle cx="30" cy="30" r="24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeDasharray="108 44" opacity="0.85" />
+              <circle cx="30" cy="30" r="16" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3 5" opacity="0.5" />
+            </svg>
+            <span>布盘之中…</span>
           </div>
         )}
         {stage === 'computing' && pct > 0 && <ProgressEnso label="排盘中" pct={pct} />}
