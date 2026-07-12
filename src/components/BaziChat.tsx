@@ -10,6 +10,8 @@ import { CITIES } from '../lib/cities'
 import { traceNarrative } from '../lib/trace'
 import { loadAiConfig, buildMasterSystem, askMasterRetry, explainAiError, type ChatTurn } from '../lib/ai'
 import { profileId, touchProfile, appendHistory, addMemory, listProfiles } from '../lib/profiles'
+import { liuYueOf, liuRiOf, type LiuYue } from '../lib/liuyue'
+import { ReportView } from './ReportView'
 import { sanpan } from '../lib/sanpan'
 import { SanpanCard } from './SanpanCard'
 import { PillarCards, WuxingPctBars, Radar, wuxingRadarData, abilityRadarData, TenGodOrbit, TenGodBars, DayunLineChart, dayunScore } from './InfoGraphics'
@@ -187,6 +189,7 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
   const aiSystemRef = useRef<string>('')
   const [aiThinking, setAiThinking] = useState(false)
   const [aiSuggests, setAiSuggests] = useState<string[]>([])
+  const [showReport, setShowReport] = useState(false)
 
   const reading = useMemo(() => (chart ? interpretBazi(chart) : null), [chart])
   chartRef.current = chart
@@ -681,7 +684,7 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
   }
 
   const suggestions: string[] = stage === 'ready'
-    ? (aiSuggests.length ? aiSuggests : TOPIC_KEYS.filter((t) => !visited.includes(t)).slice(0, 4))
+    ? [...(aiSuggests.length ? aiSuggests : TOPIC_KEYS.filter((t) => !visited.includes(t)).slice(0, 4)), '命盘报告']
     : []
 
   return (
@@ -739,11 +742,22 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
         )}
         {stage === 'computing' && pct > 0 && <ProgressEnso label="排盘中" pct={pct} />}
         {!busy && stage === 'ready' && suggestions.length > 0 && (
-          <Chips items={suggestions} onPick={(v) => { if (aiSuggests.includes(v)) onAsk(v); else runTopic(v as Topic) }} />
+          <Chips items={suggestions} onPick={(v) => {
+            if (v === '命盘报告') { setShowReport(true); return }
+            if (aiSuggests.includes(v)) onAsk(v)
+            else runTopic(v as Topic)
+          }} />
         )}
         <div ref={bottomRef} />
       </div>
       <InputBar onSend={onAsk} />
+      {showReport && chart && (
+        <ReportView
+          chart={chart}
+          memories={(() => { try { return (JSON.parse(localStorage.getItem('xjg-profiles') ?? '{}')[profileIdRef.current]?.memories ?? []) as string[] } catch { return [] } })()}
+          onClose={() => setShowReport(false)}
+        />
+      )}
     </>
   )
 }
@@ -885,8 +899,61 @@ function LiunianCard({ chart, prose = true, extraTop = null, extraBottom = null,
           ))}
         </tbody>
       </table>
+      <LiuYueSection year={year} yearGan={ln.ganZhi[0]} chart={chart} aiAsk={aiAsk} />
       {bottomNode}
     </CardMsg>
+  )
+}
+
+// ---------- 流月流日（点月即解，逐日干支） ----------
+function LiuYueSection({ year, yearGan, chart, aiAsk }: { year: number; yearGan: string; chart: BaziChart; aiAsk?: (q: string) => Promise<string> }) {
+  const months = useMemo(() => liuYueOf(year, yearGan, chart.dayGan), [year, yearGan, chart])
+  const today = new Date()
+  const curIdx = months.findIndex((m) => today >= m.start && today < m.end)
+  const [idx, setIdx] = useState<number | null>(curIdx >= 0 ? curIdx : null)
+  const [aiCache, setAiCache] = useState<Record<string, string>>({})
+  const [loading, setLoading] = useState<string | null>(null)
+  const m: LiuYue | null = idx != null ? months[idx] : null
+  const days = useMemo(() => (m ? liuRiOf(m, chart.dayGan) : []), [m, chart])
+
+  const pick = (i: number) => {
+    setIdx(i)
+    const key = `${year}-${i}`
+    if (!aiAsk || aiCache[key]) return
+    const mm = months[i]
+    setLoading(key)
+    aiAsk(`【系统指令】命主在流月表上点开 ${year} 年${mm.label}（${mm.ganZhi}月，流月${mm.god}）。请解读该月要点（60~100字，扣着他的喜忌与处境），直接给正文，不写建议/卡片/卡注。`)
+      .then((raw) => setAiCache((c) => ({ ...c, [key]: parseAiReply(raw).body })))
+      .catch(() => setAiCache((c) => ({ ...c, [key]: '未能接通 AI，此月解读暂缺。' })))
+      .finally(() => setLoading((v) => (v === key ? null : v)))
+  }
+
+  return (
+    <div style={{ marginTop: 12 }}>
+      <h3 className="reading-h">流月 · {year}年</h3>
+      <div className="ly-grid">
+        {months.map((mm, i) => (
+          <div key={mm.ganZhi + i} className={`ly-cell ${i === idx ? 'on' : ''}`} onClick={() => pick(i)}>
+            <span className="ly-gz">{mm.ganZhi}</span>
+            {mm.god}
+          </div>
+        ))}
+      </div>
+      {m && (
+        <>
+          <p className="lr-note">{m.label}（{m.start.getMonth() + 1}/{m.start.getDate()} 起）· 流月{m.god}{aiAsk ? '' : ` · ${LN_BRIEF[m.god] ?? ''}`}</p>
+          {aiAsk && (loading === `${year}-${idx}` ? <div className="card-loading">老朽正在推算此月…</div>
+            : aiCache[`${year}-${idx}`] ? <p className="reading-p" style={{ fontSize: '0.8rem' }}>{aiCache[`${year}-${idx}`]}</p> : null)}
+          <div className="lr-grid">
+            {days.map((d) => (
+              <div key={d.date.toISOString()} className={`lr-cell ${d.date.toDateString() === today.toDateString() ? 'today' : ''}`}>
+                {d.day}日<b>{d.ganZhi}</b>{d.god.slice(0, 2)}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 
