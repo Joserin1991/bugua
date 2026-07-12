@@ -9,6 +9,7 @@ import { MasterMsg, UserMsg, CardMsg, Chips, ProgressEnso, InputBar, InkArt } fr
 import { CITIES } from '../lib/cities'
 import { traceNarrative } from '../lib/trace'
 import { loadAiConfig, buildMasterSystem, askMaster, type ChatTurn } from '../lib/ai'
+import { profileId, touchProfile, appendHistory, addMemory } from '../lib/profiles'
 import { sanpan } from '../lib/sanpan'
 import { SanpanCard } from './SanpanCard'
 import { PillarCards, WuxingPctBars, Radar, wuxingRadarData, abilityRadarData, TenGodOrbit, DayunLineChart } from './InfoGraphics'
@@ -60,10 +61,12 @@ function detectTopic(text: string): Topic | null {
   return null
 }
 
-// 解析 AI 回复协议：正文 + 可选「卡片：XXX」指令 + 可选「建议：问A｜问B｜问C」动态追问
-function parseAiReply(raw: string): { body: string; card: Topic | null; suggests: string[] } {
+// 解析 AI 回复协议：正文 + 「卡片：XXX」 + 「卡注：朱批」 + 「建议：问A｜问B｜问C」 + 「记档：…」
+function parseAiReply(raw: string): { body: string; card: Topic | null; note: string; suggests: string[]; memo: string } {
   let body = raw.trim()
   let card: Topic | null = null
+  let note = ''
+  let memo = ''
   const suggests: string[] = []
   const cardM = body.match(/^卡片[：:]\s*(.+)$/m)
   if (cardM) {
@@ -71,12 +74,27 @@ function parseAiReply(raw: string): { body: string; card: Topic | null; suggests
     if ((TOPIC_KEYS as readonly string[]).includes(t)) card = t as Topic
     body = body.replace(cardM[0], '').trim()
   }
+  const noteM = body.match(/^卡注[：:]\s*(.+)$/m)
+  if (noteM) { note = noteM[1].trim(); body = body.replace(noteM[0], '').trim() }
+  const memoM = body.match(/^记档[：:]\s*(.+)$/m)
+  if (memoM) { memo = memoM[1].trim(); body = body.replace(memoM[0], '').trim() }
   const sugM = body.match(/^建议[：:]\s*(.+)$/m)
   if (sugM) {
     suggests.push(...sugM[1].split(/[|｜、；;]/).map((x) => x.trim()).filter(Boolean).slice(0, 4))
     body = body.replace(sugM[0], '').trim()
   }
-  return { body, card, suggests }
+  return { body, card, note, suggests, memo }
+}
+
+// 卡下朱批
+function withNote(card: ReactNode, note?: string): ReactNode {
+  if (!card || !note) return card
+  return (
+    <div>
+      {card}
+      <div className="card-ai-note card-reveal">批：{note}</div>
+    </div>
+  )
 }
 
 let uid = 1
@@ -98,6 +116,7 @@ export function BaziChat() {
   const ziweiRef = useRef<ZwChart | null>(null)
   const birthRef = useRef<Date | null>(null)
   const aiHistoryRef = useRef<ChatTurn[]>([])
+  const profileIdRef = useRef<string>('')
   const aiSystemRef = useRef<string>('')
   const [aiThinking, setAiThinking] = useState(false)
   const [aiSuggests, setAiSuggests] = useState<string[]>([])
@@ -113,11 +132,10 @@ export function BaziChat() {
     scroll()
   }
   const master = (segs: ReactNode[]) => { setBusy(true); push({ kind: 'master', segs }) }
-  // 卡片压在话后：等大师这段话打完字，再让卡片晕染浮现
-  const pendingCardsRef = useRef<ReactNode[]>([])
+  // 卡随话同现：大师开口的同时卡片入场，卡内元素按次序研墨般显形
   const masterThenCard = (segs: ReactNode[], ...cards: (ReactNode | null)[]) => {
-    pendingCardsRef.current.push(...cards.filter(Boolean))
     master(segs)
+    cards.filter(Boolean).forEach((cd) => node(cd))
   }
   const user = (text: string) => push({ kind: 'user', text })
   const node = (n: ReactNode) => push({ kind: 'node', node: n })
@@ -149,7 +167,13 @@ export function BaziChat() {
     try { zw = computeZiwei(y, m, d, hour, gender) } catch { /* 忽略 */ }
     ziweiRef.current = zw
     birthRef.current = new Date(y, m - 1, d, clockH, clockM)
-    aiSystemRef.current = buildMasterSystem(c, zw)
+    // 命主档案：同一生辰再来，接上旧话
+    const pid = profileId(gender, date, hour, city?.name ?? null)
+    profileIdRef.current = pid
+    const prof = touchProfile(pid, `${gender === '男' ? '乾造' : '坤造'} ${c.solarText}`)
+    const returning = prof.visits > 1 && (prof.history.length > 0 || prof.memories.length > 0)
+    if (returning) aiHistoryRef.current = prof.history.slice(-10)
+    aiSystemRef.current = buildMasterSystem(c, zw, prof.memories, returning)
     // 进度动画
     let p = 0
     const timer = setInterval(() => {
@@ -180,7 +204,9 @@ export function BaziChat() {
         <ChartMeta chart={c} />
       </CardMsg>,
     )
+    const isReturning = aiHistoryRef.current.length > 0
     const fallbackOpening: ReactNode[] = [
+      isReturning ? '又见面了——上回的盘老朽还留着底。' : '',
       `你的命盘排好了。日元${c.dayGan}${c.dayGanWx}，生于${c.pillars[1].zhi}月，日主${c.strength.level}，喜`,
       <Term key="t" k="喜用神">{`${c.favorable.join('、')}`}</Term>,
       `。${r.geju.split('。')[2] ?? ''}。`,
@@ -190,12 +216,13 @@ export function BaziChat() {
     if (cfg && aiSystemRef.current) {
       setAiThinking(true)
       Promise.all([
-        askMaster(cfg, aiSystemRef.current, [], '【系统指令】命主的命盘刚排好，四柱盘卡已展示在界面上。请作开场解读（180~260字）：报出四柱，点出日主旺衰与格局的关键（引用具体柱位，如「月干戊土食神透出」），用一两句白话讲他的性子，最后请命主说说近来的境况或最挂心的事。'),
+        askMaster(cfg, aiSystemRef.current, aiHistoryRef.current.slice(-6), `【系统指令】命主的命盘刚排好，四柱盘卡已展示在界面上。${aiHistoryRef.current.length ? '这位是回头客（档案见系统提示），开场先自然接上旧话，再点盘。' : ''}请作开场解读（180~260字）：报出四柱，点出日主旺衰与格局的关键（引用具体柱位，如「月干戊土食神透出」），用一两句白话讲他的性子，最后请命主说说近来的境况或最挂心的事。并按规则写一行「卡注」。`),
         new Promise((res) => setTimeout(res, 900)),
       ])
         .then(([reply]) => {
           const body = applyAiReply(reply as string, null, null)
           aiHistoryRef.current.push({ role: 'assistant', content: body })
+          if (profileIdRef.current) appendHistory(profileIdRef.current, [{ role: 'assistant', content: body }])
         })
         .catch(() => master(fallbackOpening))
         .finally(() => { setAiThinking(false); scroll() })
@@ -375,17 +402,21 @@ export function BaziChat() {
     }
   }
 
-  // AI 回复落地：解析正文/卡片指令/动态追问建议；卡片压在话后浮现
+  // AI 回复落地：正文与卡同现，朱批印卡下，记档入库，建议换胶囊
   const applyAiReply = (raw: string, topicCard: ReactNode | null, alreadyShown: Topic | null) => {
     const parsed = parseAiReply(raw)
-    const cards: (ReactNode | null)[] = [topicCard]
+    const cards: (ReactNode | null)[] = [withNote(topicCard, parsed.note)]
     if (parsed.card && parsed.card !== alreadyShown) {
       const view = buildTopicView(parsed.card, true)
-      cards.push(view.card)
+      cards.push(topicCard ? view.card : withNote(view.card, parsed.note))
       setVisited((v) => [...v, parsed.card!])
+    } else if (!topicCard && parsed.note) {
+      // 无新卡可挂时（如开场解读四柱卡已在屏上），朱批单独落款
+      cards.push(<div className="card-ai-note card-reveal" style={{ marginLeft: 42 }}>批：{parsed.note}</div>)
     }
     masterThenCard([parsed.body], ...cards)
     if (parsed.suggests.length) setAiSuggests(parsed.suggests)
+    if (parsed.memo && profileIdRef.current) addMemory(profileIdRef.current, parsed.memo)
     return parsed.body
   }
 
@@ -426,7 +457,9 @@ export function BaziChat() {
     ])
       .then(([reply]) => {
         const body = applyAiReply(reply as string, card, topic)
-        aiHistoryRef.current.push({ role: 'user', content: `（点开了「${topic}」）` }, { role: 'assistant', content: body })
+        const turns: ChatTurn[] = [{ role: 'user', content: `（点开了「${topic}」）` }, { role: 'assistant', content: body }]
+        aiHistoryRef.current.push(...turns)
+        if (profileIdRef.current) appendHistory(profileIdRef.current, turns)
       })
       .catch(() => masterThenCard(intro, card))
       .finally(() => { setAiThinking(false); scroll() })
@@ -459,7 +492,9 @@ export function BaziChat() {
       ])
         .then(([reply]) => {
           const body = applyAiReply(reply as string, card, chartTopic)
-          aiHistoryRef.current.push({ role: 'user', content: text }, { role: 'assistant', content: body })
+          const turns: ChatTurn[] = [{ role: 'user', content: text }, { role: 'assistant', content: body }]
+          aiHistoryRef.current.push(...turns)
+          if (profileIdRef.current) appendHistory(profileIdRef.current, turns)
         })
         .catch(() => {
           const topic = detectTopic(text)
@@ -486,14 +521,7 @@ export function BaziChat() {
       <div className="chat-scroll">
         {items.map((it) => {
           if (it.kind === 'master') {
-            return (
-              <MasterMsg key={it.id} segments={it.segs} onDone={() => {
-                setBusy(false)
-                const pcs = pendingCardsRef.current.splice(0)
-                pcs.forEach((pc) => node(pc))
-                scroll()
-              }} />
-            )
+            return <MasterMsg key={it.id} segments={it.segs} onDone={() => { setBusy(false); scroll() }} />
           }
           if (it.kind === 'user') return <UserMsg key={it.id}>{it.text}</UserMsg>
           return <div key={it.id}>{it.node}</div>
