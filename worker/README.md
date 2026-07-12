@@ -40,12 +40,9 @@ npx wrangler deploy
 | API Key | 你设的 **ACCESS_CODE**（不再是上游密钥！） |
 | 模型 | 随意填（以 Worker 里 UPSTREAM_MODEL 为准） |
 
-「我的」→ 云同步：
-
-| 字段 | 填什么 |
-| --- | --- |
-| 同步服务地址 | `https://xuanjige-api.你的子域.workers.dev` |
-| 同步口令 | 自定 ≥6 位，换设备时输入同一口令恢复 |
+「我的」→ 云同步：只需填**同步口令**（自定 ≥6 位，换设备时输入同一口令恢复）。
+服务地址已内置在前端 `src/lib/sync.ts` 的 `SYNC_URL`，自行部署后改这一处即可。
+备份内容：命主档案、问卦记录、AI 配置。
 
 ## 改配置
 

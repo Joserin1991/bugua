@@ -1,16 +1,18 @@
-// 云同步：把命主档案与问卦记录备份到自建 Worker（worker/README.md）
-// 只同步档案与记录；AI 配置与密钥绝不上云
-export interface SyncConfig { url: string; code: string }
+// 云同步：把命主档案、问卦记录与 AI 配置备份到自建 Worker（worker/README.md）
+// 服务地址内置，不在界面展示；用户只需记一个同步口令
+export const SYNC_URL = 'https://xuanjige-api.xuanjige.workers.dev'
+
+export interface SyncConfig { code: string; url?: string } // url 仅作隐藏覆盖位（测试/自部署）
 
 const LS_KEY = 'xjg-sync-config'
-const SYNC_KEYS = ['xjg-profiles', 'xuanjige_records'] as const
+const SYNC_KEYS = ['xjg-profiles', 'xuanjige_records', 'xjg-ai-config'] as const
 
 export function loadSyncConfig(): SyncConfig | null {
   try {
     const raw = localStorage.getItem(LS_KEY)
     if (!raw) return null
     const c = JSON.parse(raw) as SyncConfig
-    return c.url && c.code ? c : null
+    return c.code ? c : null
   } catch { return null }
 }
 
@@ -22,7 +24,7 @@ export function saveSyncConfig(c: SyncConfig | null) {
 interface SyncPayload { v: 1; updatedAt: string; data: Record<string, string> }
 
 async function call(cfg: SyncConfig, method: 'GET' | 'PUT', body?: string): Promise<Response> {
-  const base = cfg.url.replace(/\/+$/, '')
+  const base = (cfg.url || SYNC_URL).replace(/\/+$/, '')
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), 20000)
   try {
@@ -47,12 +49,17 @@ export async function syncUpload(cfg: SyncConfig): Promise<string> {
     const v = localStorage.getItem(k)
     if (v) data[k] = v
   }
-  if (!Object.keys(data).length) throw new Error('本机还没有可备份的档案或记录')
+  if (!Object.keys(data).length) throw new Error('本机还没有可备份的档案、记录或配置')
   const payload: SyncPayload = { v: 1, updatedAt: new Date().toISOString(), data }
   const body = JSON.stringify(payload)
   const res = await call(cfg, 'PUT', body)
   if (!res.ok) throw new Error(await readError(res))
-  return `已备份到云端（${(body.length / 1024).toFixed(1)}KB）`
+  const parts = [
+    data['xjg-profiles'] ? '档案' : '',
+    data['xuanjige_records'] ? '记录' : '',
+    data['xjg-ai-config'] ? 'AI配置' : '',
+  ].filter(Boolean).join('、')
+  return `已备份到云端：${parts}（${(body.length / 1024).toFixed(1)}KB）`
 }
 
 export async function syncRestore(cfg: SyncConfig): Promise<string> {
