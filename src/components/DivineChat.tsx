@@ -5,6 +5,24 @@ import { interpretOracle, detectCategory, type OracleCategory } from '../lib/int
 import type { HexagramInfo } from '../data/hexagrams'
 import { saveRecord } from '../lib/records'
 import { MasterMsg, UserMsg, CardMsg, Chips, EnsoRing, InputBar } from './ChatUI'
+import { loadAiConfig, buildGuaSystem, parseSuggestReply, askMasterRetry, explainAiError, type ChatTurn, type GuaInfo } from '../lib/ai'
+import { YAO_NAMES as YAO_NAMES_AI } from '../lib/hexagram'
+
+// 卦象 → AI 上下文
+export function guaInfoOf(cast: CastResult, method: '六爻摇卦' | '梅花易数'): GuaInfo {
+  return {
+    originalName: cast.original.fullName,
+    originalCi: cast.original.guaci,
+    originalBrief: cast.original.brief,
+    originalOverall: cast.original.overall,
+    changedName: cast.changed?.fullName,
+    changedOverall: cast.changed?.overall,
+    mutualName: cast.mutual.fullName,
+    mutualBrief: cast.mutual.brief,
+    movingYao: cast.changingIndexes.map((i) => YAO_NAMES_AI[i]).join('、') || '无',
+    method,
+  }
+}
 
 type NewItem =
   | { kind: 'master'; segs: ReactNode[] }
@@ -27,9 +45,34 @@ export function DivineChat() {
   const [question, setQuestion] = useState('')
   const [castDone, setCastDone] = useState<CastResult | null>(null)
   const [tossOpen, setTossOpen] = useState(false)
+  const [aiThinking, setAiThinking] = useState(false)
+  const [aiSuggests, setAiSuggests] = useState<string[]>([])
+  const aiHistoryRef = useRef<ChatTurn[]>([])
+  const aiSystemRef = useRef<string>('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const castRef = useRef<CastResult | null>(null)
   castRef.current = castDone
+
+  // 卦事 AI 问答（带上下文；失败明示）
+  const aiAnswer = (q: string, echo: boolean) => {
+    const cfg = loadAiConfig()
+    if (!cfg || !aiSystemRef.current) return false
+    if (echo) user(q)
+    setAiThinking(true)
+    Promise.all([
+      askMasterRetry(cfg, aiSystemRef.current, aiHistoryRef.current.slice(-8), q),
+      new Promise((res) => setTimeout(res, 900)),
+    ])
+      .then(([raw]) => {
+        const { body, suggests } = parseSuggestReply(raw as string)
+        master([body])
+        if (suggests.length) setAiSuggests(suggests)
+        aiHistoryRef.current.push({ role: 'user', content: q }, { role: 'assistant', content: body })
+      })
+      .catch((e) => master([`未能接通 AI（${explainAiError(e)}）——且以卦书体例为你断。`]))
+      .finally(() => { setAiThinking(false); scroll() })
+    return true
+  }
 
   const scroll = () => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100)
   const push = (item: NewItem) => { setItems((a) => [...a, { ...item, id: uid++ }]); scroll() }
@@ -57,16 +100,21 @@ export function DivineChat() {
     })
     master([`卦象已成，来看本卦——${result.original.fullName}。${result.original.brief}。`])
     node(<GuaCard result={result} question={q} category={cat} />)
-    master(['卦已解毕。若想就此卦再问一事，点下方追问；或重新摇一卦。'])
+    aiSystemRef.current = buildGuaSystem(guaInfoOf(result, '六爻摇卦'), q, cat)
+    aiHistoryRef.current = []
+    const usedAi = aiAnswer(`【系统指令】卦刚起好，卦象卡已展示。请就命主所问「${q}」解此卦（150~200字）：本卦定基调、动爻与变卦看走向，给出明确倾向与行动叮嘱。`, false)
+    if (!usedAi) master(['卦已解毕。若想就此卦再问一事，点下方追问；或重新摇一卦。'])
   }
 
   const followUps = castDone
-    ? ['事业上如何？', '感情上如何？', '财运上如何？', '重新摇卦']
+    ? [...(aiSuggests.length ? aiSuggests : ['事业上如何？', '感情上如何？', '财运上如何？']), '重新摇卦']
     : []
 
   const onFollow = (v: string) => {
     if (v === '重新摇卦') {
       user('重新摇一卦。')
+      setAiSuggests([])
+      aiSystemRef.current = ''
       setCastDone(null)
       setTossOpen(false)
       master(['好，收心，再默念一次所问之事。想好了便摇。'])
@@ -74,6 +122,7 @@ export function DivineChat() {
       setTossOpen(true)
       return
     }
+    if (aiAnswer(v, true)) return
     user(v)
     const cat: OracleCategory = v.includes('事业') ? '事业官运' : v.includes('感情') ? '感情姻缘' : '财运求财'
     const c = castRef.current
@@ -90,6 +139,7 @@ export function DivineChat() {
       master([`「${text}」——好，老朽记下了。`, '静心，点下方开始摇卦。'])
       // 展示开始摇卦 chip 由 busy=false 后 chips 渲染
     } else if (castDone) {
+      if (aiAnswer(text, false)) return
       const cat = detectCategory(text)
       const r = interpretOracle(castRef.current!, text, cat)
       const sec = r.sections.find((s) => s.title === '就事论断')
@@ -111,7 +161,12 @@ export function DivineChat() {
         {!busy && !tossOpen && !castDone && (
           <Chips items={['开始摇卦']} onPick={() => { user('开始摇卦。'); startToss() }} />
         )}
-        {!busy && castDone && <Chips items={followUps} onPick={onFollow} />}
+        {aiThinking && (
+          <div className="msg-row fade-in">
+            <div className="msg-bubble typing" style={{ marginLeft: 44 }}>老朽正在参卦<span className="caret">▌</span></div>
+          </div>
+        )}
+        {!busy && !aiThinking && castDone && <Chips items={followUps} onPick={onFollow} />}
         <div ref={bottomRef} />
       </div>
       <InputBar placeholder="有什么想问的吗？" onSend={onInput} />

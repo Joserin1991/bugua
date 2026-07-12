@@ -1588,6 +1588,26 @@ body {
 .report-sec p { font-size: 0.8rem; line-height: 2; color: var(--ink-soft); }
 
 .report-foot { text-align: center; font-size: 0.64rem; color: var(--ink-faint); margin-top: 18px; letter-spacing: 0.1em; line-height: 1.9; }
+.report-qr {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.report-qr img { border: 1px solid rgba(30, 28, 24, 0.18); border-radius: 6px; }
+.report-qr span { text-align: left; font-size: 0.62rem; color: var(--ink-soft); line-height: 1.7; letter-spacing: 0.06em; }
+
+/* 关于与免责 */
+.about-card { margin-top: 12px; }
+.about-list {
+  margin: 6px 0 2px;
+  padding-left: 16px;
+  display: grid;
+  gap: 8px;
+}
+.about-list li { font-size: 0.72rem; line-height: 1.85; color: var(--ink-soft); }
+.about-list li b { color: var(--ink); }
 
 .report-actions {
   position: sticky;

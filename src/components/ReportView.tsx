@@ -1,6 +1,7 @@
-// 命盘报告：可存长图（html2canvas）或打印成 PDF 的分享页
-import { useRef, useState } from 'react'
+// 命盘报告：可存长图（html2canvas）或打印成 PDF 的分享页，脚部带回访二维码
+import { useEffect, useRef, useState } from 'react'
 import html2canvas from 'html2canvas'
+import QRCode from 'qrcode'
 import type { BaziChart } from '../lib/bazi'
 import { liuNianOf } from '../lib/bazi'
 import { interpretBazi } from '../lib/interpret'
@@ -10,9 +11,17 @@ export function ReportView({ chart, memories, onClose }: { chart: BaziChart; mem
   const ref = useRef<HTMLDivElement>(null)
   const [img, setImg] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [qr, setQr] = useState<string | null>(null)
   const r = interpretBazi(chart)
   const year = new Date().getFullYear()
   const ln = liuNianOf(year, chart.dayGan)
+
+  useEffect(() => {
+    QRCode.toDataURL('https://joserin1991.github.io/bugua/', {
+      width: 132, margin: 1,
+      color: { dark: '#1e1c18', light: '#f6f2e6' },
+    }).then(setQr).catch(() => setQr(null))
+  }, [])
 
   const genImage = async () => {
     if (!ref.current) return
@@ -84,6 +93,12 @@ export function ReportView({ chart, memories, onClose }: { chart: BaziChart; mem
                 <p>{r.advice}</p>
               </div>
               <div className="report-foot">
+                {qr && (
+                  <div className="report-qr">
+                    <img src={qr} width={66} height={66} alt="玄机阁二维码" />
+                    <span>扫码进「玄机阁」<br />排你自己的盘</span>
+                  </div>
+                )}
                 玄机阁 · 卜卦问道<br />
                 内容基于传统术数体例生成 · 仅供参考 · 命自我立<br />
                 {new Date().toLocaleDateString('zh-CN')}

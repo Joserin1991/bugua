@@ -1,10 +1,11 @@
-// 答疑解惑 · 对话流：输入问题 → 梅花易数应时起卦 → 卦象卡 + 分节断语 → 追问
+// 答疑解惑 · 对话流：输入问题 → 梅花易数应时起卦 → 卦象卡 + AI 解卦（无 AI 则卦书断语） → 就卦追问
 import { useRef, useState, type ReactNode } from 'react'
 import { castByQuestion, type CastResult } from '../lib/hexagram'
 import { interpretOracle, detectCategory } from '../lib/interpret'
 import { saveRecord } from '../lib/records'
 import { MasterMsg, UserMsg, Chips, ProgressEnso, InputBar } from './ChatUI'
-import { GuaCard } from './DivineChat'
+import { GuaCard, guaInfoOf } from './DivineChat'
+import { loadAiConfig, buildGuaSystem, parseSuggestReply, askMasterRetry, explainAiError, type ChatTurn } from '../lib/ai'
 
 type NewItem =
   | { kind: 'master'; segs: ReactNode[] }
@@ -25,6 +26,10 @@ export function OracleChat() {
   const [computing, setComputing] = useState(false)
   const [pct, setPct] = useState(0)
   const [lastCast, setLastCast] = useState<{ cast: CastResult; q: string } | null>(null)
+  const [aiThinking, setAiThinking] = useState(false)
+  const [aiSuggests, setAiSuggests] = useState<string[]>([])
+  const aiHistoryRef = useRef<ChatTurn[]>([])
+  const aiSystemRef = useRef<string>('')
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const scroll = () => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100)
@@ -33,10 +38,31 @@ export function OracleChat() {
   const user = (t: string) => push({ kind: 'user', text: t })
   const node = (n: ReactNode) => push({ kind: 'node', node: n })
 
-  const ask = (q: string) => {
-    user(q)
+  // 就当前卦的 AI 问答（带上下文；失败明示）
+  const aiAnswer = (q: string, echo: boolean) => {
+    const cfg = loadAiConfig()
+    if (!cfg || !aiSystemRef.current) return false
+    if (echo) user(q)
+    setAiThinking(true)
+    Promise.all([
+      askMasterRetry(cfg, aiSystemRef.current, aiHistoryRef.current.slice(-8), q),
+      new Promise((res) => setTimeout(res, 900)),
+    ])
+      .then(([raw]) => {
+        const { body, suggests } = parseSuggestReply(raw as string)
+        master([body])
+        if (suggests.length) setAiSuggests(suggests)
+        aiHistoryRef.current.push({ role: 'user', content: q }, { role: 'assistant', content: body })
+      })
+      .catch((e) => master([`未能接通 AI（${explainAiError(e)}）——且以卦书体例为你断。`]))
+      .finally(() => { setAiThinking(false); scroll() })
+    return true
+  }
+
+  const cast = (q: string) => {
     if (computing) return
     setComputing(true)
+    setAiSuggests([])
     master(['凝神起卦 · 观梅问数……'])
     let p = 0
     const timer = setInterval(() => {
@@ -46,23 +72,48 @@ export function OracleChat() {
         clearInterval(timer)
         setComputing(false)
         setPct(0)
-        const cast = castByQuestion(q, new Date())
+        const result = castByQuestion(q, new Date())
         const cat = detectCategory(q)
-        const reading = interpretOracle(cast, q, cat)
-        setLastCast({ cast, q })
+        const reading = interpretOracle(result, q, cat)
+        setLastCast({ cast: result, q })
         saveRecord({
           type: '答疑解惑',
           title: `问：${q.slice(0, 18)}`,
-          summary: `${cast.original.fullName}${cast.changed ? ` 变 ${cast.changed.fullName}` : ''} · ${reading.luckLabel}`,
+          summary: `${result.original.fullName}${result.changed ? ` 变 ${result.changed.fullName}` : ''} · ${reading.luckLabel}`,
         })
-        master([`所问「${q}」（${cat}），得${cast.original.fullName}${cast.changed ? `，变${cast.changed.fullName}` : '，六爻安静'}。`])
-        node(<GuaCard result={cast} question={q} category={cat} />)
-        const trend = reading.sections.find((s) => s.title.startsWith('变卦') || s.title === '静卦所示')
-        const guide = reading.sections.find((s) => s.title === '行动指引')
-        master([`${trend?.text ?? ''}`, `${guide?.text ?? ''}`])
+        master([`所问「${q}」（${cat}），得${result.original.fullName}${result.changed ? `，变${result.changed.fullName}` : '，六爻安静'}。`])
+        node(<GuaCard result={result} question={q} category={cat} />)
+        aiSystemRef.current = buildGuaSystem(guaInfoOf(result, '梅花易数'), q, cat)
+        aiHistoryRef.current = []
+        const usedAi = aiAnswer(`【系统指令】卦刚起好，卦象卡已展示。请就命主所问「${q}」解此卦（150~200字）：本卦定基调、动爻与变卦看走向，给出明确倾向与行动叮嘱。`, false)
+        if (!usedAi) {
+          const trend = reading.sections.find((s) => s.title.startsWith('变卦') || s.title === '静卦所示')
+          const guide = reading.sections.find((s) => s.title === '行动指引')
+          master([`${trend?.text ?? ''}`, `${guide?.text ?? ''}`])
+        }
       }
     }, 90)
   }
+
+  const ask = (q: string) => {
+    user(q)
+    if (computing) return
+    // 已有卦在手：接着这一卦答；无 AI 时按旧例重新起卦
+    if (lastCast && aiAnswer(q, false)) return
+    cast(q)
+  }
+
+  const resetCast = () => {
+    setLastCast(null)
+    setAiSuggests([])
+    aiSystemRef.current = ''
+    aiHistoryRef.current = []
+    master(['好，静心，想好了便说。'])
+  }
+
+  const followUps = lastCast
+    ? [...aiSuggests, '换个问题再问一卦']
+    : []
 
   return (
     <>
@@ -73,14 +124,16 @@ export function OracleChat() {
           return <div key={it.id}>{it.node}</div>
         })}
         {computing && pct > 0 && <ProgressEnso label="起卦中" pct={pct} />}
-        {!busy && !computing && !lastCast && (
+        {aiThinking && (
+          <div className="msg-row fade-in">
+            <div className="msg-bubble typing" style={{ marginLeft: 44 }}>老朽正在参卦<span className="caret">▌</span></div>
+          </div>
+        )}
+        {!busy && !computing && !aiThinking && !lastCast && (
           <Chips ghost items={['今年适合跳槽吗？', '这段感情能长久吗？', '这笔投资可行否？']} onPick={ask} />
         )}
-        {!busy && !computing && lastCast && (
-          <Chips ghost items={['换个问题再问一卦']} onPick={() => {
-            setLastCast(null)
-            master(['好，静心，想好了便说。'])
-          }} />
+        {!busy && !computing && !aiThinking && lastCast && (
+          <Chips ghost items={followUps} onPick={(v) => { if (v === '换个问题再问一卦') resetCast(); else ask(v) }} />
         )}
         <div ref={bottomRef} />
       </div>
