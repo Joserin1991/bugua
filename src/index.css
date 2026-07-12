@@ -1250,6 +1250,11 @@ body {
 .ln-table td { text-align: center; padding: 5px 2px; border-bottom: 1px dashed rgba(33, 29, 20, 0.08); color: var(--ink-soft); cursor: pointer; }
 .ln-table tr.on td { color: var(--seal); background: var(--seal-soft); }
 
+.record-item.clickable { cursor: pointer; }
+.record-item.clickable:active { background: rgba(255, 255, 255, 0.55); }
+.r-right { text-align: right; }
+.r-go { font-size: 0.68rem; color: var(--seal); margin-top: 4px; letter-spacing: 0.08em; }
+
 /* 记录筛选 */
 .rec-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
 

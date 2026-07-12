@@ -50,6 +50,12 @@ export function appendHistory(id: string, turns: ChatTurn[]) {
   saveStore(s)
 }
 
+// 最近档案列表（按更新时间倒序）
+export function listProfiles(limit = 5): PersonProfile[] {
+  const s = loadStore()
+  return Object.values(s).sort((a, b) => b.updatedAt - a.updatedAt).slice(0, limit)
+}
+
 export function addMemory(id: string, memo: string) {
   const m = memo.trim()
   if (!m) return

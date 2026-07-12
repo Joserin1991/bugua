@@ -15,24 +15,25 @@ const SCREEN_TITLE: Record<Screen, string> = {
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('home')
+  const [resumePid, setResumePid] = useState<string | null>(null)
 
   return (
     <GlossaryProvider>
       <div className="phone">
-        {screen === 'home' && <Home go={setScreen} />}
+        {screen === 'home' && <Home go={(sc) => { setResumePid(null); setScreen(sc) }} />}
         {screen !== 'home' && (
           <>
             <ScreenHead
               title={SCREEN_TITLE[screen]}
-              onBack={() => setScreen('home')}
+              onBack={() => { setScreen('home'); setResumePid(null) }}
               right={['bazi', 'divine', 'oracle'].includes(screen)
                 ? <span className={`ai-badge ${loadAiConfig() ? 'on' : ''}`}>{loadAiConfig() ? 'AI·通' : '本地'}</span>
                 : undefined}
             />
-            {screen === 'bazi' && <BaziChat key="bazi" />}
+            {screen === 'bazi' && <BaziChat key={`bazi-${resumePid ?? 'new'}`} resumePid={resumePid} />}
             {screen === 'divine' && <DivineChat key="divine" />}
             {screen === 'oracle' && <OracleChat key="oracle" />}
-            {screen === 'records' && <RecordsScreen />}
+            {screen === 'records' && <RecordsScreen onResume={(pid) => { setResumePid(pid); setScreen('bazi') }} />}
             {screen === 'me' && <MeScreen />}
           </>
         )}
@@ -155,7 +156,7 @@ function HeroFallback() {
 }
 
 // ---------- 记录 ----------
-function RecordsScreen() {
+function RecordsScreen({ onResume }: { onResume: (pid: string) => void }) {
   const [records, setRecords] = useState<RecordItem[]>([])
   const [filter, setFilter] = useState<'全部' | RecordItem['type']>('全部')
   useEffect(() => { setRecords(loadRecords()) }, [])
@@ -171,13 +172,20 @@ function RecordsScreen() {
         <div className="records-empty">尚无记录<br />排一次盘、问一次卦，缘分自会留痕</div>
       )}
       {shown.map((r) => (
-        <div className="record-item" key={r.id}>
+        <div
+          className={`record-item ${r.pid ? 'clickable' : ''}`}
+          key={r.id}
+          onClick={r.pid ? () => onResume(r.pid!) : undefined}
+        >
           <EnsoRing size={52} stroke={3} />
           <div>
             <div className="r-title">{r.type} · {r.title}</div>
             <div className="r-sub">{r.summary}</div>
           </div>
-          <div className="r-date">{r.date.slice(5, 16)}</div>
+          <div className="r-right">
+            <div className="r-date">{r.date.slice(5, 16)}</div>
+            {r.pid && <div className="r-go">续问 ›</div>}
+          </div>
         </div>
       ))}
     </div>
