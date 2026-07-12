@@ -25,7 +25,8 @@ export interface WheelRing {
 
 export interface WheelConfig {
   rotateToZhi?: string   // 使该支转至正上方（红针所指）
-  centerLabel?: string   // 中宫下方文字
+  centerLabel?: string   // 中宫下方文字（兼容旧用法）
+  center?: { tag: string; main: string; sub?: string } // 盘心三段式：小标 / 干支 / 年份
   rings: WheelRing[]     // 内→外
 }
 
@@ -87,14 +88,16 @@ export function baziToWheel(chart: BaziChart, activeLn: LiuNian | null): WheelCo
 
   return {
     rotateToZhi: activeLn?.zhi ?? chart.pillars[0].zhi,
-    centerLabel: activeLn ? `流年 ${activeLn.ganZhi} · ${activeLn.year}` : `日主 ${chart.dayGan}${chart.dayGanWx}`,
+    center: activeLn
+      ? { tag: '流年', main: activeLn.ganZhi, sub: String(activeLn.year) }
+      : { tag: '日主', main: `${chart.dayGan}${chart.dayGanWx}` },
     rings: [
-      { id: 'gong', name: '十二宫', radius: 0.33, fontScale: 0.72, tone: 'faint', items: gongItems },
-      { id: 'changsheng', name: '十二长生', radius: 0.45, fontScale: 0.72, tone: 'faint', items: csItems },
+      { id: 'gong', name: '十二宫', radius: 0.33, fontScale: 0.9, tone: 'faint', items: gongItems },
+      { id: 'changsheng', name: '十二长生', radius: 0.45, fontScale: 0.9, tone: 'faint', items: csItems },
       { id: 'zhi', name: '十二地支', radius: 0.585, fontScale: 1.5, brush: true, tone: 'strong', items: zhiItems },
-      { id: 'gan', name: '藏干本气', radius: 0.70, fontScale: 0.78, tone: 'faint', items: ganItems },
-      { id: 'liunian', name: '流年', radius: 0.80, fontScale: 0.66, tone: 'mid', items: lnItems },
-      { id: 'dayun', name: '大运', radius: 0.905, fontScale: 0.62, tone: 'mid', items: dyItems },
+      { id: 'gan', name: '藏干本气', radius: 0.70, fontScale: 0.95, tone: 'faint', items: ganItems },
+      { id: 'liunian', name: '流年', radius: 0.80, fontScale: 0.8, tone: 'mid', items: lnItems },
+      { id: 'dayun', name: '大运', radius: 0.905, fontScale: 0.76, tone: 'mid', items: dyItems },
     ],
   }
 }
