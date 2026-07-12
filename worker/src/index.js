@@ -33,14 +33,43 @@ function cors(env) {
 const json = (obj, headers, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json', ...headers } })
 
-// 访问口令校验：设了 ACCESS_CODE 才拦，防止陌生人拿 Worker 地址烧额度
-function checkAccess(req, env) {
-  if (!env.ACCESS_CODE) return true
-  return (req.headers.get('authorization') || '') === `Bearer ${env.ACCESS_CODE}`
+// 特权口令：带对 ACCESS_CODE 的请求不限额（自用）
+function privileged(req, env) {
+  return !!env.ACCESS_CODE && (req.headers.get('authorization') || '') === `Bearer ${env.ACCESS_CODE}`
+}
+
+// 网页零配置访问：来源须在白名单内，且受每日限额（全站 + 单IP）约束
+function originAllowed(req, env) {
+  const origin = req.headers.get('origin') || ''
+  if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return true // 本地开发
+  const allowed = (env.PUBLIC_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean)
+  return allowed.includes(origin)
+}
+
+async function rateLimit(req, env) {
+  if (!env.SYNC_KV) return null // 未绑定 KV 时不限（不建议）
+  const day = new Date().toISOString().slice(0, 10)
+  const ip = req.headers.get('cf-connecting-ip') || 'unknown'
+  const gKey = `rl:${day}`
+  const iKey = `rl:${day}:${ip}`
+  const [g, i] = await Promise.all([env.SYNC_KV.get(gKey), env.SYNC_KV.get(iKey)])
+  const gN = parseInt(g || '0', 10)
+  const iN = parseInt(i || '0', 10)
+  if (gN >= parseInt(env.DAILY_LIMIT || '300', 10)) return '今日全站问询额度已用尽，明日再来'
+  if (iN >= parseInt(env.IP_DAILY_LIMIT || '60', 10)) return '你今日已问了许多，且回去消化消化，明日再来'
+  await Promise.all([
+    env.SYNC_KV.put(gKey, String(gN + 1), { expirationTtl: 172800 }),
+    env.SYNC_KV.put(iKey, String(iN + 1), { expirationTtl: 172800 }),
+  ])
+  return null
 }
 
 async function aiProxy(req, env, h) {
-  if (!checkAccess(req, env)) return json({ error: { message: '访问口令不对（在「我的」页 API Key 一栏填 Worker 的访问口令）' } }, h, 401)
+  if (!privileged(req, env)) {
+    if (!originAllowed(req, env)) return json({ error: { message: '仅允许玄机阁网页调用' } }, h, 401)
+    const limited = await rateLimit(req, env)
+    if (limited) return json({ error: { message: limited } }, h, 429)
+  }
   if (!env.UPSTREAM_KEY || !env.UPSTREAM_BASE) return json({ error: { message: 'Worker 未配置上游（UPSTREAM_BASE / UPSTREAM_KEY）' } }, h, 500)
   const body = await req.json()
   const payload = {
@@ -59,7 +88,7 @@ async function aiProxy(req, env, h) {
 }
 
 function models(req, env, h) {
-  if (!checkAccess(req, env)) return json({ error: { message: '访问口令不对' } }, h, 401)
+  if (!privileged(req, env) && !originAllowed(req, env)) return json({ error: { message: '仅允许玄机阁网页调用' } }, h, 401)
   return json({ data: env.UPSTREAM_MODEL ? [{ id: env.UPSTREAM_MODEL }] : [] }, h)
 }
 

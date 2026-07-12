@@ -184,6 +184,7 @@ export function InkArt({ name, height = 150 }: { name: string; height?: number }
       {imgOk ? (
         <img
           src={fx(`art-${name}.png`)}
+          className="inkart-img"
           style={{ maxWidth: '100%', maxHeight: height, objectFit: 'contain' }}
           onError={() => setImgOk(false)}
           alt=""

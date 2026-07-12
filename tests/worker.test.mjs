@@ -29,6 +29,9 @@ const env = {
   UPSTREAM_KEY: 'sk-secret-upstream',
   UPSTREAM_MODEL: 'fixed-model',
   ACCESS_CODE: 'guest-pass',
+  PUBLIC_ORIGINS: 'https://joserin1991.github.io',
+  DAILY_LIMIT: '10',
+  IP_DAILY_LIMIT: '2',
   SYNC_KV,
 }
 
@@ -47,16 +50,16 @@ await test('CORS 预检返回 204 且带跨域头', async () => {
   assert.equal(res.headers.get('access-control-allow-origin'), '*')
 })
 
-await test('无口令拒绝 401，不打上游', async () => {
-  const res = await call('/v1/chat/completions', { method: 'POST', body: JSON.stringify({ messages: [] }) })
+await test('陌生来源且无口令 → 401，不打上游', async () => {
+  const res = await call('/v1/chat/completions', { method: 'POST', headers: { origin: 'https://evil.example' }, body: JSON.stringify({ messages: [] }) })
   assert.equal(res.status, 401)
 })
 
-await test('正确口令代理成功：换上密钥、锁定模型、封顶 tokens、截断历史', async () => {
+await test('白名单来源零配置直通：换密钥、锁模型、封顶 tokens、截历史', async () => {
   const messages = Array.from({ length: 30 }, (_, i) => ({ role: 'user', content: `m${i}` }))
   const res = await call('/v1/chat/completions', {
     method: 'POST',
-    headers: { authorization: 'Bearer guest-pass' },
+    headers: { origin: 'https://joserin1991.github.io', 'cf-connecting-ip': '1.1.1.1' },
     body: JSON.stringify({ model: 'whatever', messages, max_tokens: 99999 }),
   })
   assert.equal(res.status, 200)
@@ -67,8 +70,39 @@ await test('正确口令代理成功：换上密钥、锁定模型、封顶 toke
   assert.ok(text.includes('msgs=24'), '历史应截到 24 条')
 })
 
-await test('/v1/models 返回锁定模型', async () => {
-  const res = await call('/v1/models', { headers: { authorization: 'Bearer guest-pass' } })
+await test('单 IP 每日限额（IP_DAILY_LIMIT=2）：第3次 429', async () => {
+  const hit = () => call('/v1/chat/completions', {
+    method: 'POST',
+    headers: { origin: 'https://joserin1991.github.io', 'cf-connecting-ip': '2.2.2.2' },
+    body: JSON.stringify({ messages: [{ role: 'user', content: 'q' }] }),
+  })
+  assert.equal((await hit()).status, 200)
+  assert.equal((await hit()).status, 200)
+  assert.equal((await hit()).status, 429, '第3次应触 IP 限额')
+})
+
+await test('全站每日限额：达到 DAILY_LIMIT 后 429', async () => {
+  env.DAILY_LIMIT = '3' // 此前全站已计 3 次（1.1.1.1×1 + 2.2.2.2×2）
+  const res = await call('/v1/chat/completions', {
+    method: 'POST',
+    headers: { origin: 'https://joserin1991.github.io', 'cf-connecting-ip': '3.3.3.3' },
+    body: JSON.stringify({ messages: [{ role: 'user', content: 'q' }] }),
+  })
+  assert.equal(res.status, 429)
+  env.DAILY_LIMIT = '10'
+})
+
+await test('特权口令不受限额与来源约束', async () => {
+  const res = await call('/v1/chat/completions', {
+    method: 'POST',
+    headers: { authorization: 'Bearer guest-pass', origin: 'https://evil.example' },
+    body: JSON.stringify({ messages: [{ role: 'user', content: 'q' }] }),
+  })
+  assert.equal(res.status, 200)
+})
+
+await test('localhost 开发来源放行', async () => {
+  const res = await call('/v1/models', { headers: { origin: 'http://localhost:4519' } })
   assert.deepEqual((await res.json()).data, [{ id: 'fixed-model' }])
 })
 
@@ -90,7 +124,7 @@ await test('PUT 后 GET 取回同一份；不同口令互不可见', async () =>
 })
 
 await test('KV 键是口令哈希，不存明文口令', async () => {
-  for (const k of kvStore.keys()) {
+  for (const k of [...kvStore.keys()].filter((x) => x.startsWith('sync:'))) {
     assert.ok(/^sync:[0-9a-f]{64}$/.test(k), `键应为 sync:<sha256>，实际 ${k}`)
     assert.ok(!k.includes('my-secret'), '不得出现明文口令')
   }

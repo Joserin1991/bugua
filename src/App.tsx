@@ -5,8 +5,7 @@ import { BaziChat } from './components/BaziChat'
 import { DivineChat } from './components/DivineChat'
 import { OracleChat } from './components/OracleChat'
 import { loadRecords, type RecordItem } from './lib/records'
-import { loadAiConfig, saveAiConfig, testAi, listModels } from './lib/ai'
-import { loadSyncConfig, saveSyncConfig, syncUpload, syncRestore } from './lib/sync'
+import { loadSyncConfig, saveSyncConfig, syncRestore, ensureSyncCode } from './lib/sync'
 import { fx } from './lib/fx'
 
 type Screen = 'home' | 'bazi' | 'divine' | 'oracle' | 'records' | 'me'
@@ -18,6 +17,7 @@ const SCREEN_TITLE: Record<Screen, string> = {
 export default function App() {
   const [screen, setScreen] = useState<Screen>('home')
   const [resumePid, setResumePid] = useState<string | null>(null)
+  useEffect(() => { ensureSyncCode() }, []) // 首次启动生成恢复码，自动备份即刻可用
 
   return (
     <GlossaryProvider>
@@ -29,7 +29,7 @@ export default function App() {
               title={SCREEN_TITLE[screen]}
               onBack={() => { setScreen('home'); setResumePid(null) }}
               right={['bazi', 'divine', 'oracle'].includes(screen)
-                ? <span className={`ai-badge ${loadAiConfig() ? 'on' : ''}`}>{loadAiConfig() ? 'AI·通' : '本地'}</span>
+                ? <span className="ai-badge on">AI·通</span>
                 : undefined}
             />
             {screen === 'bazi' && <BaziChat key={`bazi-${resumePid ?? 'new'}`} resumePid={resumePid} />}
@@ -50,14 +50,14 @@ function Home({ go }: { go: (s: Screen) => void }) {
   return (
     <>
       <div className="home">
+        <div className="home-bg" aria-hidden>
+          {heroOk ? (
+            <img src={fx('hero-ink.png')} onError={() => setHeroOk(false)} alt="" />
+          ) : (
+            <HeroFallback />
+          )}
+        </div>
         <div className="home-hero">
-          <div className="home-art">
-            {heroOk ? (
-              <img src={fx('hero-ink.png')} onError={() => setHeroOk(false)} alt="" />
-            ) : (
-              <HeroFallback />
-            )}
-          </div>
           <div className="home-title-wrap">
             <h1 className="home-title-col">
               <span className="ht-text">玄机阁</span>
@@ -199,58 +199,13 @@ function RecordsScreen({ onResume }: { onResume: (pid: string) => void }) {
 
 // ---------- 我的 ----------
 function MeScreen() {
-  const saved = loadAiConfig()
-  const [baseUrl, setBaseUrl] = useState(saved?.baseUrl ?? '')
-  const [apiKey, setApiKey] = useState(saved?.apiKey ?? '')
-  const [model, setModel] = useState(saved?.model ?? '')
-  const [status, setStatus] = useState(saved ? '已接入 AI（密钥仅存本机）' : '未接入 · 大师问答走本地规则引擎')
-  const [testing, setTesting] = useState(false)
-  const [models, setModels] = useState<string[]>([])
-
-  const save = () => {
-    if (!baseUrl.trim() || !apiKey.trim() || !model.trim()) {
-      saveAiConfig(null)
-      setStatus('已清除配置 · 回到本地规则引擎')
-      return
-    }
-    saveAiConfig({ baseUrl: baseUrl.trim(), apiKey: apiKey.trim(), model: model.trim() })
-    setStatus('已保存（密钥仅存本机浏览器）')
-  }
-
-  const test = async () => {
-    const cfg = loadAiConfig()
-    if (!cfg) { setStatus('请先保存配置'); return }
-    setTesting(true)
-    setStatus('测试中…')
-    const r = await testAi(cfg)
-    setStatus(r.msg)
-    setTesting(false)
-  }
-
-  const fetchModels = async () => {
-    if (!baseUrl.trim() || !apiKey.trim()) { setStatus('先填接口地址和 Key 再查'); return }
-    setTesting(true)
-    setStatus('查询模型中…')
-    try {
-      const ids = await listModels(baseUrl.trim(), apiKey.trim())
-      setModels(ids.slice(0, 30))
-      setStatus(`该站共 ${ids.length} 个模型，点下方名字自动填入`)
-    } catch (e) {
-      const raw = e instanceof Error ? e.message : String(e)
-      setModels([])
-      setStatus(/load failed|failed to fetch/i.test(raw) || e instanceof TypeError
-        ? '查询失败：请求被浏览器拦下——该站大概率未开放网页跨域（CORS），网页无法直连'
-        : `查询失败：${raw}`)
-    }
-    setTesting(false)
-  }
-
   const recs = loadRecords()
   const profCount = (() => { try { return Object.keys(JSON.parse(localStorage.getItem('xjg-profiles') ?? '{}')).length } catch { return 0 } })()
+  const [note, setNote] = useState('')
   const clearData = () => {
     localStorage.removeItem('xuanjige_records')
     localStorage.removeItem('xjg-profiles')
-    setStatus('已清除本机记录与命主档案（AI 配置保留）——刷新后生效')
+    setNote('已清除本机记录与命主档案——刷新后生效')
   }
   return (
     <div className="records-list">
@@ -259,40 +214,21 @@ function MeScreen() {
         <div className="me-stat"><b>{recs.filter((r) => r.type !== '八字排盘').length}</b><span>问卦</span></div>
         <div className="me-stat"><b>{profCount}</b><span>命主档案</span></div>
       </div>
-      <div className="ai-config card-msg">
-        <div className="card-title">大师 AI 接入</div>
-        <div className="card-sub">配置后自由提问由大模型实时分析（排盘计算不变）；留空保存即关闭。可直连中转站，也可填自建 Worker 代理（密钥不进浏览器，见仓库 worker/README.md）</div>
-        <label className="ai-field">接口地址<input value={baseUrl} placeholder="https://api.openai.com/v1 或 Anthropic/中转地址" onChange={(e) => setBaseUrl(e.target.value)} /></label>
-        <label className="ai-field">API Key<input type="password" value={apiKey} placeholder="sk-…（只存这台设备）" onChange={(e) => setApiKey(e.target.value)} /></label>
-        <label className="ai-field">模型<input value={model} placeholder="如 claude-sonnet-5 / gpt-4o" onChange={(e) => setModel(e.target.value)} /></label>
-        <div className="ai-actions">
-          <button className="chip" onClick={save}>保存</button>
-          <button className="chip chip-ghost" onClick={test} disabled={testing}>测试连接</button>
-          <button className="chip chip-ghost" onClick={fetchModels} disabled={testing}>查可用模型</button>
-        </div>
-        <p className="ai-status">{status}</p>
-        <div className="ai-actions" style={{ marginTop: 4 }}>
-          <button className="chip chip-ghost" onClick={clearData}>清除本机记录与档案</button>
-        </div>
-        {models.length > 0 && (
-          <div className="ai-models">
-            {models.map((m) => (
-              <button key={m} className={`ai-model-chip ${m === model ? 'on' : ''}`} onClick={() => { setModel(m); setStatus(`已选 ${m}，记得点保存`) }}>{m}</button>
-            ))}
-          </div>
-        )}
-      </div>
-      <SyncCard />
+      <BackupCard />
       <div className="about-card card-msg">
         <div className="card-title">关于与免责声明</div>
         <ul className="about-list">
           <li>「玄机阁」是一款基于传统术数文化（八字、紫微斗数、六爻、梅花易数）的<b>文化娱乐类</b>应用，所有排盘与断语仅供参考、休闲与传统文化学习之用。</li>
           <li>本应用内容<b>不构成</b>医疗、健康、投资、理财、法律、婚恋等任何专业建议。涉及健康请就医，涉及钱财与重大决定请咨询持牌专业人士，切勿以卦断代替理性判断。</li>
-          <li>接入 AI 后，回答由大模型基于盘面生成，可能存在错漏，请自行甄别；未接入时为本地规则引擎按古籍体例生成的模板断语。</li>
+          <li>大师问答由 AI 大模型基于盘面实时生成，可能存在错漏，请自行甄别；网络不通时按古籍体例出具模板断语。</li>
           <li>未成年人请在监护人陪同下使用，请勿沉迷占测。</li>
-          <li><b>隐私</b>：出生信息、对话记录、命主档案、AI 配置全部只保存在你这台设备的浏览器里，不会自动上传；清除浏览器数据或点上方「清除本机记录与档案」即可抹除。只有你主动点「备份到云端」时，档案、记录与 AI 配置才会凭同步口令存到自建云端——口令即钥匙，请勿外泄。AI 问答会把盘面数据发给所配置的模型服务，请确保是你信任的服务。</li>
+          <li><b>隐私</b>：出生信息、对话记录与命主档案保存在你的设备上，并凭「恢复码」自动备份到本应用云端，用于换设备找回；恢复码即钥匙，请勿外泄。点上方「清除本机记录与档案」可抹除本机数据。</li>
           <li>命自我立，福自己求——卦为镜，路在人。</li>
         </ul>
+        <div className="ai-actions" style={{ marginTop: 8 }}>
+          <button className="chip chip-ghost" onClick={clearData}>清除本机记录与档案</button>
+        </div>
+        {note && <p className="ai-status">{note}</p>}
       </div>
       <div className="records-empty">
         玄机阁 · 卜卦问道
@@ -305,42 +241,47 @@ function MeScreen() {
   )
 }
 
-// 云同步：备份/恢复档案与记录到自建 Worker（部署方法见仓库 worker/README.md）
-function SyncCard() {
-  const saved = loadSyncConfig()
-  const [code, setCode] = useState(saved?.code ?? '')
-  const [status, setStatus] = useState(saved ? '已设同步口令' : '未设口令 · 数据只在本机')
+// 云备份：全自动，界面只露恢复码；换设备输入恢复码即可取回
+function BackupCard() {
+  const [code] = useState(() => ensureSyncCode())
+  const [inCode, setInCode] = useState('')
+  const [status, setStatus] = useState('自动备份已开启 · 数据变动后静默上云')
   const [working, setWorking] = useState(false)
 
-  const withConfig = (): { code: string; url?: string } | null => {
-    const c = code.trim()
-    if (c.length < 6) { setStatus('同步口令至少 6 位'); return null }
-    const cfg = { ...(saved?.url ? { url: saved.url } : {}), code: c }
-    saveSyncConfig(cfg)
-    return cfg
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(code); setStatus('恢复码已复制，请抄在安全的地方') }
+    catch { setStatus(`恢复码：${code}（请手动抄录）`) }
   }
 
-  const run = async (fn: (cfg: { code: string; url?: string }) => Promise<string>) => {
-    const cfg = withConfig()
-    if (!cfg) return
+  const restore = async () => {
+    const c = inCode.trim().toUpperCase()
+    if (c.length < 6) { setStatus('恢复码不对——形如 XJG-XXXXXXXX'); return }
     setWorking(true)
     setStatus('连接云端…')
     try {
-      setStatus(await fn(cfg))
+      const saved = loadSyncConfig()
+      const cfg = { ...(saved?.url ? { url: saved.url } : {}), code: c }
+      const msg = await syncRestore(cfg)
+      saveSyncConfig(cfg) // 此后本机以该码继续自动备份
+      setStatus(msg)
     } catch (e) {
-      setStatus(`失败：${e instanceof Error ? e.message : String(e)}`)
+      setStatus(`恢复失败：${e instanceof Error ? e.message : String(e)}`)
     }
     setWorking(false)
   }
 
   return (
     <div className="ai-config card-msg">
-      <div className="card-title">云同步</div>
-      <div className="card-sub">备份命主档案、问卦记录与 AI 配置，换设备输入同一口令即可恢复。口令即钥匙，请自己保管好</div>
-      <label className="ai-field">同步口令<input type="password" value={code} placeholder="自定 ≥6 位，两台设备填同一个" onChange={(e) => setCode(e.target.value)} /></label>
+      <div className="card-title">云备份</div>
+      <div className="card-sub">档案、记录自动备份，无需操作。换设备时在新设备输入这台机器的恢复码即可找回</div>
+      <div className="backup-code" onClick={copy} title="点击复制">
+        <span>本机恢复码</span>
+        <b>{code}</b>
+        <span className="bc-hint">点击复制 · 请抄录保管</span>
+      </div>
+      <label className="ai-field">从旧设备恢复<input value={inCode} placeholder="输入旧设备的恢复码 XJG-…" onChange={(e) => setInCode(e.target.value)} /></label>
       <div className="ai-actions">
-        <button className="chip" onClick={() => run(syncUpload)} disabled={working}>备份到云端</button>
-        <button className="chip chip-ghost" onClick={() => run(syncRestore)} disabled={working}>从云端恢复</button>
+        <button className="chip" onClick={restore} disabled={working}>取回云端数据</button>
       </div>
       <p className="ai-status">{status}</p>
     </div>
