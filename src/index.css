@@ -1177,6 +1177,15 @@ body {
 
 @keyframes castspin { to { transform: rotate(360deg); } }
 
+/* 卡内就地推算提示 */
+.card-loading {
+  margin: 6px 0 12px;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.14em;
+  animation: caretblink 1.2s steps(1) infinite;
+}
+
 /* AI 状态印章（屏头） */
 .ai-badge {
   display: inline-block;
