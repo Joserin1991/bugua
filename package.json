@@ -9,7 +9,7 @@
     "lint": "oxlint",
     "test": "tsx tests/engine.test.ts && node tests/worker.test.mjs",
     "preview": "vite preview",
-    "deploy:cloudflare": "npm run build && npx wrangler@latest pages deploy dist --project-name bugua",
+    "deploy:cloudflare": "npm run build && npx wrangler@latest pages deploy --force dist --project-name bugua",
     "preview:cloudflare": "npm run build && npx wrangler@latest pages dev dist",
     "deploy:worker": "cd worker && npx wrangler@latest deploy"
   },
