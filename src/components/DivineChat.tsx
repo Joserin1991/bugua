@@ -1,4 +1,5 @@
 // 六爻占卜 · 对话流：默念所问 → 摇卦六次（步进/爻列表） → 本卦/变卦/互卦 + 吉凶/概率/时机 → 追问
+import { fx } from '../lib/fx'
 import { useRef, useState, type ReactNode } from 'react'
 import { buildResult, hexUnicode, tossOnce, YAO_NAMES, type CastLine, type CastResult } from '../lib/hexagram'
 import { interpretOracle, detectCategory, type OracleCategory } from '../lib/interpret'
@@ -212,7 +213,7 @@ function TossCard({ onDone }: { onDone: (lines: CastLine[]) => void }) {
           <EnsoRing size={190} className={tossing ? 'enso-rotate' : ''} stroke={7} />
           <div className="coins-tri">
             {[0, 1, 2].map((i) => (
-              <div key={i} className={`coin coin-img ${tossing ? 'tossing' : ''} ${!tossing && !coins[i] ? 'tail' : ''}`} style={{ animationDelay: `${i * 0.1}s`, backgroundImage: `url(/fx/${!tossing && !coins[i] ? 'coin-back' : 'coin-front'}.png)` }}>
+              <div key={i} className={`coin coin-img ${tossing ? 'tossing' : ''} ${!tossing && !coins[i] ? 'tail' : ''}`} style={{ animationDelay: `${i * 0.1}s`, backgroundImage: `url(${fx(!tossing && !coins[i] ? 'coin-back.png' : 'coin-front.png')})` }}>
                 <span className="hole" />
                 <span>{tossing ? '' : coins[i] ? '字' : '背'}</span>
               </div>

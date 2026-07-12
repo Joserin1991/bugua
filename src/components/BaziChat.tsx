@@ -1,4 +1,5 @@
 // 问命排盘 · 对话流：问性别/生日/时辰 → 推演进度墨圈 → 四柱卡+命盘 → 胶囊追问逐题细解
+import { fx } from '../lib/fx'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { computeBazi, liuNianRange, type BaziChart, type LiuNian } from '../lib/bazi'
 import { computeZiwei, type ZwChart } from '../lib/ziwei'
@@ -746,7 +747,7 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
         )}
         {stage === 'computing' && pct > 0 && (
           <div className="computing-fx fade-in">
-            <video src="/fx/fx-ink-loop.mp4" autoPlay loop muted playsInline />
+            <video src={fx('fx-ink-loop.mp4')} autoPlay loop muted playsInline />
             <span>排盘中 · {Math.round(pct)}%</span>
           </div>
         )}

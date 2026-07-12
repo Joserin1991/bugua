@@ -7,6 +7,7 @@ import { OracleChat } from './components/OracleChat'
 import { loadRecords, type RecordItem } from './lib/records'
 import { loadAiConfig, saveAiConfig, testAi, listModels } from './lib/ai'
 import { loadSyncConfig, saveSyncConfig, syncUpload, syncRestore } from './lib/sync'
+import { fx } from './lib/fx'
 
 type Screen = 'home' | 'bazi' | 'divine' | 'oracle' | 'records' | 'me'
 
@@ -52,7 +53,7 @@ function Home({ go }: { go: (s: Screen) => void }) {
         <div className="home-hero">
           <div className="home-art">
             {heroOk ? (
-              <img src="/fx/hero-ink.png" onError={() => setHeroOk(false)} alt="" />
+              <img src={fx('hero-ink.png')} onError={() => setHeroOk(false)} alt="" />
             ) : (
               <HeroFallback />
             )}
@@ -171,7 +172,7 @@ function RecordsScreen({ onResume }: { onResume: (pid: string) => void }) {
       </div>
       {shown.length === 0 && (
         <div className="records-empty">
-          <img src="/fx/empty-records.png" alt="" style={{ width: '70%', maxWidth: 300, opacity: 0.9, display: 'block', margin: '0 auto 10px' }} />
+          <img src={fx('empty-records.png')} alt="" style={{ width: '70%', maxWidth: 300, opacity: 0.9, display: 'block', margin: '0 auto 10px' }} />
           尚无记录<br />排一次盘、问一次卦，缘分自会留痕
         </div>
       )}

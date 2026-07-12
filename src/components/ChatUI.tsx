@@ -1,5 +1,6 @@
 // 对话式 UI 基础件：禅圈头像、大师气泡（打字机）、用户胶囊、快捷追问、进度墨圈、水墨插画位
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { fx } from '../lib/fx'
 
 // 禅圈头像（若 public/fx/master-avatar.png 存在则用图片）
 export function EnsoAvatar({ size = 32 }: { size?: number }) {
@@ -9,7 +10,7 @@ export function EnsoAvatar({ size = 32 }: { size?: number }) {
     <span className="msg-avatar" style={{ width: size, height: size, display: 'inline-block' }}>
       {imgOk ? (
         <img
-          src="/fx/master-avatar.png"
+          src={fx('master-avatar.png')}
           width={size} height={size}
           style={{ borderRadius: '50%', display: 'block' }}
           onError={() => setImgOk(false)}
@@ -130,7 +131,7 @@ export function EnsoRing({ size = 150, className = '', stroke = 6 }: { size?: nu
   if (imgOk) {
     return (
       <img
-        src="/fx/enso-ring.png"
+        src={fx('enso-ring.png')}
         width={size}
         height={size}
         className={`enso-ring ${className}`}
@@ -182,7 +183,7 @@ export function InkArt({ name, height = 150 }: { name: string; height?: number }
     <div style={{ display: 'flex', justifyContent: 'center', margin: '6px 0' }}>
       {imgOk ? (
         <img
-          src={`/fx/art-${name}.png`}
+          src={fx(`art-${name}.png`)}
           style={{ maxWidth: '100%', maxHeight: height, objectFit: 'contain' }}
           onError={() => setImgOk(false)}
           alt=""
