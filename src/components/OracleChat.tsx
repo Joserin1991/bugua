@@ -2,7 +2,7 @@
 import { useRef, useState, type ReactNode } from 'react'
 import { castByQuestion, type CastResult } from '../lib/hexagram'
 import { interpretOracle, detectCategory } from '../lib/interpret'
-import { saveRecord } from '../lib/records'
+import { saveRecord, updateRecordChat, type ChatLine } from '../lib/records'
 import { MasterMsg, UserMsg, Chips, ProgressEnso, InputBar } from './ChatUI'
 import { GuaCard, guaInfoOf } from './DivineChat'
 import { loadAiConfig, buildGuaSystem, parseSuggestReply, askMasterRetry, explainAiError, type ChatTurn } from '../lib/ai'
@@ -34,8 +34,16 @@ export function OracleChat() {
 
   const scroll = () => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100)
   const push = (item: NewItem) => { setItems((a) => [...a, { ...item, id: uid++ }]); scroll() }
-  const master = (segs: ReactNode[]) => { setBusy(true); push({ kind: 'master', segs }) }
-  const user = (t: string) => push({ kind: 'user', text: t })
+  // 对话全程记档：随聊随存进当条记录
+  const chatLogRef = useRef<ChatLine[]>([])
+  const recordIdRef = useRef<string | null>(null)
+  const log = (r: 'm' | 'u', t: string) => {
+    if (!t) return
+    chatLogRef.current.push({ r, t })
+    if (recordIdRef.current) updateRecordChat(recordIdRef.current, chatLogRef.current)
+  }
+  const master = (segs: ReactNode[]) => { setBusy(true); push({ kind: 'master', segs }); log('m', segs.filter((x) => typeof x === 'string').join('')) }
+  const user = (t: string) => { push({ kind: 'user', text: t }); log('u', t) }
   const node = (n: ReactNode) => push({ kind: 'node', node: n })
 
   // 就当前卦的 AI 问答（带上下文；失败明示）
@@ -76,10 +84,13 @@ export function OracleChat() {
         const cat = detectCategory(q)
         const reading = interpretOracle(result, q, cat)
         setLastCast({ cast: result, q })
-        saveRecord({
+        log('m', `〔卦象卡〕本卦 ${result.original.fullName}${result.changed ? `，变卦 ${result.changed.fullName}` : '，六爻安静'}；互卦 ${result.mutual.fullName}。`)
+        recordIdRef.current = saveRecord({
           type: '答疑解惑',
           title: `问：${q.slice(0, 18)}`,
           summary: `${result.original.fullName}${result.changed ? ` 变 ${result.changed.fullName}` : ''} · ${reading.luckLabel}`,
+          chat: chatLogRef.current,
+          gua: { info: guaInfoOf(result, '梅花易数'), question: q, category: cat },
         })
         master([`所问「${q}」（${cat}），得${result.original.fullName}${result.changed ? `，变${result.changed.fullName}` : '，六爻安静'}。`])
         node(<GuaCard result={result} question={q} category={cat} />)
@@ -108,6 +119,8 @@ export function OracleChat() {
     setAiSuggests([])
     aiSystemRef.current = ''
     aiHistoryRef.current = []
+    recordIdRef.current = null // 新一卦另起一条记录
+    chatLogRef.current = []
     master(['好，静心，想好了便说。'])
   }
 

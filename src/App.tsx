@@ -4,19 +4,21 @@ import { ScreenHead, EnsoRing } from './components/ChatUI'
 import { BaziChat } from './components/BaziChat'
 import { DivineChat } from './components/DivineChat'
 import { OracleChat } from './components/OracleChat'
+import { ReplayChat } from './components/ReplayChat'
 import { loadRecords, type RecordItem } from './lib/records'
 import { loadSyncConfig, saveSyncConfig, syncRestore, ensureSyncCode } from './lib/sync'
 import { fx } from './lib/fx'
 
-type Screen = 'home' | 'bazi' | 'divine' | 'oracle' | 'records' | 'me'
+type Screen = 'home' | 'bazi' | 'divine' | 'oracle' | 'records' | 'me' | 'replay'
 
 const SCREEN_TITLE: Record<Screen, string> = {
-  home: '', bazi: '问命排盘', divine: '六爻占卜', oracle: '答疑解惑', records: '我的记录', me: '我的',
+  home: '', bazi: '问命排盘', divine: '六爻占卜', oracle: '答疑解惑', records: '我的记录', me: '我的', replay: '回看 · 续问',
 }
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('home')
   const [resumePid, setResumePid] = useState<string | null>(null)
+  const [replayRec, setReplayRec] = useState<RecordItem | null>(null)
   useEffect(() => { ensureSyncCode() }, []) // 首次启动生成恢复码，自动备份即刻可用
 
   return (
@@ -27,15 +29,21 @@ export default function App() {
           <>
             <ScreenHead
               title={SCREEN_TITLE[screen]}
-              onBack={() => { setScreen('home'); setResumePid(null) }}
-              right={['bazi', 'divine', 'oracle'].includes(screen)
+              onBack={() => { setScreen(screen === 'replay' ? 'records' : 'home'); setResumePid(null) }}
+              right={['bazi', 'divine', 'oracle', 'replay'].includes(screen)
                 ? <span className="ai-badge on">AI·通</span>
                 : undefined}
             />
             {screen === 'bazi' && <BaziChat key={`bazi-${resumePid ?? 'new'}`} resumePid={resumePid} />}
             {screen === 'divine' && <DivineChat key="divine" />}
             {screen === 'oracle' && <OracleChat key="oracle" />}
-            {screen === 'records' && <RecordsScreen onResume={(pid) => { setResumePid(pid); setScreen('bazi') }} />}
+            {screen === 'records' && (
+              <RecordsScreen
+                onResume={(pid) => { setResumePid(pid); setScreen('bazi') }}
+                onOpen={(rec) => { setReplayRec(rec); setScreen('replay') }}
+              />
+            )}
+            {screen === 'replay' && replayRec && <ReplayChat key={replayRec.id} record={replayRec} />}
             {screen === 'me' && <MeScreen />}
           </>
         )}
@@ -158,7 +166,7 @@ function HeroFallback() {
 }
 
 // ---------- 记录 ----------
-function RecordsScreen({ onResume }: { onResume: (pid: string) => void }) {
+function RecordsScreen({ onResume, onOpen }: { onResume: (pid: string) => void; onOpen: (rec: RecordItem) => void }) {
   const [records, setRecords] = useState<RecordItem[]>([])
   const [filter, setFilter] = useState<'全部' | RecordItem['type']>('全部')
   useEffect(() => { setRecords(loadRecords()) }, [])
@@ -178,9 +186,9 @@ function RecordsScreen({ onResume }: { onResume: (pid: string) => void }) {
       )}
       {shown.map((r) => (
         <div
-          className={`record-item ${r.pid ? 'clickable' : ''}`}
+          className="record-item clickable"
           key={r.id}
-          onClick={r.pid ? () => onResume(r.pid!) : undefined}
+          onClick={() => { if (r.type === '八字排盘' && r.pid) onResume(r.pid); else onOpen(r) }}
         >
           <EnsoRing size={52} stroke={3} />
           <div>
@@ -189,7 +197,7 @@ function RecordsScreen({ onResume }: { onResume: (pid: string) => void }) {
           </div>
           <div className="r-right">
             <div className="r-date">{r.date.slice(5, 16)}</div>
-            {r.pid && <div className="r-go">续问 ›</div>}
+            <div className="r-go">{r.type === '八字排盘' ? '续问' : r.gua ? '回看·续问' : '回看'} ›</div>
           </div>
         </div>
       ))}
