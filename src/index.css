@@ -37,8 +37,8 @@ body {
   position: relative;
   max-width: 460px;
   margin: 0 auto;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   background:
     radial-gradient(ellipse 90% 30% at 50% -4%, rgba(30, 28, 24, 0.06), transparent 70%),
     linear-gradient(180deg, #f2eee1 0%, #efeadb 55%, #e9e3d2 100%);
@@ -1449,3 +1449,123 @@ body {
 }
 
 .sp-note { font-size: 0.68rem; color: var(--ink-faint); margin: 0 2px; }
+
+
+/* ---------- 窄屏适配 ---------- */
+@media (max-width: 400px) {
+  .card-msg { margin-left: 14px; padding: 16px 12px; }
+  .card-with-note { margin-left: 14px; }
+  .card-ai-note.solo { margin-left: 14px; }
+  .casting-fx { margin-left: 14px; }
+  .msg-bubble { max-width: 88%; }
+  .chat-scroll { padding: 12px 12px 20px; }
+}
+
+/* 古籍引文 */
+.classic-quote {
+  margin: 10px 0 2px;
+  padding: 8px 12px;
+  border-left: 2px solid var(--line-strong);
+  font-size: 0.8rem;
+  line-height: 1.9;
+  color: var(--ink-soft);
+  font-family: "ZCOOL XiaoWei", "STKaiti", serif;
+}
+
+.classic-quote .cq-src { color: var(--ink-faint); font-size: 0.7rem; margin-left: 6px; }
+
+/* 流月流日 */
+.ly-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin: 10px 0 4px; }
+
+.ly-cell {
+  border: 1px solid var(--card-line);
+  border-radius: 6px;
+  text-align: center;
+  padding: 5px 2px;
+  background: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  font-size: 0.66rem;
+  color: var(--ink-soft);
+}
+
+.ly-cell .ly-gz { font-family: "ZCOOL XiaoWei", serif; font-size: 0.8rem; color: var(--ink); display: block; }
+.ly-cell.on { border-color: var(--seal); background: var(--seal-soft); }
+.ly-cell.on .ly-gz { color: var(--seal); }
+
+.lr-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin: 8px 0 4px; }
+
+.lr-cell {
+  border: 1px solid rgba(33, 29, 20, 0.1);
+  border-radius: 5px;
+  text-align: center;
+  padding: 4px 1px;
+  font-size: 0.6rem;
+  color: var(--ink-faint);
+}
+
+.lr-cell b { display: block; font-weight: 400; font-size: 0.7rem; color: var(--ink-soft); font-family: "ZCOOL XiaoWei", serif; }
+.lr-cell.today { border-color: var(--seal); color: var(--seal); }
+.lr-cell.today b { color: var(--seal); }
+
+.lr-note { font-size: 0.7rem; color: var(--ink-faint); margin: 4px 2px; }
+
+/* 报告浮层 */
+.report-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(20, 18, 14, 0.55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 16px 10px 30px;
+}
+
+.report-sheet {
+  width: 100%;
+  max-width: 430px;
+  background: #f6f2e6;
+  border-radius: 10px;
+  padding: 26px 20px;
+  position: relative;
+}
+
+.report-head { text-align: center; margin-bottom: 14px; }
+.report-head h2 { font-family: "Ma Shan Zheng", serif; font-weight: 400; font-size: 1.6rem; letter-spacing: 0.3em; }
+.report-head .rp-sub { font-size: 0.7rem; color: var(--ink-faint); letter-spacing: 0.2em; margin-top: 4px; }
+
+.report-sec { margin: 16px 0; }
+.report-sec h3 {
+  font-family: "ZCOOL XiaoWei", serif;
+  font-weight: 400;
+  font-size: 0.95rem;
+  letter-spacing: 0.25em;
+  color: var(--seal);
+  border-bottom: 1px solid var(--card-line);
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+}
+
+.report-sec p { font-size: 0.8rem; line-height: 2; color: var(--ink-soft); }
+
+.report-foot { text-align: center; font-size: 0.64rem; color: var(--ink-faint); margin-top: 18px; letter-spacing: 0.1em; line-height: 1.9; }
+
+.report-actions {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  padding: 12px 0 2px;
+  background: linear-gradient(180deg, transparent, #f6f2e6 40%);
+}
+
+.report-img { width: 100%; border-radius: 8px; border: 1px solid var(--card-line); }
+
+@media print {
+  body * { visibility: hidden; }
+  .report-mask, .report-mask * { visibility: visible; }
+  .report-mask { position: static; background: none; padding: 0; }
+  .report-actions { display: none; }
+}

@@ -2,6 +2,7 @@
 import type { BaziChart, LiuNian } from './bazi'
 import { WUXING_TRAITS, GAN_WUXING, tenGod, tenGodGroup, ZHI_CHONG, ZHI_HE, type WuXing } from './wuxing'
 import type { CastResult } from './hexagram'
+import { quoteFor } from './classics'
 import { LUCK_LABEL } from './hexagram'
 
 // 十天干日主性情
@@ -83,6 +84,7 @@ export function interpretBazi(chart: BaziChart): BaziReading {
       ? '五行流转贵在中和，此为难得之象，一生运势平稳，关键在把握大运节奏。'
       : `扶抑之法，取${favorable.join('、')}为喜用之神，忌${unfavorable.join('、')}再来${strength.level.includes('强') ? '助身' : '克泄'}。`,
     `喜用所在，即人生趋吉之方向。`,
+    (() => { const q = quoteFor(strength.level); return q ? `古云「${q.text}」（${q.source}）。` : '' })(),
   ].join('')
 
   // 性格
@@ -118,10 +120,10 @@ export function interpretBazi(chart: BaziChart): BaziReading {
     ? [
       `你的财星有据可查：${wealthLocs.slice(0, 3).join('、')}。`,
       strength.level.includes('强')
-        ? `日主${strength.level}（${strength.score}分），身强足以任财，属「身强担财」之格——敢博敢挣，正财偏财皆可图之；中年后财运尤旺，投资置业眼光独到。`
+        ? `日主${strength.level}（${strength.score}分），身强足以任财，古云「财为养命之源，身强则能任其财」（《渊海子平》）——敢博敢挣，正财偏财皆可图之；中年后财运尤旺，投资置业眼光独到。`
         : strength.level === '中和'
           ? `日主中和（${strength.score}分），财来能受、财去不伤，求财之道贵在细水长流、稳中取利。`
-          : `然日主${strength.level}（仅${strength.score}分），财多身弱则求财劳心——宜稳扎稳打，忌重杠杆豪赌；先强己身（行印比之运）再图大财。`,
+          : `然日主${strength.level}（仅${strength.score}分），古云「财多身弱，富屋贫人」（《渊海子平》）——求财劳心，宜稳扎稳打，忌重杠杆豪赌；先强己身（行印比之运）再图大财。`,
     ].join('')
     : `遍查四柱，天干不透财、地支亦少财根——求财宜走专业技能路线，以才生财、以名带利；此类命局往往是闷声聚财之相，不显山露水。`
 
