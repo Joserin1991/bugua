@@ -9,7 +9,7 @@ import { MasterMsg, UserMsg, CardMsg, Chips, ProgressEnso, InputBar, InkArt } fr
 import { CITIES } from '../lib/cities'
 import { traceNarrative } from '../lib/trace'
 import { loadAiConfig, buildMasterSystem, askMasterRetry, explainAiError, type ChatTurn } from '../lib/ai'
-import { profileId, touchProfile, appendHistory, addMemory } from '../lib/profiles'
+import { profileId, touchProfile, appendHistory, addMemory, listProfiles } from '../lib/profiles'
 import { sanpan } from '../lib/sanpan'
 import { SanpanCard } from './SanpanCard'
 import { PillarCards, WuxingPctBars, Radar, wuxingRadarData, abilityRadarData, TenGodOrbit, TenGodBars, DayunLineChart, dayunScore } from './InfoGraphics'
@@ -160,7 +160,15 @@ function parseBirthText(text: string, draft: BirthDraft) {
 
 let uid = 1
 
-export function BaziChat() {
+// 档案ID → 生辰草稿（id 格式：性别|日期|时辰|城市）
+function draftFromPid(pid: string): BirthDraft | null {
+  const [g, d, h, city] = pid.split('|')
+  if ((g !== '男' && g !== '女') || !d || h === undefined) return null
+  const ci = city ? CITIES.findIndex((c) => c.name === city) : -1
+  return { gender: g, date: d, hour: Number(h), cityIdx: ci >= 0 ? ci : null }
+}
+
+export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
   const [items, setItems] = useState<Item[]>([])
   const [stage, setStage] = useState<Stage>('gather')
   const [busy, setBusy] = useState(true) // 大师打字中
@@ -201,11 +209,23 @@ export function BaziChat() {
   const user = (text: string) => push({ kind: 'user', text })
   const node = (n: ReactNode) => push({ kind: 'node', node: n })
 
+  const archives = useMemo(() => listProfiles(3), [])
+
   useEffect(() => {
+    if (resumePid) {
+      const d = draftFromPid(resumePid)
+      if (d) {
+        draftRef.current = d
+        master(['稍候，老朽把你的旧盘从柜里取出来——上回聊到哪儿，咱们接着说。'])
+        setTimeout(() => startCompute(), 600)
+        return
+      }
+    }
     master([
       '世间万象，皆有其时。',
       '既然你想了解自己，把出生信息一并说与老朽——是男是女、哪年哪月哪日（阳历）、大概几点、生在哪座城市。',
       '例如：「女，1991年11月2日上午10点，杭州」。缺哪样，老朽再单问。',
+      ...(archives.length ? ['若是旧相识，点下方档案即可取旧盘续问。'] : []),
       ...(loadAiConfig() ? [] : ['（老朽当前以本地古法作答；到「我的」页接入 AI 后，问答更贴身。）']),
     ])
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -277,6 +297,7 @@ export function BaziChat() {
       type: '八字排盘',
       title: `${c.gender === '男' ? '乾造' : '坤造'} ${c.solarText}`,
       summary: `日主${c.dayGan}${c.dayGanWx} · ${c.strength.level} · 喜${c.favorable.join('')}`,
+      pid: profileIdRef.current,
     })
     node(
       <CardMsg title="四柱八字" sub={`${c.solarCorrection ? `真太阳时 ${c.solarCorrection.trueText}（${c.solarCorrection.city} ${c.solarCorrection.offsetMin > 0 ? '+' : ''}${c.solarCorrection.offsetMin} 分）｜ ` : ''}农历 ${c.lunarText} ｜ 属${c.animal}`}>
@@ -688,6 +709,20 @@ export function BaziChat() {
           return <div key={it.id}>{it.node}</div>
         })}
 
+        {!busy && stage === 'gather' && !resumePid && archives.length > 0 && (
+          <Chips
+            items={archives.map((a) => `${a.title.slice(0, 14)}｜续`)}
+            onPick={(v) => {
+              const a = archives.find((x) => `${x.title.slice(0, 14)}｜续` === v)
+              if (!a) return
+              const d = draftFromPid(a.id)
+              if (!d) return
+              draftRef.current = d
+              user(`取旧盘：${a.title}。`)
+              startCompute()
+            }}
+          />
+        )}
         {aiThinking && (
           <div className="msg-row fade-in">
             <div className="msg-bubble typing" style={{ marginLeft: 44 }}>老朽正在掐指推算<span className="caret">▌</span></div>

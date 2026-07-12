@@ -5,6 +5,7 @@ export interface RecordItem {
   title: string
   summary: string
   date: string // YYYY-MM-DD HH:mm
+  pid?: string // 命主档案ID（八字记录可据此续盘续问）
 }
 
 const KEY = 'xuanjige_records'
