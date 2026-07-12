@@ -35,6 +35,55 @@ npm run build    # 生产构建
 npm run preview  # 预览构建产物
 ```
 
+## 部署到 Cloudflare 免费版
+
+本项目分两部分部署：
+
+- 前端应用：Cloudflare Pages，构建产物在 `dist`
+- 轻后端：Cloudflare Workers，用于 AI 代理和云同步，配置在 `worker/`
+
+### 前端：Cloudflare Pages
+
+推荐连接 GitHub 自动部署：
+
+1. 登录 Cloudflare Dashboard，进入 **Workers & Pages**。
+2. 选择 **Create application** -> **Pages** -> **Connect to Git**。
+3. 选择仓库 `Joserin1991/bugua`，分支选择 `main`。
+4. 构建设置：
+   - Framework preset: `Vite`
+   - Build command: `npm run build`
+   - Build output directory: `dist`
+   - Root directory: 留空
+5. 保存后 Cloudflare 会自动构建并发布；以后推送到 `main` 会自动重新部署。
+
+也可以在本地直接上传：
+
+```bash
+npm run deploy:cloudflare
+```
+
+首次运行会要求登录 Cloudflare；发布目标项目名为 `bugua`。
+
+### 轻后端：Cloudflare Workers
+
+如果需要 AI 代理或云同步，再部署 Worker：
+
+```bash
+cd worker
+npx wrangler@latest login
+npx wrangler@latest kv namespace create SYNC_KV
+```
+
+把命令输出的 `id` 填进 `worker/wrangler.toml` 的 `kv_namespaces.id`，然后设置密钥并发布：
+
+```bash
+npx wrangler@latest secret put UPSTREAM_KEY
+npx wrangler@latest secret put ACCESS_CODE
+npx wrangler@latest deploy
+```
+
+部署完成后，在应用的「我的」页中填写 Worker 地址。详细说明见 `worker/README.md`。
+
 ## 技术栈
 Vite + React 19 + TypeScript，排盘历法引擎 lunar-javascript。
 
