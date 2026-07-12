@@ -418,9 +418,9 @@ export function BaziChat() {
           ),
         }
       case '大运走势':
-        return { intro: [`${c.qiYunText}。大运十年一换，如行船换水道——下图便是你一生的水路起伏。`], card: <DayunCard chart={c} prose={!ai} extraTop={aiProse} extraBottom={aiZhupi} /> }
+        return { intro: [`${c.qiYunText}。大运十年一换，如行船换水道——下图便是你一生的水路起伏。`], card: <DayunCard chart={c} prose={!ai} extraTop={aiProse} extraBottom={aiZhupi} aiAsk={ai ? aiAsk : undefined} /> }
       case '流年运势':
-        return { intro: ['来看你今年的流年运势。'], card: <LiunianCard chart={c} prose={!ai} extraTop={aiProse} extraBottom={aiZhupi} /> }
+        return { intro: ['来看你今年的流年运势。'], card: <LiunianCard chart={c} prose={!ai} extraTop={aiProse} extraBottom={aiZhupi} aiAsk={ai ? aiAsk : undefined} /> }
       case '事业运势':
         return {
           intro: ['来看你今年的事业运势。'],
@@ -504,6 +504,13 @@ export function BaziChat() {
             ),
         }
     }
+  }
+
+  // 卡片内部切换（流年/大运）时的就地追问
+  const aiAsk = async (q: string): Promise<string> => {
+    const cfg = loadAiConfig()
+    if (!cfg || !aiSystemRef.current) throw new Error('AI 未接入')
+    return askMasterRetry(cfg, aiSystemRef.current, aiHistoryRef.current.slice(-6), q)
   }
 
   // 通用后处理：建议换胶囊、记档入库
@@ -706,24 +713,40 @@ export function BaziChat() {
 }
 
 // ---------- 大运卡（内部可交互） ----------
-function DayunCard({ chart, prose = true, extraTop = null, extraBottom = null }: { chart: BaziChart; prose?: boolean; extraTop?: ReactNode; extraBottom?: ReactNode }) {
+function DayunCard({ chart, prose = true, extraTop = null, extraBottom = null, aiAsk }: { chart: BaziChart; prose?: boolean; extraTop?: ReactNode; extraBottom?: ReactNode; aiAsk?: (q: string) => Promise<string> }) {
   const now = new Date().getFullYear()
   const init = Math.max(0, chart.daYun.findIndex((d) => now >= d.startYear && now <= d.endYear))
   const [idx, setIdx] = useState(init)
+  const [aiCache, setAiCache] = useState<Record<number, { body: string; note: string }>>({})
+  const [loadingIdx, setLoadingIdx] = useState<number | null>(null)
   const d = chart.daYun[idx]
   const god = tenGod(chart.dayGan, d.ganZhi[0])
+  const pick = (i: number) => {
+    setIdx(i)
+    if (!aiAsk || i === init || aiCache[i]) return
+    const dy = chart.daYun[i]
+    const g = tenGod(chart.dayGan, dy.ganZhi[0])
+    setLoadingIdx(i)
+    aiAsk(`【系统指令】命主在大运卡上切换到「${dy.ganZhi}」大运（${dy.startYear}—${dy.endYear}，${dy.startAge}—${dy.startAge + 9}岁，运干${g}）。请解读这步运的要点（80~150字，扣着他的喜忌与处境），另起一行「卡注：不超过26字」。不要写「建议」「卡片」行。`)
+      .then((raw) => { const pr = parseAiReply(raw); setAiCache((m) => ({ ...m, [i]: { body: pr.body, note: pr.note } })) })
+      .catch(() => setAiCache((m) => ({ ...m, [i]: { body: '未能接通 AI，此运解读暂缺——修好配置后重选即可。', note: '' } })))
+      .finally(() => setLoadingIdx((v) => (v === i ? null : v)))
+  }
+  const topNode = !aiAsk || idx === init ? extraTop : (aiCache[idx] ? aiProseNode(aiCache[idx].body) : null)
+  const bottomNode = !aiAsk || idx === init ? extraBottom : (aiCache[idx]?.note ? aiZhupiNode(aiCache[idx].note) : null)
   return (
-    <CardMsg title="大运排盘" sub="每十年一运 · 岁数为虚岁 · 点折线上的节点切换">
-      {extraTop}
+    <CardMsg title="大运排盘" sub="每十年一运 · 岁数为虚岁 · 点节点切换即时解读">
+      {topNode}
+      {loadingIdx === idx && <div className="card-loading">老朽正在推算此运…</div>}
       <div className="dayun-strip">
         {chart.daYun.map((dy, i) => (
-          <div key={dy.ganZhi + dy.startYear} className={`dayun-cell ${i === idx ? 'active' : ''}`} onClick={() => setIdx(i)}>
+          <div key={dy.ganZhi + dy.startYear} className={`dayun-cell ${i === idx ? 'active' : ''}`} onClick={() => pick(i)}>
             <div className="dayun-gz">{dy.ganZhi}</div>
             <div className="dayun-age">{dy.startAge}–{dy.startAge + 9}岁</div>
           </div>
         ))}
       </div>
-      <DayunLineChart chart={chart} activeIdx={idx} onPick={setIdx} />
+      <DayunLineChart chart={chart} activeIdx={idx} onPick={pick} />
       {prose && <p className="reading-p" style={{ marginTop: 8 }}>
         你{now >= d.startYear && now <= d.endYear ? '当前行' : '于此段行'}「{d.ganZhi}」大运（{d.startYear}—{d.endYear}，<Term k={god}>{god}</Term>运）。
         {['正官', '正印', '正财', '食神'].includes(god)
@@ -732,25 +755,41 @@ function DayunCard({ chart, prose = true, extraTop = null, extraBottom = null }:
             ? '此运动星当值，压力与机遇并存，敢闯者得势，唯忌意气用事。'
             : '此运气象平顺，宜按部就班经营，勿贪快求变。'}
       </p>}
-      {extraBottom}
+      {bottomNode}
     </CardMsg>
   )
 }
 
 // ---------- 流年卡（内部可交互） ----------
-function LiunianCard({ chart, prose = true, extraTop = null, extraBottom = null }: { chart: BaziChart; prose?: boolean; extraTop?: ReactNode; extraBottom?: ReactNode }) {
+function LiunianCard({ chart, prose = true, extraTop = null, extraBottom = null, aiAsk }: { chart: BaziChart; prose?: boolean; extraTop?: ReactNode; extraBottom?: ReactNode; aiAsk?: (q: string) => Promise<string> }) {
   const now = new Date().getFullYear()
   const years = useMemo(() => liuNianRange(now - 1, 6, chart.dayGan), [chart, now])
   const [year, setYear] = useState(now)
+  const [aiCache, setAiCache] = useState<Record<number, { body: string; note: string }>>({})
+  const [loadingYear, setLoadingYear] = useState<number | null>(null)
   const ln = years.find((l) => l.year === year) ?? years[0]
   const r = interpretLiuNian(ln, chart)
+  const pick = (y: number) => {
+    setYear(y)
+    if (!aiAsk || y === now || aiCache[y]) return
+    const l = years.find((x) => x.year === y)
+    if (!l) return
+    setLoadingYear(y)
+    aiAsk(`【系统指令】命主在流年卡上切换到 ${l.year} ${l.ganZhi} 年（流年${l.god}）。请解读该年运势要点（80~150字，扣着他的喜忌与处境，说明吉凶与该做什么），另起一行「卡注：不超过26字」。不要写「建议」「卡片」行。`)
+      .then((raw) => { const pr = parseAiReply(raw); setAiCache((m) => ({ ...m, [y]: { body: pr.body, note: pr.note } })) })
+      .catch(() => setAiCache((m) => ({ ...m, [y]: { body: '未能接通 AI，此年解读暂缺——修好配置后重选此年即可。', note: '' } })))
+      .finally(() => setLoadingYear((v) => (v === y ? null : v)))
+  }
+  const topNode = !aiAsk || year === now ? extraTop : (aiCache[year] ? aiProseNode(aiCache[year].body) : null)
+  const bottomNode = !aiAsk || year === now ? extraBottom : (aiCache[year]?.note ? aiZhupiNode(aiCache[year].note) : null)
   return (
-    <CardMsg title={`${ln.year} ${ln.ganZhi}年`} sub={`流年${ln.god} · 红针指向流年地支`}>
-      {extraTop}
+    <CardMsg title={`${ln.year} ${ln.ganZhi}年`} sub={`流年${ln.god} · 红针指向流年地支 · 点年份即时解读`}>
+      {topNode}
+      {loadingYear === year && <div className="card-loading">老朽正在推算 {year} 年…</div>}
       <InkArt name="liunian" height={120} />
       <div className="liunian-grid" style={{ marginBottom: 10 }}>
         {years.map((l) => (
-          <div key={l.year} className={`liunian-cell ${l.year === year ? 'active' : ''}`} onClick={() => setYear(l.year)}>
+          <div key={l.year} className={`liunian-cell ${l.year === year ? 'active' : ''}`} onClick={() => pick(l.year)}>
             <div className="liunian-gz">{l.ganZhi}</div>
             <div className="liunian-year">{l.year} · {l.god}</div>
           </div>
@@ -764,7 +803,7 @@ function LiunianCard({ chart, prose = true, extraTop = null, extraBottom = null 
           <div className="badge-row ji"><span className="badge-key">提点</span><span className="badge-val">{r.extra}。</span></div>
         </div>
       )}
-      {extraBottom}
+      {bottomNode}
     </CardMsg>
   )
 }
