@@ -62,6 +62,29 @@ export async function syncUpload(cfg: SyncConfig): Promise<string> {
   return `已备份到云端：${parts}（${(body.length / 1024).toFixed(1)}KB）`
 }
 
+// 首次使用自动生成恢复码（备份身份）；换设备输入同一码即可取回
+export function ensureSyncCode(): string {
+  const saved = loadSyncConfig()
+  if (saved?.code) return saved.code
+  const bytes = new Uint8Array(5)
+  crypto.getRandomValues(bytes)
+  const code = 'XJG-' + [...bytes].map((b) => b.toString(36).padStart(2, '0')).join('').slice(0, 8).toUpperCase()
+  saveSyncConfig({ ...(saved ?? {}), code })
+  return code
+}
+
+// 静默自动备份：数据变更后防抖 5 秒上传，失败不打扰（下次变更再试）
+let backupTimer: ReturnType<typeof setTimeout> | null = null
+export function scheduleBackup(delayMs = 5000) {
+  if (typeof localStorage === 'undefined') return
+  if (backupTimer) clearTimeout(backupTimer)
+  backupTimer = setTimeout(() => {
+    backupTimer = null
+    const cfg = loadSyncConfig()
+    if (cfg) syncUpload(cfg).catch(() => { /* 静默，等下次 */ })
+  }, delayMs)
+}
+
 export async function syncRestore(cfg: SyncConfig): Promise<string> {
   const res = await call(cfg, 'GET')
   if (!res.ok) throw new Error(await readError(res))

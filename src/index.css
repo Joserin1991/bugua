@@ -96,6 +96,7 @@ body {
 
 /* ---------- 首页 ---------- */
 .home {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -105,24 +106,33 @@ body {
 
 .home-hero {
   position: relative;
+  z-index: 1;
   flex: 1;
   min-height: 420px;
   display: flex;
   flex-direction: column;
 }
 
-.home-art {
+/* 主视觉作背景渲染：满幅铺底、正片叠底融入纸面、四周水墨淡出 */
+.home-bg {
   position: absolute;
   inset: 0;
   z-index: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
+  pointer-events: none;
 }
 
-.home-art img,
-.home-art svg { width: 100%; height: 100%; object-fit: contain; }
+.home-bg img,
+.home-bg svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 24%;
+  mix-blend-mode: multiply;
+  opacity: 0.88;
+  -webkit-mask-image: radial-gradient(135% 84% at 50% 30%, #000 40%, rgba(0, 0, 0, 0.5) 64%, rgba(0, 0, 0, 0.12) 82%, transparent 94%);
+  mask-image: radial-gradient(135% 84% at 50% 30%, #000 40%, rgba(0, 0, 0, 0.5) 64%, rgba(0, 0, 0, 0.12) 82%, transparent 94%);
+}
 
 .home-title-wrap {
   position: relative;
@@ -1597,6 +1607,36 @@ body {
 }
 .report-qr img { border: 1px solid rgba(30, 28, 24, 0.18); border-radius: 6px; }
 .report-qr span { text-align: left; font-size: 0.62rem; color: var(--ink-soft); line-height: 1.7; letter-spacing: 0.06em; }
+
+/* 卡内插画融合：叠进纸面、边缘淡出，不再像贴上去的图 */
+.card-msg .inkart-img {
+  mix-blend-mode: multiply;
+  opacity: 0.92;
+  -webkit-mask-image: radial-gradient(115% 100% at 50% 50%, #000 55%, rgba(0, 0, 0, 0.4) 82%, transparent 100%);
+  mask-image: radial-gradient(115% 100% at 50% 50%, #000 55%, rgba(0, 0, 0, 0.4) 82%, transparent 100%);
+}
+
+/* 恢复码 */
+.backup-code {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 10px 0 12px;
+  padding: 12px 10px;
+  border: 1px dashed rgba(30, 28, 24, 0.35);
+  border-radius: 10px;
+  cursor: pointer;
+  background: rgba(255, 253, 246, 0.6);
+}
+.backup-code span { font-size: 0.64rem; color: var(--ink-faint); letter-spacing: 0.12em; }
+.backup-code b {
+  font-family: "ZCOOL XiaoWei", serif;
+  font-size: 1.3rem;
+  letter-spacing: 0.14em;
+  color: var(--ink);
+}
+.backup-code .bc-hint { color: var(--seal); opacity: 0.85; }
 
 /* 关于与免责 */
 .about-card { margin-top: 12px; }

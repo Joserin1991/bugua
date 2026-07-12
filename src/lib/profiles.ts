@@ -1,5 +1,6 @@
 // 命主档案库：按生辰建档，记对话史与关键记忆，供大师"认人"
 import type { ChatTurn } from './ai'
+import { scheduleBackup } from './sync'
 
 export interface PersonProfile {
   id: string
@@ -22,6 +23,7 @@ function loadStore(): Store {
 
 function saveStore(s: Store) {
   try { localStorage.setItem(LS_KEY, JSON.stringify(s)) } catch { /* 存满则放弃 */ }
+  scheduleBackup()
 }
 
 export function profileId(gender: string, date: string, hour: number, city: string | null): string {

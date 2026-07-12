@@ -1,8 +1,9 @@
 // 大师 AI 问答：把命盘全量证据交给大模型，回答专业+可懂+有情绪价值
-// 密钥只存用户本机 localStorage，绝不写入代码库或上传
+// 零配置：默认直连自建 Worker 代理（上游密钥在 Worker Secret，前端无密钥可泄）
 import { liuNianRange, type BaziChart } from './bazi'
 import type { ZwChart } from './ziwei'
 import { buildTrace } from './trace'
+import { SYNC_URL, scheduleBackup } from './sync'
 
 export interface AiConfig {
   baseUrl: string // 如 https://api.openai.com/v1 或 https://api.anthropic.com
@@ -12,18 +13,22 @@ export interface AiConfig {
 
 const LS_KEY = 'xjg-ai-config'
 
-export function loadAiConfig(): AiConfig | null {
+// 内置默认：走 Worker 代理，模型由 Worker 锁定；apiKey 仅作占位（来源白名单放行）
+export const DEFAULT_AI: AiConfig = { baseUrl: `${SYNC_URL}/v1`, apiKey: 'xjg-web', model: 'claude-sonnet-5' }
+
+export function loadAiConfig(): AiConfig {
   try {
     const raw = localStorage.getItem(LS_KEY)
-    if (!raw) return null
+    if (!raw) return DEFAULT_AI
     const c = JSON.parse(raw) as AiConfig
-    return c.baseUrl && c.apiKey && c.model ? c : null
-  } catch { return null }
+    return c.baseUrl && c.apiKey && c.model ? c : DEFAULT_AI
+  } catch { return DEFAULT_AI }
 }
 
 export function saveAiConfig(c: AiConfig | null) {
   if (!c) localStorage.removeItem(LS_KEY)
   else localStorage.setItem(LS_KEY, JSON.stringify(c))
+  scheduleBackup()
 }
 
 export interface ChatTurn { role: 'user' | 'assistant'; content: string }

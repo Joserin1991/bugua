@@ -1,4 +1,5 @@
 // 我的记录：localStorage 存档
+import { scheduleBackup } from './sync'
 export interface RecordItem {
   id: string
   type: '八字排盘' | '六爻问事' | '答疑解惑'
@@ -29,4 +30,5 @@ export function saveRecord(r: Omit<RecordItem, 'id' | 'date'>) {
   try {
     localStorage.setItem(KEY, JSON.stringify(list))
   } catch { /* 存储不可用时静默 */ }
+  scheduleBackup()
 }

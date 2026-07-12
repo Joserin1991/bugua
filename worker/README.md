@@ -32,17 +32,12 @@ npx wrangler deploy
 
 ## 在应用里怎么填
 
-「我的」→ 大师 AI 接入：
+## 应用侧零配置
 
-| 字段 | 填什么 |
-| --- | --- |
-| 接口地址 | `https://xuanjige-api.你的子域.workers.dev/v1` |
-| API Key | 你设的 **ACCESS_CODE**（不再是上游密钥！） |
-| 模型 | 随意填（以 Worker 里 UPSTREAM_MODEL 为准） |
+前端**无需任何填写**：
 
-「我的」→ 云同步：只需填**同步口令**（自定 ≥6 位，换设备时输入同一口令恢复）。
-服务地址已内置在前端 `src/lib/sync.ts` 的 `SYNC_URL`，自行部署后改这一处即可。
-备份内容：命主档案、问卦记录、AI 配置。
+- **AI**：默认直连本 Worker（地址内置在 `src/lib/sync.ts` 的 `SYNC_URL`）。放行逻辑：来源在 `PUBLIC_ORIGINS` 白名单内（或 localhost 开发）即可用，受每日限额约束（全站 `DAILY_LIMIT`、单 IP `IP_DAILY_LIMIT`）；带 `ACCESS_CODE` 的请求不限额（自用）。
+- **云备份**：全自动。首次启动生成「恢复码」（「我的」页可见、点击复制），数据变动后 5 秒静默上云；换设备输入旧机恢复码即可取回档案与记录。
 
 ## 改配置
 

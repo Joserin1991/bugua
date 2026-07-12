@@ -16,6 +16,11 @@ UPSTREAM_BASE = "https://api.hao.ai/v1"
 UPSTREAM_MODEL = "claude-sonnet-5"
 # 允许的网页来源；上线后建议收紧为 "https://joserin1991.github.io"
 ALLOW_ORIGIN = "*"
+# 零配置访问白名单（Origin 精确匹配，逗号分隔；localhost 恒放行方便开发）
+PUBLIC_ORIGINS = "https://joserin1991.github.io"
+# 零配置访问每日限额（特权口令不受限）
+DAILY_LIMIT = "300"
+IP_DAILY_LIMIT = "60"
 
 # 机密另行设置，绝不写进本文件：
 #   npx wrangler secret put UPSTREAM_KEY   ← 上游 API 密钥
