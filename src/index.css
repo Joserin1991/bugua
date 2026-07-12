@@ -1108,6 +1108,14 @@ body {
   border-top: 1px dashed var(--card-line);
 }
 
+/* 正文印图表之上 */
+.ai-on-card.top {
+  margin: 4px 0 14px;
+  padding: 0 0 12px;
+  border-top: none;
+  border-bottom: 1px dashed var(--card-line);
+}
+
 .ai-on-card .reading-p { margin-bottom: 8px; }
 
 .card-zhupi {
@@ -1168,6 +1176,23 @@ body {
 }
 
 @keyframes castspin { to { transform: rotate(360deg); } }
+
+/* AI 状态印章（屏头） */
+.ai-badge {
+  display: inline-block;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  padding: 3px 7px;
+  border-radius: 3px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-faint);
+  font-family: "ZCOOL XiaoWei", serif;
+}
+
+.ai-badge.on {
+  border-color: var(--seal);
+  color: var(--seal);
+}
 
 /* ---------- AI 配置 ---------- */
 .ai-config { margin-bottom: 14px; }

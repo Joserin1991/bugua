@@ -34,7 +34,7 @@ type NewItem =
 
 type Item = NewItem & { id: number }
 
-type Stage = 'gender' | 'date' | 'hour' | 'city' | 'computing' | 'ready'
+type Stage = 'gather' | 'computing' | 'ready'
 
 const TOPIC_KEYS = ['三盘合参', '五行分析', '十神关系', '大运走势', '流年运势', '事业运势', '财运走势', '感情运势', '健康提点', '神煞照命', '专业细盘', '紫微星盘', '命理总断'] as const
 // 「推演解说」不上胶囊栏：推理链留在引擎内部，用户问起时由大师口述带过
@@ -86,27 +86,86 @@ function parseAiReply(raw: string): { body: string; card: Topic | null; note: st
   return { body, card, note, suggests, memo }
 }
 
-// AI 解读块：印在卡片内部（正文段落 + 朱批），是卡的一部分
-function aiOnCard(body: string, note: string): ReactNode {
-  if (!body && !note) return null
+// AI 解读正文：印在卡片顶部（图表之上）
+function aiProseNode(body: string): ReactNode {
+  if (!body) return null
   return (
-    <div className="ai-on-card">
+    <div className="ai-on-card top">
       {body.split(/\n+/).filter(Boolean).map((t, i) => <p className="reading-p" key={i}>{t}</p>)}
-      {note && <div className="card-zhupi">批：{note}</div>}
     </div>
   )
+}
+
+// AI 朱批：印在卡片底部
+function aiZhupiNode(note: string): ReactNode {
+  if (!note) return null
+  return <div className="card-zhupi">批：{note}</div>
+}
+
+// ---------- 生辰自由文本解析 ----------
+interface BirthDraft { gender?: '男' | '女'; date?: string; hour?: number; cityIdx?: number | null }
+
+const CN_NUM: Record<string, number> = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 }
+function cnToNum(t: string): number | undefined {
+  if (/^\d+$/.test(t)) return Number(t)
+  if (CN_NUM[t] != null) return CN_NUM[t]
+  const m = t.match(/^十([一二])$/)
+  if (m) return 10 + CN_NUM[m[1]]
+  const m2 = t.match(/^([一二两三四五六七八九])?十([一二三四五六七八九])?$/)
+  if (m2) return (m2[1] ? CN_NUM[m2[1]] : 1) * 10 + (m2[2] ? CN_NUM[m2[2]] : 0)
+  return undefined
+}
+
+const ZHI_HOUR: Record<string, number> = { 子: 23, 丑: 1, 寅: 3, 卯: 5, 辰: 7, 巳: 9, 午: 11, 未: 13, 申: 15, 酉: 17, 戌: 19, 亥: 21 }
+
+// 钟点 → HOUR_OPTIONS 档位
+function hourToOption(h: number): number {
+  if (h >= 23) return 23
+  if (h <= 0) return 0
+  return h % 2 === 1 ? h : h - 1
+}
+
+function parseBirthText(text: string, draft: BirthDraft) {
+  if (/女/.test(text)) draft.gender = '女'
+  else if (/男/.test(text)) draft.gender = '男'
+  const dm = text.match(/((?:19|20)\d{2})\s*[年.\-\/]\s*(\d{1,2})\s*[月.\-\/]\s*(\d{1,2})/)
+  if (dm) {
+    const y = Number(dm[1]); const mo = Number(dm[2]); const dd = Number(dm[3])
+    if (mo >= 1 && mo <= 12 && dd >= 1 && dd <= 31) draft.date = `${y}-${String(mo).padStart(2, '0')}-${String(dd).padStart(2, '0')}`
+  }
+  const zm = text.match(/([子丑寅卯辰巳午未申酉戌亥])[时時]/)
+  if (zm) draft.hour = ZHI_HOUR[zm[1]]
+  const hm = text.match(/([\d一二两三四五六七八九十]{1,3})\s*[点點]/)
+  if (hm) {
+    let h = cnToNum(hm[1])
+    if (h != null) {
+      if (/(下午|傍晚|晚上|夜里|晚间)/.test(text) && h < 12) h += 12
+      if (/凌晨/.test(text) && h >= 12) h -= 12
+      if (h === 24) h = 0
+      if (h >= 0 && h <= 23) draft.hour = hourToOption(h)
+    }
+  }
+  if (draft.hour == null) {
+    if (/(中午|正午)/.test(text)) draft.hour = 11
+    else if (/(清晨|拂晓)/.test(text)) draft.hour = 5
+    else if (/上午/.test(text)) draft.hour = 9
+    else if (/(早上|早晨)/.test(text)) draft.hour = 7
+    else if (/(傍晚|黄昏)/.test(text)) draft.hour = 17
+    else if (/(深夜|半夜)/.test(text)) draft.hour = 23
+  }
+  const ci = CITIES.findIndex((ct) => text.includes(ct.name))
+  if (ci >= 0) draft.cityIdx = ci
+  else if (draft.cityIdx === undefined && /(跳过|不知道|不清楚|记不清|不记得)/.test(text)) draft.cityIdx = null
 }
 
 let uid = 1
 
 export function BaziChat() {
   const [items, setItems] = useState<Item[]>([])
-  const [stage, setStage] = useState<Stage>('gender')
+  const [stage, setStage] = useState<Stage>('gather')
   const [busy, setBusy] = useState(true) // 大师打字中
-  const [gender, setGender] = useState<'男' | '女'>('男')
-  const [date, setDate] = useState('1995-08-16')
-  const [hour, setHour] = useState(9)
-  const [cityIdx, setCityIdx] = useState(0)
+  const draftRef = useRef<BirthDraft>({})
+  const lastAskRef = useRef<'gender' | 'date' | 'hour' | 'city' | null>(null)
   const [pct, setPct] = useState(0)
   const [chart, setChart] = useState<BaziChart | null>(null)
   const [visited, setVisited] = useState<Topic[]>([])
@@ -143,22 +202,43 @@ export function BaziChat() {
   const node = (n: ReactNode) => push({ kind: 'node', node: n })
 
   useEffect(() => {
-    master(['世间万象，皆有其时。', '既然你想了解自己，我们先从你的出生信息开始，老朽为你排出专属命盘。', '所测是男命，还是女命？'])
+    master([
+      '世间万象，皆有其时。',
+      '既然你想了解自己，把出生信息一并说与老朽——是男是女、哪年哪月哪日（阳历）、大概几点、生在哪座城市。',
+      '例如：「女，1991年11月2日上午10点，杭州」。缺哪样，老朽再单问。',
+      ...(loadAiConfig() ? [] : ['（老朽当前以本地古法作答；到「我的」页接入 AI 后，问答更贴身。）']),
+    ])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ---------- 起盘 ----------
-  const confirmHour = (h: number) => {
-    setHour(h)
-    user(`${HOUR_OPTIONS.find((o) => o.v === h)?.label.split('（')[0] ?? ''}。`)
-    master(['最后一问：出生在哪座城市？', '中西部与沿海钟表同刻、日影不同——老朽要按当地真太阳时给你校时，差之一辰谬以千里。'])
-    setStage('city')
+  // ---------- 起盘（对话式收集） ----------
+  const askMissing = () => {
+    const d = draftRef.current
+    if (!d.gender) { lastAskRef.current = 'gender'; master(['所测是男命，还是女命？']); return }
+    if (!d.date) { lastAskRef.current = 'date'; master(['出生的年月日是？如「1991年11月2日」（阳历即可，农历节气老朽自会换算）。']); return }
+    if (d.hour == null) { lastAskRef.current = 'hour'; master(['几点钟出生？大概时段亦可——如「上午十点」「下午两点」「戌时」。']); return }
+    if (d.cityIdx === undefined) { lastAskRef.current = 'city'; master(['最后一问：生在哪座城市？老朽按当地真太阳时给你校时——记不清说「跳过」。']); return }
+    lastAskRef.current = null
+    startCompute()
   }
 
-  const confirmCity = (idx: number) => {
-    const city = idx >= 0 ? CITIES[idx] : null
-    user(city ? `${city.name}。` : '记不清了，直接排吧。')
-    master(['多谢。', '正在为你排演，请稍候片刻。'])
+  const handleGather = (text: string) => {
+    user(text)
+    const d = draftRef.current
+    parseBirthText(text, d)
+    // 追问城市而未识别：按跳过处理，不纠缠
+    if (lastAskRef.current === 'city' && d.cityIdx === undefined) d.cityIdx = null
+    askMissing()
+  }
+
+  const startCompute = () => {
+    const draft = draftRef.current
+    const gender = draft.gender!
+    const date = draft.date!
+    const hour = draft.hour!
+    const city = draft.cityIdx != null && draft.cityIdx >= 0 ? CITIES[draft.cityIdx] : null
+    const hourLabel = HOUR_OPTIONS.find((o) => o.v === hour)?.label.split('（')[0] ?? ''
+    master([`听全了——${gender}命，${date.replace(/-0?/g, '/').replace('/', '年').replace('/', '月')}日，${hourLabel}，${city ? city.name : '出生地未知'}。`, '正在为你排演，请稍候片刻。'])
     setStage('computing')
     const [y, m, d] = date.split('-').map(Number)
     // 用时辰中点作钟表时刻，交由引擎做真太阳时校正
@@ -281,7 +361,7 @@ export function BaziChat() {
   }
 
   // 各话题的固定开场白与盘面卡（AI 模式下开场白仅作断网保底）
-  const buildTopicView = (topic: Topic, ai = false, aiExtra: ReactNode = null): { intro: ReactNode[]; card: ReactNode | null } => {
+  const buildTopicView = (topic: Topic, ai = false, aiProse: ReactNode = null, aiZhupi: ReactNode = null): { intro: ReactNode[]; card: ReactNode | null } => {
     const c = chartRef.current!
     const r = readingRef.current!
     const ln = currentLn(c)
@@ -294,8 +374,9 @@ export function BaziChat() {
           intro: ['孤证不立。老朽把八字、紫微、卦象三盘并起，对事业、财帛、姻缘、康健逐一互证——三盘同断者十拿九稳，各执一词者，老朽也给你说分明。'],
           card: (
             <CardMsg title="三盘合参" sub="八字 × 紫微 × 卦象 · 交叉印证">
+              {aiProse}
               <SanpanCard result={sp} />
-              {aiExtra}
+              {aiZhupi}
             </CardMsg>
           ),
         }
@@ -305,10 +386,11 @@ export function BaziChat() {
           intro: ['我们先看你的五行强弱。'],
           card: (
             <CardMsg title="五行能量分布">
+              {aiProse}
               <WuxingPctBars chart={c} />
               <Radar data={wuxingRadarData(c)} max={100} />
               {!ai && <p className="reading-p" style={{ marginTop: 6 }}>{r.personality}</p>}
-              {aiExtra}
+              {aiZhupi}
             </CardMsg>
           ),
         }
@@ -317,9 +399,10 @@ export function BaziChat() {
           intro: ['十神者，人事之网也——贵人、财富、才华、压力，皆在此图中各居其位。红点为命中所有，红圈为今岁当值。'],
           card: (
             <CardMsg title="十神环绕 · 日主居中">
+              {aiProse}
               <TenGodOrbit chart={c} activeGod={ln ? ln.god : undefined} />
               <p className="center-note">点<Term k="十神">十神</Term>名可查其义</p>
-              {aiExtra}
+              {aiZhupi}
             </CardMsg>
           ),
         }
@@ -328,23 +411,25 @@ export function BaziChat() {
           intro: ['细盘在此。地支藏干、星运自坐、空亡纳音、神煞，柱柱分明；右二列为现行大运与流年。红字皆可点问。'],
           card: (
             <CardMsg title="专业细盘">
+              {aiProse}
               <ProTable chart={c} activeDayun={c.daYun.find((d) => { const y = new Date().getFullYear(); return y >= d.startYear && y <= d.endYear }) ?? c.daYun[0]} activeLn={ln} />
-              {aiExtra}
+              {aiZhupi}
             </CardMsg>
           ),
         }
       case '大运走势':
-        return { intro: [`${c.qiYunText}。大运十年一换，如行船换水道——下图便是你一生的水路起伏。`], card: <DayunCard chart={c} prose={!ai} extra={aiExtra} /> }
+        return { intro: [`${c.qiYunText}。大运十年一换，如行船换水道——下图便是你一生的水路起伏。`], card: <DayunCard chart={c} prose={!ai} extraTop={aiProse} extraBottom={aiZhupi} /> }
       case '流年运势':
-        return { intro: ['来看你今年的流年运势。'], card: <LiunianCard chart={c} prose={!ai} extra={aiExtra} /> }
+        return { intro: ['来看你今年的流年运势。'], card: <LiunianCard chart={c} prose={!ai} extraTop={aiProse} extraBottom={aiZhupi} /> }
       case '事业运势':
         return {
           intro: ['来看你今年的事业运势。'],
           card: (
             <CardMsg title="事业五维" sub="由命局十神推得">
+              {aiProse}
               <Radar data={abilityRadarData(c)} max={100} />
               {!ai && <p className="reading-p" style={{ marginTop: 4 }}>{r.career}</p>}
-              {aiExtra}
+              {aiZhupi}
             </CardMsg>
           ),
         }
@@ -352,7 +437,7 @@ export function BaziChat() {
         return {
           intro: ['财帛之事，须看财星与身强身弱相配。'],
           card: ai
-            ? (aiExtra ? <CardMsg title="财帛之道">{aiExtra}</CardMsg> : null)
+            ? (aiProse ? <CardMsg title="财帛之道">{aiProse}{aiZhupi}</CardMsg> : null)
             : (
               <CardMsg title="财帛之道">
                 <p className="reading-p">{r.wealth}</p>
@@ -364,9 +449,10 @@ export function BaziChat() {
           intro: ['你的感情格局如下：'],
           card: (
             <CardMsg title="姻缘情感">
+              {aiProse}
               <InkArt name="love" height={140} />
               {!ai && <p className="reading-p">{r.love}</p>}
-              {aiExtra}
+              {aiZhupi}
             </CardMsg>
           ),
         }
@@ -374,7 +460,7 @@ export function BaziChat() {
         return {
           intro: ['身体是行运的本钱，且听老朽几句提点。'],
           card: ai
-            ? (aiExtra ? <CardMsg title="康健养生">{aiExtra}</CardMsg> : null)
+            ? (aiProse ? <CardMsg title="康健养生">{aiProse}{aiZhupi}</CardMsg> : null)
             : (
               <CardMsg title="康健养生">
                 <p className="reading-p">{r.health}</p>
@@ -386,8 +472,9 @@ export function BaziChat() {
           intro: ['你命里照着这几颗星。吉者当用，凶者知避——不必惧，是提前递给你的信儿。'],
           card: (
             <CardMsg title="神煞照命">
+              {aiProse}
               <ShenshaSection chart={c} />
-              {aiExtra}
+              {aiZhupi}
             </CardMsg>
           ),
         }
@@ -398,8 +485,9 @@ export function BaziChat() {
           intro: [`八字论气，斗数观星。你是${zw.fiveElementsClass}，命主${zw.soul}，身主${zw.body}。星名皆可点问。`],
           card: (
             <CardMsg title="紫微星盘">
+              {aiProse}
               <ZiweiChart chart={zw} gender={c.gender} />
-              {aiExtra}
+              {aiZhupi}
             </CardMsg>
           ),
         }
@@ -408,7 +496,7 @@ export function BaziChat() {
         return {
           intro: ['最后，老朽将此命从头道来——格局、性情、事业、财帛、姻缘、康健，一一剖解。'],
           card: ai
-            ? (aiExtra ? <CardMsg title="命理总断">{aiExtra}</CardMsg> : null)
+            ? (aiProse ? <CardMsg title="命理总断">{aiProse}{aiZhupi}</CardMsg> : null)
             : (
               <CardMsg title="命理总断">
                 <ReadingSections reading={r} />
@@ -429,7 +517,7 @@ export function BaziChat() {
     const parsed = parseAiReply(raw)
     const cards: (ReactNode | null)[] = []
     if (parsed.card) {
-      const view = buildTopicView(parsed.card, true, parsed.note ? aiOnCard('', parsed.note) : null)
+      const view = buildTopicView(parsed.card, true, null, aiZhupiNode(parsed.note))
       cards.push(view.card)
       setVisited((v) => [...v, parsed.card!])
     }
@@ -441,7 +529,7 @@ export function BaziChat() {
   // 卡路：AI 返回后才开始布盘，解读正文与朱批全部印在卡片内部
   const applyCardReply = (topic: Topic, raw: string): string => {
     const parsed = parseAiReply(raw)
-    const view = buildTopicView(topic, true, aiOnCard(parsed.body, parsed.note))
+    const view = buildTopicView(topic, true, aiProseNode(parsed.body), aiZhupiNode(parsed.note))
     if (view.card) {
       setCardCasting(true)
       setTimeout(() => {
@@ -499,7 +587,7 @@ export function BaziChat() {
       return
     }
     const digest = topicDigest(topic)
-    const instruction = `【系统指令】命主刚点开「${topic}」。你的解读正文将直接印在这张盘面卡内部（图表下方），朱批印在卡底——所以直接以解读开头，不要寒暄。${digest ? `卡片数据：${digest}。` : ''}请解读（150~260字）：把卡上的关键处点到名字（哪一年、哪一步运、哪个五行），先专业断语后白话解释，扣着他此前聊过的处境，末尾一句指引；并按规则写一行「卡注」。`
+    const instruction = `【系统指令】命主刚点开「${topic}」。你的解读正文将印在这张盘面卡顶部（图表之上），朱批印在卡底——所以直接以解读开头，不要寒暄。${digest ? `卡片数据：${digest}。` : ''}请解读（150~260字）：把卡上的关键处点到名字（哪一年、哪一步运、哪个五行），先专业断语后白话解释，扣着他此前聊过的处境，末尾一句指引；并按规则写一行「卡注」。`
     setAiThinking(true)
     Promise.all([
       askMaster(aiCfg!, aiSystemRef.current, aiHistoryRef.current.slice(-8), instruction),
@@ -517,9 +605,10 @@ export function BaziChat() {
 
   // 底部自由提问：配置了 AI 走大模型（带上下文），否则回落规则引擎
   const onAsk = (text: string) => {
+    if (stage === 'gather') { handleGather(text); return }
     if (stage !== 'ready') {
       user(text)
-      master(['莫急，先把生辰告诉老朽，排出命盘，方能为你细断。'])
+      master(['莫急，盘正在排，稍候片刻。'])
       return
     }
     user(text)
@@ -532,7 +621,7 @@ export function BaziChat() {
       if (cardTopic) {
         setVisited((v) => [...v, cardTopic])
         const digest = topicDigest(cardTopic)
-        q = `${text}\n【系统指令】你的解读正文将直接印在「${cardTopic}」盘面卡内部——直接以解读开头，不要寒暄。${digest ? `卡片数据：${digest}。` : ''}结合卡上数据点名解读（150~260字），先答命主所问，扣着他此前的处境；并按规则写一行「卡注」。`
+        q = `${text}\n【系统指令】你的解读正文将印在「${cardTopic}」盘面卡顶部（图表之上）——直接以解读开头，不要寒暄。${digest ? `卡片数据：${digest}。` : ''}结合卡上数据点名解读（150~260字），先答命主所问，扣着他此前的处境；并按规则写一行「卡注」。`
       }
       setAiThinking(true)
       Promise.all([
@@ -590,43 +679,6 @@ export function BaziChat() {
           return <div key={it.id}>{it.node}</div>
         })}
 
-        {/* 阶段交互 */}
-        {!busy && stage === 'gender' && (
-          <Chips items={['男命', '女命']} onPick={(v) => {
-            setGender(v === '男命' ? '男' : '女')
-            user(`${v}。`)
-            master(['你的出生日期是？阳历即可，农历节气老朽自会换算。'])
-            setStage('date')
-          }} />
-        )}
-        {!busy && stage === 'date' && (
-          <div className="inline-input-row fade-in">
-            <input type="date" value={date} min="1901-01-01" max="2099-12-31" onChange={(e) => setDate(e.target.value)} />
-            <button className="chip" onClick={() => {
-              if (!date) return
-              user(`${date.split('-')[0]}年${Number(date.split('-')[1])}月${Number(date.split('-')[2])}日。`)
-              master(['出生时间是？记不清确切钟点，选个大概也不打紧。'])
-              setStage('hour')
-            }}>就是这天</button>
-          </div>
-        )}
-        {!busy && stage === 'hour' && (
-          <div className="inline-input-row fade-in">
-            <select value={hour} onChange={(e) => setHour(Number(e.target.value))}>
-              {HOUR_OPTIONS.map((h) => <option key={h.label} value={h.v}>{h.label}</option>)}
-            </select>
-            <button className="chip" onClick={() => confirmHour(hour)}>差不多这时候</button>
-          </div>
-        )}
-        {!busy && stage === 'city' && (
-          <div className="inline-input-row fade-in">
-            <select value={cityIdx} onChange={(e) => setCityIdx(Number(e.target.value))}>
-              {CITIES.map((ct, i) => <option key={ct.name} value={i}>{ct.name}（东经{ct.lng}°）</option>)}
-            </select>
-            <button className="chip" onClick={() => confirmCity(cityIdx)}>就是这里</button>
-            <button className="chip chip-ghost" onClick={() => confirmCity(-1)}>跳过</button>
-          </div>
-        )}
         {aiThinking && (
           <div className="msg-row fade-in">
             <div className="msg-bubble typing" style={{ marginLeft: 44 }}>老朽正在掐指推算<span className="caret">▌</span></div>
@@ -653,7 +705,7 @@ export function BaziChat() {
 }
 
 // ---------- 大运卡（内部可交互） ----------
-function DayunCard({ chart, prose = true, extra = null }: { chart: BaziChart; prose?: boolean; extra?: ReactNode }) {
+function DayunCard({ chart, prose = true, extraTop = null, extraBottom = null }: { chart: BaziChart; prose?: boolean; extraTop?: ReactNode; extraBottom?: ReactNode }) {
   const now = new Date().getFullYear()
   const init = Math.max(0, chart.daYun.findIndex((d) => now >= d.startYear && now <= d.endYear))
   const [idx, setIdx] = useState(init)
@@ -661,6 +713,7 @@ function DayunCard({ chart, prose = true, extra = null }: { chart: BaziChart; pr
   const god = tenGod(chart.dayGan, d.ganZhi[0])
   return (
     <CardMsg title="大运排盘" sub="每十年一运 · 岁数为虚岁 · 点折线上的节点切换">
+      {extraTop}
       <div className="dayun-strip">
         {chart.daYun.map((dy, i) => (
           <div key={dy.ganZhi + dy.startYear} className={`dayun-cell ${i === idx ? 'active' : ''}`} onClick={() => setIdx(i)}>
@@ -678,13 +731,13 @@ function DayunCard({ chart, prose = true, extra = null }: { chart: BaziChart; pr
             ? '此运动星当值，压力与机遇并存，敢闯者得势，唯忌意气用事。'
             : '此运气象平顺，宜按部就班经营，勿贪快求变。'}
       </p>}
-      {extra}
+      {extraBottom}
     </CardMsg>
   )
 }
 
 // ---------- 流年卡（内部可交互） ----------
-function LiunianCard({ chart, prose = true, extra = null }: { chart: BaziChart; prose?: boolean; extra?: ReactNode }) {
+function LiunianCard({ chart, prose = true, extraTop = null, extraBottom = null }: { chart: BaziChart; prose?: boolean; extraTop?: ReactNode; extraBottom?: ReactNode }) {
   const now = new Date().getFullYear()
   const years = useMemo(() => liuNianRange(now - 1, 6, chart.dayGan), [chart, now])
   const [year, setYear] = useState(now)
@@ -692,6 +745,7 @@ function LiunianCard({ chart, prose = true, extra = null }: { chart: BaziChart; 
   const r = interpretLiuNian(ln, chart)
   return (
     <CardMsg title={`${ln.year} ${ln.ganZhi}年`} sub={`流年${ln.god} · 红针指向流年地支`}>
+      {extraTop}
       <InkArt name="liunian" height={120} />
       <div className="liunian-grid" style={{ marginBottom: 10 }}>
         {years.map((l) => (
@@ -709,7 +763,7 @@ function LiunianCard({ chart, prose = true, extra = null }: { chart: BaziChart; 
           <div className="badge-row ji"><span className="badge-key">提点</span><span className="badge-val">{r.extra}。</span></div>
         </div>
       )}
-      {extra}
+      {extraBottom}
     </CardMsg>
   )
 }
