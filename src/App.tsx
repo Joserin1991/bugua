@@ -22,7 +22,13 @@ export default function App() {
         {screen === 'home' && <Home go={setScreen} />}
         {screen !== 'home' && (
           <>
-            <ScreenHead title={SCREEN_TITLE[screen]} onBack={() => setScreen('home')} />
+            <ScreenHead
+              title={SCREEN_TITLE[screen]}
+              onBack={() => setScreen('home')}
+              right={['bazi', 'divine', 'oracle'].includes(screen)
+                ? <span className={`ai-badge ${loadAiConfig() ? 'on' : ''}`}>{loadAiConfig() ? 'AI·通' : '本地'}</span>
+                : undefined}
+            />
             {screen === 'bazi' && <BaziChat key="bazi" />}
             {screen === 'divine' && <DivineChat key="divine" />}
             {screen === 'oracle' && <OracleChat key="oracle" />}
