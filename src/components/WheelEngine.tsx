@@ -1,5 +1,6 @@
 // 命盘圆盘引擎 · 渲染层：WheelConfig(JSON) → SVG
 // 中心太极不转；环体随 rotateToZhi 旋转，红针固定正上
+import { fx } from '../lib/fx'
 import { TOKENS } from '../dassets/tokens'
 import { ZHI_LIST } from '../lib/wuxing'
 import type { WheelConfig, WheelRing } from '../engine/wheel'
@@ -75,7 +76,7 @@ export function WheelEngine({ config }: { config: WheelConfig }) {
         <circle cx={c} cy={c} r={hubR} fill={TOKENS.card} stroke={TOKENS.ink} strokeWidth="1.4" />
         <circle cx={c} cy={c} r={hubR - 4} fill="none" stroke={TOKENS.seal} strokeWidth="0.8" opacity="0.6" />
         <image
-          href="/fx/taiji.png"
+          href={fx('taiji.png')}
           x={c - hubR * 0.5} y={c - hubR * 0.68}
           width={hubR} height={hubR}
           opacity="0.95"
