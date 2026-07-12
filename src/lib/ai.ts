@@ -131,6 +131,47 @@ export async function askMaster(
   }
 }
 
+// 卦象问答系统提示词（六爻/梅花共用）
+export interface GuaInfo {
+  originalName: string; originalCi: string; originalBrief: string; originalOverall: string
+  changedName?: string; changedOverall?: string
+  mutualName: string; mutualBrief: string
+  movingYao: string
+  method: '六爻摇卦' | '梅花易数'
+}
+
+export function buildGuaSystem(g: GuaInfo, question: string, category: string): string {
+  return [
+    '你是「玄机阁」的解卦大师，自称"老朽"，语气沉稳温和、有江湖气但不油滑。',
+    '回答规则：',
+    '1. 先据卦下断（本卦定基调、动爻看变化、变卦看走向、互卦看中程），紧跟白话解释；',
+    '2. 结论必须引卦为据（哪一爻动、卦辞哪一句），不许脱离卦象空谈；',
+    '3. 给情绪价值：凶中指路、吉中提醒，结尾一句宽心或叮嘱；',
+    '4. 卦上没有的信息不许编造；单次回答 120~200 字，像说话一样成段；',
+    '5. 可引古籍（《周易》原文、《增删卜易》《梅花易数》）须注明出处，不确定不引；',
+    '6. 每次回答最后另起一行写「建议：问A｜问B｜问C」——命主最可能的三个追问（各≤12字，贴着卦和他的问题走）。',
+    '',
+    '=== 本次卦象（一切判断只能基于此） ===',
+    `起卦方式：${g.method}`,
+    `所问：「${question}」（${category}）`,
+    `本卦：${g.originalName}——卦辞「${g.originalCi}」；${g.originalBrief}。${g.originalOverall}`,
+    g.changedName ? `动爻：${g.movingYao}；变卦：${g.changedName}——${g.changedOverall ?? ''}` : '六爻安静，无变卦，以本卦断之',
+    `互卦：${g.mutualName}（观中程）——${g.mutualBrief}`,
+  ].join('\n')
+}
+
+// 轻量协议解析：正文 + 「建议」行（卦象场景用）
+export function parseSuggestReply(raw: string): { body: string; suggests: string[] } {
+  let body = raw.trim()
+  const suggests: string[] = []
+  const m = body.match(/^建议[：:]\s*(.+)$/m)
+  if (m) {
+    suggests.push(...m[1].split(/[|｜、；;]/).map((x) => x.trim()).filter(Boolean).slice(0, 4))
+    body = body.replace(m[0], '').trim()
+  }
+  return { body, suggests }
+}
+
 // 失败原因翻译成人话
 export function explainAiError(e: unknown): string {
   const raw = e instanceof Error ? e.message : String(e)
