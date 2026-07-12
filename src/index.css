@@ -1461,6 +1461,15 @@ body {
   .chat-scroll { padding: 12px 12px 20px; }
 }
 
+/* 细盘脚注 */
+.pro-foot {
+  margin: 10px 2px 2px;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.06em;
+  line-height: 1.8;
+}
+
 /* 古籍引文 */
 .classic-quote {
   margin: 10px 0 2px;
