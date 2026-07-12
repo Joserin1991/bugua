@@ -1,6 +1,7 @@
 // 复用盘面区块：专业细盘、命盘天衡、神煞、命理总断
 import { useMemo } from 'react'
 import { columnDetail, type BaziChart, type ColumnDetail, type DaYunItem, type LiuNian } from '../lib/bazi'
+import { liuYueOf } from '../lib/liuyue'
 import type { BaziReading } from '../lib/interpret'
 import { WheelEngine } from './WheelEngine'
 import { baziToWheel } from '../engine/wheel'
@@ -23,6 +24,13 @@ export function ProTable({
     }))
     if (activeDayun) cols.push({ label: '大运', lu: true, detail: columnDetail(activeDayun.ganZhi[0], activeDayun.ganZhi[1], chart.dayGan, yearZhi, dayZhi, false, chart.pillars[1].zhi) })
     if (activeLn) cols.push({ label: '流年', lu: true, detail: columnDetail(activeLn.ganZhi[0], activeLn.ganZhi[1], chart.dayGan, yearZhi, dayZhi, false, chart.pillars[1].zhi) })
+    // 流月列：仅当流年为今年时取当前节气月
+    if (activeLn && activeLn.year === new Date().getFullYear()) {
+      const months = liuYueOf(activeLn.year, activeLn.ganZhi[0], chart.dayGan)
+      const today = new Date()
+      const ly = months.find((m) => today >= m.start && today < m.end)
+      if (ly) cols.push({ label: '流月', lu: true, detail: columnDetail(ly.ganZhi[0], ly.ganZhi[1], chart.dayGan, yearZhi, dayZhi, false, chart.pillars[1].zhi) })
+    }
     return cols
   }, [chart, activeDayun, activeLn])
 
@@ -61,6 +69,7 @@ export function ProTable({
           <RowGroup key={label} label={label} termKey={termKey} columns={columns} render={render} cellClass={cellClass[label]} />
         ))}
       </div>
+      <div className="pro-foot">起运：{chart.qiYunText}　·　司令：{chart.pillars[1].cangGan[0].gan}（月令本气）</div>
     </div>
   )
 }
@@ -113,7 +122,7 @@ export function WheelSection({ chart, activeLn }: { chart: BaziChart; activeLn: 
     <div>
       <WheelEngine config={baziToWheel(chart, activeLn)} />
       <span className="wheel-hint">
-        自内而外：太极 · <Term k="命盘天衡">十二宫</Term> · <Term k="星运">十二长生</Term> · 地支 · <Term k="藏干">藏干本气</Term> · 流年 · <Term k="大运">大运</Term>
+        自内而外：太极 · <Term k="命盘天衡">十二宫</Term> · <Term k="星运">十二长生</Term> · 地支 · <Term k="藏干">藏干本气</Term> · 流年 · <Term k="大运">大运</Term> · 节气消息卦
         <br />朱印标四柱本位 · 红针所指为当前流年
       </span>
     </div>

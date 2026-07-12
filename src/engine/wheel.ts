@@ -1,6 +1,6 @@
 // 命盘圆盘引擎 · 数据层
 // 输入 WheelConfig(JSON) → WheelEngine 组件输出 SVG
-// 环序（内→外）：中心太极 → 十二宫 → 十二长生 → 十二地支 → 天干(藏干本气) → 流年 → 大运
+// 环序（内→外）：中心太极 → 十二宫 → 十二长生 → 十二地支 → 天干(藏干本气) → 流年 → 大运 → 节气·消息卦
 import type { BaziChart, LiuNian } from '../lib/bazi'
 import { ZHI_LIST, ZHI_WUXING, ZHI_CANGGAN, changSheng } from '../lib/wuxing'
 import { wuxingColor } from '../dassets/tokens'
@@ -70,6 +70,18 @@ export function baziToWheel(chart: BaziChart, activeLn: LiuNian | null): WheelCo
     return { label: g }
   })
 
+  // 十二消息卦 + 节气外环（子起）：卦符 U+4DC0 区
+  const XIAOXI: Record<string, [number, string, string]> = {
+    // 月支: [卦序, 卦名, 节名]
+    子: [24, '复', '大雪'], 丑: [19, '临', '小寒'], 寅: [11, '泰', '立春'], 卯: [34, '大壮', '惊蛰'],
+    辰: [43, '夬', '清明'], 巳: [1, '乾', '立夏'], 午: [44, '姤', '芒种'], 未: [33, '遁', '小暑'],
+    申: [12, '否', '立秋'], 酉: [20, '观', '白露'], 戌: [23, '剥', '寒露'], 亥: [2, '坤', '立冬'],
+  }
+  const jieqiItems = ZHI_LIST.map((z) => {
+    const [gid, name, jie] = XIAOXI[z]
+    return { label: `${String.fromCodePoint(0x4dbf + gid)} ${name}`, sub: jie }
+  })
+
   // 流年环：以当前流年为锚，向前后铺满 12 支（每支恰一年）
   const nowZhiIdx = (nowLn - 4) % 12 // 甲子=1984, 1984%12=4 → 子
   const lnItems = ZHI_LIST.map((_, idx) => {
@@ -92,12 +104,13 @@ export function baziToWheel(chart: BaziChart, activeLn: LiuNian | null): WheelCo
       ? { tag: '流年', main: activeLn.ganZhi, sub: String(activeLn.year) }
       : { tag: '日主', main: `${chart.dayGan}${chart.dayGanWx}` },
     rings: [
-      { id: 'gong', name: '十二宫', radius: 0.33, fontScale: 0.9, tone: 'faint', items: gongItems },
-      { id: 'changsheng', name: '十二长生', radius: 0.45, fontScale: 0.9, tone: 'faint', items: csItems },
-      { id: 'zhi', name: '十二地支', radius: 0.585, fontScale: 1.5, brush: true, tone: 'strong', items: zhiItems },
-      { id: 'gan', name: '藏干本气', radius: 0.70, fontScale: 0.95, tone: 'faint', items: ganItems },
-      { id: 'liunian', name: '流年', radius: 0.80, fontScale: 0.8, tone: 'mid', items: lnItems },
-      { id: 'dayun', name: '大运', radius: 0.905, fontScale: 0.76, tone: 'mid', items: dyItems },
+      { id: 'gong', name: '十二宫', radius: 0.31, fontScale: 0.88, tone: 'faint', items: gongItems },
+      { id: 'changsheng', name: '十二长生', radius: 0.425, fontScale: 0.88, tone: 'faint', items: csItems },
+      { id: 'zhi', name: '十二地支', radius: 0.545, fontScale: 1.45, brush: true, tone: 'strong', items: zhiItems },
+      { id: 'gan', name: '藏干本气', radius: 0.655, fontScale: 0.92, tone: 'faint', items: ganItems },
+      { id: 'liunian', name: '流年', radius: 0.75, fontScale: 0.78, tone: 'mid', items: lnItems },
+      { id: 'dayun', name: '大运', radius: 0.845, fontScale: 0.74, tone: 'mid', items: dyItems },
+      { id: 'jieqi', name: '节气·消息卦', radius: 0.945, fontScale: 0.62, tone: 'faint', items: jieqiItems },
     ],
   }
 }
