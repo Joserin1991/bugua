@@ -8,7 +8,7 @@ import { saveRecord } from '../lib/records'
 import { MasterMsg, UserMsg, CardMsg, Chips, ProgressEnso, InputBar, InkArt } from './ChatUI'
 import { CITIES } from '../lib/cities'
 import { traceNarrative } from '../lib/trace'
-import { loadAiConfig, buildMasterSystem, askMaster, type ChatTurn } from '../lib/ai'
+import { loadAiConfig, buildMasterSystem, askMasterRetry, explainAiError, type ChatTurn } from '../lib/ai'
 import { profileId, touchProfile, appendHistory, addMemory } from '../lib/profiles'
 import { sanpan } from '../lib/sanpan'
 import { SanpanCard } from './SanpanCard'
@@ -298,7 +298,7 @@ export function BaziChat() {
     if (cfg && aiSystemRef.current) {
       setAiThinking(true)
       Promise.all([
-        askMaster(cfg, aiSystemRef.current, aiHistoryRef.current.slice(-6), `【系统指令】命主的命盘刚排好，四柱盘卡已展示在界面上。${aiHistoryRef.current.length ? '这位是回头客（档案见系统提示），开场先自然接上旧话，再点盘。' : ''}请作开场解读（180~260字）：报出四柱，点出日主旺衰与格局的关键（引用具体柱位，如「月干戊土食神透出」），用一两句白话讲他的性子，最后请命主说说近来的境况或最挂心的事。`),
+        askMasterRetry(cfg, aiSystemRef.current, aiHistoryRef.current.slice(-6), `【系统指令】命主的命盘刚排好，四柱盘卡已展示在界面上。${aiHistoryRef.current.length ? '这位是回头客（档案见系统提示），开场先自然接上旧话，再点盘。' : ''}请作开场解读（180~260字）：报出四柱，点出日主旺衰与格局的关键（引用具体柱位，如「月干戊土食神透出」），用一两句白话讲他的性子，最后请命主说说近来的境况或最挂心的事。`),
         new Promise((res) => setTimeout(res, 900)),
       ])
         .then(([reply]) => {
@@ -306,7 +306,7 @@ export function BaziChat() {
           aiHistoryRef.current.push({ role: 'assistant', content: body })
           if (profileIdRef.current) appendHistory(profileIdRef.current, [{ role: 'assistant', content: body }])
         })
-        .catch(() => master(fallbackOpening))
+        .catch((e) => master([`未能接通 AI（${explainAiError(e)}）——以下为本地古法开场，修好「我的」页配置后问答即为 AI。`, ...fallbackOpening]))
         .finally(() => { setAiThinking(false); scroll() })
     } else {
       master(fallbackOpening)
@@ -573,7 +573,7 @@ export function BaziChat() {
     if (topic === '推演解说') {
       setAiThinking(true)
       Promise.all([
-        askMaster(aiCfg!, aiSystemRef.current, aiHistoryRef.current.slice(-8), '【系统指令】命主想知道这盘怎么算的。据推理链口述（150~220字），像说话一样，不列表格。'),
+        askMasterRetry(aiCfg!, aiSystemRef.current, aiHistoryRef.current.slice(-8), '【系统指令】命主想知道这盘怎么算的。据推理链口述（150~220字），像说话一样，不列表格。'),
         new Promise((res) => setTimeout(res, 900)),
       ])
         .then(([reply]) => {
@@ -582,7 +582,7 @@ export function BaziChat() {
           aiHistoryRef.current.push(...turns)
           if (profileIdRef.current) appendHistory(profileIdRef.current, turns)
         })
-        .catch(() => master(intro))
+        .catch((e) => master([`未能接通 AI（${explainAiError(e)}）。`, ...intro]))
         .finally(() => { setAiThinking(false); scroll() })
       return
     }
@@ -590,7 +590,7 @@ export function BaziChat() {
     const instruction = `【系统指令】命主刚点开「${topic}」。你的解读正文将印在这张盘面卡顶部（图表之上），朱批印在卡底——所以直接以解读开头，不要寒暄。${digest ? `卡片数据：${digest}。` : ''}请解读（150~260字）：把卡上的关键处点到名字（哪一年、哪一步运、哪个五行），先专业断语后白话解释，扣着他此前聊过的处境，末尾一句指引；并按规则写一行「卡注」。`
     setAiThinking(true)
     Promise.all([
-      askMaster(aiCfg!, aiSystemRef.current, aiHistoryRef.current.slice(-8), instruction),
+      askMasterRetry(aiCfg!, aiSystemRef.current, aiHistoryRef.current.slice(-8), instruction),
       new Promise((res) => setTimeout(res, 900)),
     ])
       .then(([reply]) => {
@@ -599,7 +599,10 @@ export function BaziChat() {
         aiHistoryRef.current.push(...turns)
         if (profileIdRef.current) appendHistory(profileIdRef.current, turns)
       })
-      .catch(() => masterThenCard(intro, card))
+      .catch((e) => masterThenCard(
+        [`未能接通 AI（${explainAiError(e)}）——此卡的解读须 AI 现写，下面仅列盘面数据；到「我的」页测试连接修好后再问。`],
+        buildTopicView(topic, true).card,
+      ))
       .finally(() => { setAiThinking(false); scroll() })
   }
 
@@ -625,7 +628,7 @@ export function BaziChat() {
       }
       setAiThinking(true)
       Promise.all([
-        askMaster(cfg, aiSystemRef.current, aiHistoryRef.current.slice(-8), q),
+        askMasterRetry(cfg, aiSystemRef.current, aiHistoryRef.current.slice(-8), q),
         new Promise((res) => setTimeout(res, 900)),
       ])
         .then(([reply]) => {
@@ -634,10 +637,8 @@ export function BaziChat() {
           aiHistoryRef.current.push(...turns)
           if (profileIdRef.current) appendHistory(profileIdRef.current, turns)
         })
-        .catch(() => {
-          const topic = detectTopic(text)
-          if (topic) { master(['天机线路一时不通，老朽以本盘规则为你细断。']); runTopic(topic, null) }
-          else master(['天机线路一时不通（AI 连接失败），且换个问法，或到「我的」页检查 AI 配置。'])
+        .catch((e) => {
+          master([`未能接通 AI（${explainAiError(e)}）。已重试一次仍不通——到「我的」页点「测试连接」看具体原因，修好后老朽必以 AI 细断。`])
         })
         .finally(() => { setAiThinking(false); scroll() })
       return
