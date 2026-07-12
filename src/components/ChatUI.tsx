@@ -126,6 +126,20 @@ export function Chips({
 
 // 手绘感禅圈 SVG（可复用）
 export function EnsoRing({ size = 150, className = '', stroke = 6 }: { size?: number; className?: string; stroke?: number }) {
+  const [imgOk, setImgOk] = useState(true)
+  if (imgOk) {
+    return (
+      <img
+        src="/fx/enso-ring.png"
+        width={size}
+        height={size}
+        className={`enso-ring ${className}`}
+        style={{ display: 'block' }}
+        onError={() => setImgOk(false)}
+        alt=""
+      />
+    )
+  }
   const c = size / 2
   const r = c - stroke - 2
   return (

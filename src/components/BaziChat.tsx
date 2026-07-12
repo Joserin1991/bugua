@@ -5,7 +5,7 @@ import { computeZiwei, type ZwChart } from '../lib/ziwei'
 import { interpretBazi, interpretLiuNian, type BaziReading } from '../lib/interpret'
 import { tenGod } from '../lib/wuxing'
 import { saveRecord } from '../lib/records'
-import { MasterMsg, UserMsg, CardMsg, Chips, ProgressEnso, InputBar, InkArt } from './ChatUI'
+import { MasterMsg, UserMsg, CardMsg, Chips, InputBar, InkArt } from './ChatUI'
 import { CITIES } from '../lib/cities'
 import { traceNarrative } from '../lib/trace'
 import { loadAiConfig, buildMasterSystem, askMasterRetry, explainAiError, type ChatTurn } from '../lib/ai'
@@ -744,7 +744,12 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
             <span>布盘之中…</span>
           </div>
         )}
-        {stage === 'computing' && pct > 0 && <ProgressEnso label="排盘中" pct={pct} />}
+        {stage === 'computing' && pct > 0 && (
+          <div className="computing-fx fade-in">
+            <video src="/fx/fx-ink-loop.mp4" autoPlay loop muted playsInline />
+            <span>排盘中 · {Math.round(pct)}%</span>
+          </div>
+        )}
         {!busy && stage === 'ready' && suggestions.length > 0 && (
           <Chips items={suggestions} onPick={(v) => {
             if (v === '命盘报告') { setShowReport(true); return }
