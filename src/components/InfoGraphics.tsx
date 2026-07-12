@@ -24,20 +24,63 @@ export function PillarCards({ chart }: { chart: BaziChart }) {
 }
 
 // ---------- 五行能量分布（百分比条） ----------
+// 月令旺相休囚死：当令者旺、令生者相、生令者休、克令者囚、令克者死
+const SEASON_LING: Record<string, WuXing> = {
+  寅: '木', 卯: '木', 巳: '火', 午: '火', 申: '金', 酉: '金', 亥: '水', 子: '水', 辰: '土', 戌: '土', 丑: '土', 未: '土',
+}
+const SHENG_MAP: Record<WuXing, WuXing> = { 木: '火', 火: '土', 土: '金', 金: '水', 水: '木' }
+const KE_MAP: Record<WuXing, WuXing> = { 木: '土', 土: '水', 水: '火', 火: '金', 金: '木' }
+
+export function wuxingSeasonState(w: WuXing, monthZhi: string): string {
+  const ling = SEASON_LING[monthZhi]
+  if (!ling) return ''
+  if (w === ling) return '旺'
+  if (SHENG_MAP[ling] === w) return '相'
+  if (SHENG_MAP[w] === ling) return '休'
+  if (KE_MAP[w] === ling) return '囚'
+  return '死'
+}
+
 export function WuxingPctBars({ chart }: { chart: BaziChart }) {
   const total = WUXING_LIST.reduce((s, w) => s + chart.wuxingCount[w], 0) || 1
+  const monthZhi = chart.pillars[1].zhi
   return (
     <div className="wx-pct-rows">
       {WUXING_LIST.map((w) => {
         const pct = Math.round((chart.wuxingCount[w] / total) * 100)
+        const st = wuxingSeasonState(w, monthZhi)
         return (
           <div className={`wx-pct-row ${chart.favorable.includes(w) ? 'fav' : ''}`} key={w}>
             <span className={`label wx-${w}`}>{w}</span>
+            <i className={`wx-state st-${st}`}>{st}</i>
             <div className="track"><div className="fill" style={{ width: `${pct}%` }} /></div>
             <span className="pct">{pct}%</span>
           </div>
         )
       })}
+    </div>
+  )
+}
+
+// ---------- 十神分布（计数条形） ----------
+const TEN_GOD_ORDER = ['比肩', '劫财', '食神', '伤官', '偏财', '正财', '七杀', '正官', '偏印', '正印']
+
+export function TenGodBars({ chart }: { chart: BaziChart }) {
+  const count: Record<string, number> = Object.fromEntries(TEN_GOD_ORDER.map((g) => [g, 0]))
+  for (const p of chart.pillars) {
+    if (p.ganGod !== '日元' && count[p.ganGod] != null) count[p.ganGod] += 1
+    for (const c of p.cangGan) if (count[c.god] != null) count[c.god] += 1
+  }
+  const max = Math.max(1, ...Object.values(count))
+  return (
+    <div className="tg-bars">
+      {TEN_GOD_ORDER.map((g) => (
+        <div className="tg-bar-row" key={g}>
+          <span className="tg-name">{g}</span>
+          <div className="track"><div className="fill" style={{ width: `${(count[g] / max) * 100}%` }} /></div>
+          <span className="tg-num">{count[g]}</span>
+        </div>
+      ))}
     </div>
   )
 }

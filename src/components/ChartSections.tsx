@@ -19,10 +19,10 @@ export function ProTable({
     const cols: { label: string; detail: ColumnDetail; lu: boolean }[] = chart.pillars.map((p) => ({
       label: p.label,
       lu: false,
-      detail: columnDetail(p.gan, p.zhi, chart.dayGan, yearZhi, dayZhi, p.label === '日柱'),
+      detail: columnDetail(p.gan, p.zhi, chart.dayGan, yearZhi, dayZhi, p.label === '日柱', chart.pillars[1].zhi),
     }))
-    if (activeDayun) cols.push({ label: '大运', lu: true, detail: columnDetail(activeDayun.ganZhi[0], activeDayun.ganZhi[1], chart.dayGan, yearZhi, dayZhi) })
-    if (activeLn) cols.push({ label: '流年', lu: true, detail: columnDetail(activeLn.ganZhi[0], activeLn.ganZhi[1], chart.dayGan, yearZhi, dayZhi) })
+    if (activeDayun) cols.push({ label: '大运', lu: true, detail: columnDetail(activeDayun.ganZhi[0], activeDayun.ganZhi[1], chart.dayGan, yearZhi, dayZhi, false, chart.pillars[1].zhi) })
+    if (activeLn) cols.push({ label: '流年', lu: true, detail: columnDetail(activeLn.ganZhi[0], activeLn.ganZhi[1], chart.dayGan, yearZhi, dayZhi, false, chart.pillars[1].zhi) })
     return cols
   }, [chart, activeDayun, activeLn])
 
