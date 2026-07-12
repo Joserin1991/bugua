@@ -12,7 +12,7 @@ import { loadAiConfig, buildMasterSystem, askMasterRetry, explainAiError, type C
 import { profileId, touchProfile, appendHistory, addMemory } from '../lib/profiles'
 import { sanpan } from '../lib/sanpan'
 import { SanpanCard } from './SanpanCard'
-import { PillarCards, WuxingPctBars, Radar, wuxingRadarData, abilityRadarData, TenGodOrbit, DayunLineChart } from './InfoGraphics'
+import { PillarCards, WuxingPctBars, Radar, wuxingRadarData, abilityRadarData, TenGodOrbit, TenGodBars, DayunLineChart, dayunScore } from './InfoGraphics'
 import { ProTable, ChartMeta, ShenshaSection, WheelSection, ReadingSections } from './ChartSections'
 import { ZiweiChart } from './ZiweiChart'
 import { Term } from './Master'
@@ -401,6 +401,7 @@ export function BaziChat() {
             <CardMsg title="十神环绕 · 日主居中">
               {aiProse}
               <TenGodOrbit chart={c} activeGod={ln ? ln.god : undefined} />
+              <TenGodBars chart={c} />
               <p className="center-note">点<Term k="十神">十神</Term>名可查其义</p>
               {aiZhupi}
             </CardMsg>
@@ -712,6 +713,31 @@ export function BaziChat() {
   )
 }
 
+// 十神 → 流年简说 / 四维短评
+const LN_BRIEF: Record<string, string> = {
+  比肩: '朋友助力，防分财', 劫财: '竞争破耗，守财库', 食神: '福禄才华，宜表达', 伤官: '锋芒外露，慎言行',
+  偏财: '机遇流财，见好就收', 正财: '勤耕有获，置业佳', 七杀: '压力挑战，砺刃上位', 正官: '名位晋升，走正道',
+  偏印: '沉潜进修，防孤郁', 正印: '贵人文书，宜安家',
+}
+const LN_DIMS: Record<string, [string, string, string, string]> = {
+  // [事业, 财运, 感情, 健康]
+  比肩: ['合作可为', '防友分财', '桃花平平', '体气尚可'],
+  劫财: ['竞争激烈', '忌借贷', '防口角', '劳逸结合'],
+  食神: ['才华显露', '福财缓进', '人缘旺', '气色佳'],
+  伤官: ['宜技不宜仕', '偏财可图', '易生口舌', '防小恙'],
+  偏财: ['机会外来', '流财快进出', '桃花外露', '奔波注意'],
+  正财: ['稳中有升', '正财入库', '姻缘正旺', '平顺'],
+  七杀: ['压力升职', '费心之财', '强缘将至', '防劳损'],
+  正官: ['晋升名分', '稳定收益', '婚缘正星', '规律作息'],
+  偏印: ['宜学宜研', '收成平缓', '心事宜诉', '防思虑伤神'],
+  正印: ['贵人提携', '文书之财', '长辈牵缘', '静养得宜'],
+}
+
+function Stars({ n }: { n: number }) {
+  const full = Math.round(n)
+  return <span className="stars">{'★'.repeat(full)}{'☆'.repeat(5 - full)}</span>
+}
+
 // ---------- 大运卡（内部可交互） ----------
 function DayunCard({ chart, prose = true, extraTop = null, extraBottom = null, aiAsk }: { chart: BaziChart; prose?: boolean; extraTop?: ReactNode; extraBottom?: ReactNode; aiAsk?: (q: string) => Promise<string> }) {
   const now = new Date().getFullYear()
@@ -741,12 +767,14 @@ function DayunCard({ chart, prose = true, extraTop = null, extraBottom = null, a
       <div className="dayun-strip">
         {chart.daYun.map((dy, i) => (
           <div key={dy.ganZhi + dy.startYear} className={`dayun-cell ${i === idx ? 'active' : ''}`} onClick={() => pick(i)}>
+            <div className="dayun-god">{tenGod(chart.dayGan, dy.ganZhi[0])}</div>
             <div className="dayun-gz">{dy.ganZhi}</div>
-            <div className="dayun-age">{dy.startAge}–{dy.startAge + 9}岁</div>
+            <div className="dayun-age">{dy.startAge}岁<br />{dy.startYear}</div>
           </div>
         ))}
       </div>
       <DayunLineChart chart={chart} activeIdx={idx} onPick={pick} />
+      <div className="ln-rate">整体运势 <Stars n={dayunScore(d, chart)} /></div>
       {prose && <p className="reading-p" style={{ marginTop: 8 }}>
         你{now >= d.startYear && now <= d.endYear ? '当前行' : '于此段行'}「{d.ganZhi}」大运（{d.startYear}—{d.endYear}，<Term k={god}>{god}</Term>运）。
         {['正官', '正印', '正财', '食神'].includes(god)
@@ -803,7 +831,36 @@ function LiunianCard({ chart, prose = true, extraTop = null, extraBottom = null,
           <div className="badge-row ji"><span className="badge-key">提点</span><span className="badge-val">{r.extra}。</span></div>
         </div>
       )}
+      <div className="ln-dims">
+        {(['事业', '财运', '感情', '健康'] as const).map((k, i) => (
+          <div className="ln-dim" key={k}>
+            <span className="ln-dim-k">{k}</span>
+            <span className="ln-dim-v">{(LN_DIMS[ln.god] ?? ['—', '—', '—', '—'])[i]}</span>
+          </div>
+        ))}
+      </div>
+      <div className="ln-rate">整体运势 <Stars n={lnStars(ln, chart)} /></div>
+      <table className="ln-table">
+        <thead><tr><th>年份</th><th>干支</th><th>十神</th><th>说明</th></tr></thead>
+        <tbody>
+          {years.map((l) => (
+            <tr key={l.year} className={l.year === year ? 'on' : ''} onClick={() => pick(l.year)}>
+              <td>{l.year}</td><td>{l.ganZhi}</td><td>{l.god}</td><td>{LN_BRIEF[l.god] ?? ''}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
       {bottomNode}
     </CardMsg>
   )
+}
+
+function lnStars(ln: LiuNian, chart: BaziChart): number {
+  const wx = { 甲: '木', 乙: '木', 丙: '火', 丁: '火', 戊: '土', 己: '土', 庚: '金', 辛: '金', 壬: '水', 癸: '水' }[ln.ganZhi[0]]
+  let n = 3
+  if (chart.favorable.includes(wx as never)) n += 1
+  if (chart.unfavorable.includes(wx as never)) n -= 1
+  if (['正官', '正印', '正财', '食神'].includes(ln.god)) n += 0.5
+  if (['七杀', '伤官', '劫财'].includes(ln.god)) n -= 0.5
+  return Math.max(1, Math.min(5, n))
 }

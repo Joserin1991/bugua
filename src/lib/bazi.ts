@@ -2,9 +2,10 @@
 import { Solar, Lunar, LunarUtil } from 'lunar-javascript'
 import {
   GAN_WUXING, ZHI_WUXING, ZHI_CANGGAN, GAN_YINYANG, tenGod, type WuXing,
-  TIANYI, WENCHANG, taohua, yima, YANGREN, ZHI_CHONG, ZHI_HE,
+  ZHI_CHONG, ZHI_HE,
   changSheng, kongWang,
 } from './wuxing'
+import { shenshaOfPillar, SHENSHA_DESC } from './shensha'
 
 export interface Pillar {
   label: '年柱' | '月柱' | '日柱' | '时柱'
@@ -241,41 +242,19 @@ export function computeBazi(
   }))
   const qiYunText = `出生后${yun.getStartYear()}年${yun.getStartMonth()}个月${yun.getStartDay()}天起运，${GAN_YINYANG[pillars[0].gan]}年${gender}命${yun.isForward() ? '顺' : '逆'}排`
 
-  // 神煞
+  // 神煞：二十余种全库逐柱扫描
   const shenSha: ShenSha[] = []
   const allZhi = pillars.map((p) => p.zhi)
   const yearZhi = ec.getYearZhi()
   const dayZhi = ec.getDayZhi()
-  const tianyiTargets = TIANYI[dayGan] ?? []
-  allZhi.forEach((z, i) => {
-    if (tianyiTargets.includes(z)) {
-      shenSha.push({ name: '天乙贵人', where: pillars[i].label, desc: '至尊之神，逢凶化吉，一生多遇贵人提携' })
-    }
-  })
-  if (allZhi.includes(WENCHANG[dayGan])) {
-    const i = allZhi.indexOf(WENCHANG[dayGan])
-    shenSha.push({ name: '文昌贵人', where: pillars[i].label, desc: '聪明好学，利科甲文书，气质文雅' })
-  }
-  const th = taohua(yearZhi); const th2 = taohua(dayZhi)
-  allZhi.forEach((z, i) => {
-    if (z === th || z === th2) {
-      if (!shenSha.some((s) => s.name === '咸池桃花' && s.where === pillars[i].label)) {
-        shenSha.push({ name: '咸池桃花', where: pillars[i].label, desc: '人缘极佳，风姿魅力过人，感情丰富' })
+  const ssCtx = { dayGan, monthZhi, yearZhi, dayZhi, yearGan: ec.getYearGan() }
+  pillars.forEach((p) => {
+    for (const name of shenshaOfPillar(p.gan, p.zhi, ssCtx)) {
+      if (!shenSha.some((x) => x.name === name && x.where === p.label)) {
+        shenSha.push({ name, where: p.label, desc: SHENSHA_DESC[name] ?? '' })
       }
     }
   })
-  const ym = yima(yearZhi); const ym2 = yima(dayZhi)
-  allZhi.forEach((z, i) => {
-    if (z === ym || z === ym2) {
-      if (!shenSha.some((s) => s.name === '驿马星' && s.where === pillars[i].label)) {
-        shenSha.push({ name: '驿马星', where: pillars[i].label, desc: '主奔波走动，利外出发展、远行迁移' })
-      }
-    }
-  })
-  if (YANGREN[dayGan] && allZhi.includes(YANGREN[dayGan])) {
-    const i = allZhi.indexOf(YANGREN[dayGan])
-    shenSha.push({ name: '羊刃', where: pillars[i].label, desc: '刚烈果决，魄力十足，宜制化得宜' })
-  }
   // 地支冲合提示
   for (let i = 0; i < allZhi.length; i++) {
     for (let j = i + 1; j < allZhi.length; j++) {
@@ -348,20 +327,16 @@ export interface ColumnDetail {
   shenSha: string[] // 本柱神煞（短名）
 }
 
-export function shenShaOfZhi(zhi: string, dayGan: string, yearZhi: string, dayZhi: string): string[] {
-  const out: string[] = []
-  if ((TIANYI[dayGan] ?? []).includes(zhi)) out.push('天乙贵人')
-  if (WENCHANG[dayGan] === zhi) out.push('文昌贵人')
-  if (taohua(yearZhi) === zhi || taohua(dayZhi) === zhi) out.push('桃花')
-  if (yima(yearZhi) === zhi || yima(dayZhi) === zhi) out.push('驿马')
-  if (YANGREN[dayGan] === zhi) out.push('羊刃')
+export function shenShaOfZhi(zhi: string, dayGan: string, yearZhi: string, dayZhi: string, monthZhi = '', gan = ''): string[] {
+  const out = shenshaOfPillar(gan, zhi, { dayGan, monthZhi, yearZhi, dayZhi })
+    .map((n) => n.replace('咸池桃花', '桃花').replace('驿马星', '驿马').replace('贵人', ''))
   if (ZHI_CHONG[zhi] === dayZhi) out.push('冲日支')
   if (ZHI_HE[zhi] === dayZhi) out.push('合日支')
   return out
 }
 
 export function columnDetail(
-  gan: string, zhi: string, dayGan: string, yearZhi: string, dayZhi: string, isDayPillar = false,
+  gan: string, zhi: string, dayGan: string, yearZhi: string, dayZhi: string, isDayPillar = false, monthZhi = '',
 ): ColumnDetail {
   const nayinMap = (LunarUtil as any).NAYIN ?? {}
   return {
@@ -375,6 +350,6 @@ export function columnDetail(
     ziZuo: changSheng(gan, zhi),
     kong: kongWang(gan, zhi),
     naYin: nayinMap[gan + zhi] ?? '',
-    shenSha: shenShaOfZhi(zhi, dayGan, yearZhi, dayZhi),
+    shenSha: shenShaOfZhi(zhi, dayGan, yearZhi, dayZhi, monthZhi, gan),
   }
 }

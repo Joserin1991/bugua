@@ -906,6 +906,8 @@ body {
 }
 
 .liunian-cell.active { border-color: var(--seal); background: var(--seal-soft); color: var(--seal); }
+
+.dayun-god { font-size: 0.6rem; color: var(--seal); letter-spacing: 0.05em; }
 .liunian-gz { font-family: "ZCOOL XiaoWei", serif; font-size: 0.92rem; }
 .liunian-year { color: var(--ink-faint); font-size: 0.64rem; }
 
@@ -914,42 +916,44 @@ body {
 
 .zw-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(4, minmax(140px, auto));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(108px, auto));
   grid-template-areas:
     "si   wu     wei    shen"
     "chen center center you"
     "mao  center center xu"
     "yin  chou   zi     hai";
-  gap: 1.5px;
+  gap: 1px;
   background: rgba(33, 29, 20, 0.25);
   border: 1.5px solid var(--ink);
   border-radius: 4px;
   overflow: hidden;
-  min-width: 680px;
+  width: 100%;
 }
 
 .zw-palace {
   background: var(--card);
-  padding: 8px 9px;
+  padding: 5px 5px 4px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 140px;
+  min-height: 108px;
+  min-width: 0;
+  overflow: hidden;
 }
 
-.zw-stars-major { display: flex; flex-wrap: wrap; gap: 7px 9px; margin-bottom: 4px; }
+.zw-stars-major { display: flex; flex-wrap: wrap; gap: 3px 5px; margin-bottom: 3px; }
 .zw-star { display: inline-flex; align-items: flex-start; gap: 1px; white-space: nowrap; }
-.zw-major { font-family: "ZCOOL XiaoWei", serif; font-size: 1rem; color: var(--ink); }
-.zw-minor { font-size: 0.76rem; color: var(--ink-soft); }
-.zw-stars-minor { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-bottom: 3px; }
-.zw-stars-adj { display: flex; flex-wrap: wrap; gap: 2px 6px; font-size: 0.64rem; color: var(--ink-faint); }
+.zw-major { font-family: "ZCOOL XiaoWei", serif; font-size: 0.78rem; color: var(--ink); }
+.zw-minor { font-size: 0.6rem; color: var(--ink-soft); }
+.zw-stars-minor { display: flex; flex-wrap: wrap; gap: 2px 5px; margin-bottom: 2px; }
+.zw-stars-adj { display: flex; flex-wrap: wrap; gap: 1px 4px; font-size: 0.52rem; color: var(--ink-faint); }
 .zw-bright { font-style: normal; font-size: 0.6em; color: var(--ink-faint); }
 
 .zw-mut {
   font-style: normal;
   font-weight: 400;
-  font-size: 0.58rem;
+  font-size: 0.5rem;
   color: #f4f2ea;
   border-radius: 2px;
   padding: 0.5px 3px;
@@ -973,11 +977,11 @@ body {
   margin-top: 6px;
 }
 
-.zw-cs { font-size: 0.62rem; color: var(--ink-faint); line-height: 1.5; }
+.zw-cs { font-size: 0.5rem; color: var(--ink-faint); line-height: 1.45; }
 .zw-cs i { font-style: normal; opacity: 0.75; }
 
-.zw-name { font-family: "ZCOOL XiaoWei", serif; color: var(--seal); font-size: 0.85rem; text-align: center; line-height: 1.3; }
-.zw-name .zw-range { display: block; font-style: normal; font-size: 0.58rem; color: var(--ink-faint); }
+.zw-name { font-family: "ZCOOL XiaoWei", serif; color: var(--seal); font-size: 0.68rem; text-align: center; line-height: 1.25; }
+.zw-name .zw-range { display: block; font-style: normal; font-size: 0.5rem; color: var(--ink-faint); }
 
 .zw-body {
   font-style: normal;
@@ -990,7 +994,7 @@ body {
   vertical-align: 2px;
 }
 
-.zw-gz { font-family: "Ma Shan Zheng", serif; font-size: 0.88rem; text-align: right; line-height: 1.25; }
+.zw-gz { font-family: "Ma Shan Zheng", serif; font-size: 0.7rem; text-align: right; line-height: 1.2; }
 
 .zw-center {
   grid-area: center;
@@ -999,14 +1003,14 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 14px;
+  gap: 4px;
+  padding: 8px 6px;
   text-align: center;
 }
 
-.zw-center-title { font-family: "Ma Shan Zheng", serif; font-size: 1.3rem; letter-spacing: 0.18em; }
-.zw-center-row { font-size: 0.78rem; color: var(--ink-soft); }
-.zw-bazi { font-family: "ZCOOL XiaoWei", serif; font-size: 0.95rem; letter-spacing: 0.2em; }
+.zw-center-title { font-family: "Ma Shan Zheng", serif; font-size: 1rem; letter-spacing: 0.14em; }
+.zw-center-row { font-size: 0.6rem; color: var(--ink-soft); }
+.zw-bazi { font-family: "ZCOOL XiaoWei", serif; font-size: 0.74rem; letter-spacing: 0.14em; }
 .zw-center-tags { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 3px; }
 
 .zw-center-tags span {
@@ -1185,6 +1189,91 @@ body {
   letter-spacing: 0.14em;
   animation: caretblink 1.2s steps(1) infinite;
 }
+
+/* 五行旺相休囚死标注 */
+.wx-state {
+  font-style: normal;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  border: 1px solid var(--card-line);
+  color: var(--ink-faint);
+  font-size: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wx-state.st-旺 { border-color: var(--seal); color: var(--seal); }
+.wx-state.st-相 { border-color: var(--line-strong); color: var(--ink-soft); }
+
+/* 十神分布条形 */
+.tg-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin: 12px 2px 4px; }
+
+.tg-bar-row { display: flex; align-items: center; gap: 7px; font-size: 0.72rem; }
+.tg-bar-row .tg-name { flex: none; width: 30px; color: var(--ink-soft); letter-spacing: 0.05em; }
+.tg-bar-row .track { flex: 1; height: 5px; background: rgba(33, 29, 20, 0.08); border-radius: 2px; overflow: hidden; }
+.tg-bar-row .fill { height: 100%; background: var(--ink); opacity: 0.75; border-radius: 2px; }
+.tg-bar-row .tg-num { flex: none; width: 12px; text-align: right; color: var(--ink-faint); font-size: 0.68rem; }
+
+/* 流年四维短评 */
+.ln-dims { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin: 12px 0 4px; }
+
+.ln-dim {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--card-line);
+  border-radius: 7px;
+  padding: 7px 10px;
+  background: rgba(255, 255, 255, 0.4);
+  font-size: 0.76rem;
+}
+
+.ln-dim-k {
+  flex: none;
+  font-family: "ZCOOL XiaoWei", serif;
+  color: var(--seal);
+  font-size: 0.72rem;
+}
+
+.ln-dim-v { color: var(--ink-soft); }
+
+/* 星级 */
+.ln-rate { margin: 8px 2px; font-size: 0.76rem; color: var(--ink-soft); letter-spacing: 0.1em; }
+.stars { color: var(--seal); letter-spacing: 2px; }
+
+/* 流年十神表 */
+.ln-table { width: 100%; border-collapse: collapse; margin: 8px 0 4px; font-size: 0.74rem; }
+.ln-table th { font-weight: 400; color: var(--ink-faint); border-bottom: 1px solid var(--card-line); padding: 4px 2px; letter-spacing: 0.1em; }
+.ln-table td { text-align: center; padding: 5px 2px; border-bottom: 1px dashed rgba(33, 29, 20, 0.08); color: var(--ink-soft); cursor: pointer; }
+.ln-table tr.on td { color: var(--seal); background: var(--seal-soft); }
+
+/* 记录筛选 */
+.rec-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+
+.rec-tab {
+  appearance: none;
+  border: 1px solid var(--card-line);
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  padding: 6px 15px;
+  font-family: inherit;
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.rec-tab.on { background: var(--ink); color: #f4f2ea; border-color: var(--ink); }
+
+/* 个人中心统计 */
+.me-stats { display: flex; justify-content: space-around; padding: 16px 10px; margin-bottom: 14px; }
+
+.me-stat { text-align: center; }
+.me-stat b { display: block; font-family: "ZCOOL XiaoWei", serif; font-size: 1.4rem; font-weight: 400; color: var(--ink); }
+.me-stat span { font-size: 0.68rem; color: var(--ink-faint); letter-spacing: 0.15em; }
 
 /* AI 状态印章（屏头） */
 .ai-badge {

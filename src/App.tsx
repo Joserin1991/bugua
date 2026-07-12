@@ -157,13 +157,20 @@ function HeroFallback() {
 // ---------- 记录 ----------
 function RecordsScreen() {
   const [records, setRecords] = useState<RecordItem[]>([])
+  const [filter, setFilter] = useState<'全部' | RecordItem['type']>('全部')
   useEffect(() => { setRecords(loadRecords()) }, [])
+  const shown = filter === '全部' ? records : records.filter((r) => r.type === filter)
   return (
     <div className="records-list">
-      {records.length === 0 && (
+      <div className="rec-tabs">
+        {(['全部', '八字排盘', '六爻问事', '答疑解惑'] as const).map((t) => (
+          <button key={t} className={`rec-tab ${filter === t ? 'on' : ''}`} onClick={() => setFilter(t)}>{t === '八字排盘' ? '命盘' : t === '六爻问事' ? '卜卦' : t === '答疑解惑' ? '解惑' : '全部'}</button>
+        ))}
+      </div>
+      {shown.length === 0 && (
         <div className="records-empty">尚无记录<br />排一次盘、问一次卦，缘分自会留痕</div>
       )}
-      {records.map((r) => (
+      {shown.map((r) => (
         <div className="record-item" key={r.id}>
           <EnsoRing size={52} stroke={3} />
           <div>
@@ -225,8 +232,20 @@ function MeScreen() {
     setTesting(false)
   }
 
+  const recs = loadRecords()
+  const profCount = (() => { try { return Object.keys(JSON.parse(localStorage.getItem('xjg-profiles') ?? '{}')).length } catch { return 0 } })()
+  const clearData = () => {
+    localStorage.removeItem('xuanjige_records')
+    localStorage.removeItem('xjg-profiles')
+    setStatus('已清除本机记录与命主档案（AI 配置保留）——刷新后生效')
+  }
   return (
     <div className="records-list">
+      <div className="me-stats card-msg">
+        <div className="me-stat"><b>{recs.filter((r) => r.type === '八字排盘').length}</b><span>排盘</span></div>
+        <div className="me-stat"><b>{recs.filter((r) => r.type !== '八字排盘').length}</b><span>问卦</span></div>
+        <div className="me-stat"><b>{profCount}</b><span>命主档案</span></div>
+      </div>
       <div className="ai-config card-msg">
         <div className="card-title">大师 AI 接入</div>
         <div className="card-sub">配置后自由提问由大模型实时分析（排盘计算不变）；留空保存即关闭</div>
@@ -239,6 +258,9 @@ function MeScreen() {
           <button className="chip chip-ghost" onClick={fetchModels} disabled={testing}>查可用模型</button>
         </div>
         <p className="ai-status">{status}</p>
+        <div className="ai-actions" style={{ marginTop: 4 }}>
+          <button className="chip chip-ghost" onClick={clearData}>清除本机记录与档案</button>
+        </div>
         {models.length > 0 && (
           <div className="ai-models">
             {models.map((m) => (
