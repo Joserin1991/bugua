@@ -290,7 +290,7 @@ function MeScreen() {
           <li>本应用内容<b>不构成</b>医疗、健康、投资、理财、法律、婚恋等任何专业建议。涉及健康请就医，涉及钱财与重大决定请咨询持牌专业人士，切勿以卦断代替理性判断。</li>
           <li>接入 AI 后，回答由大模型基于盘面生成，可能存在错漏，请自行甄别；未接入时为本地规则引擎按古籍体例生成的模板断语。</li>
           <li>未成年人请在监护人陪同下使用，请勿沉迷占测。</li>
-          <li><b>隐私</b>：出生信息、对话记录、命主档案、AI 密钥全部只保存在你这台设备的浏览器里，不会自动上传；清除浏览器数据或点上方「清除本机记录与档案」即可抹除。只有你主动点「备份到云端」时，档案与记录才会凭口令存到你自建的同步服务（密钥永不上云）。AI 问答会把盘面数据发给你配置的模型服务商，请选择你信任的服务商。</li>
+          <li><b>隐私</b>：出生信息、对话记录、命主档案、AI 配置全部只保存在你这台设备的浏览器里，不会自动上传；清除浏览器数据或点上方「清除本机记录与档案」即可抹除。只有你主动点「备份到云端」时，档案、记录与 AI 配置才会凭同步口令存到自建云端——口令即钥匙，请勿外泄。AI 问答会把盘面数据发给所配置的模型服务，请确保是你信任的服务。</li>
           <li>命自我立，福自己求——卦为镜，路在人。</li>
         </ul>
       </div>
@@ -308,21 +308,19 @@ function MeScreen() {
 // 云同步：备份/恢复档案与记录到自建 Worker（部署方法见仓库 worker/README.md）
 function SyncCard() {
   const saved = loadSyncConfig()
-  const [url, setUrl] = useState(saved?.url ?? '')
   const [code, setCode] = useState(saved?.code ?? '')
-  const [status, setStatus] = useState(saved ? '已配置同步服务' : '未配置 · 数据只在本机')
+  const [status, setStatus] = useState(saved ? '已设同步口令' : '未设口令 · 数据只在本机')
   const [working, setWorking] = useState(false)
 
-  const withConfig = (): { url: string; code: string } | null => {
-    const u = url.trim(), c = code.trim()
-    if (!u || !c) { setStatus('先填同步服务地址和口令'); return null }
+  const withConfig = (): { code: string; url?: string } | null => {
+    const c = code.trim()
     if (c.length < 6) { setStatus('同步口令至少 6 位'); return null }
-    const cfg = { url: u, code: c }
+    const cfg = { ...(saved?.url ? { url: saved.url } : {}), code: c }
     saveSyncConfig(cfg)
     return cfg
   }
 
-  const run = async (fn: (cfg: { url: string; code: string }) => Promise<string>) => {
+  const run = async (fn: (cfg: { code: string; url?: string }) => Promise<string>) => {
     const cfg = withConfig()
     if (!cfg) return
     setWorking(true)
@@ -337,9 +335,8 @@ function SyncCard() {
 
   return (
     <div className="ai-config card-msg">
-      <div className="card-title">云同步（自建 Worker）</div>
-      <div className="card-sub">备份命主档案与问卦记录，换设备用同一口令恢复；AI 密钥不上云。部署见仓库 worker/README.md</div>
-      <label className="ai-field">同步服务地址<input value={url} placeholder="https://xuanjige-api.xxx.workers.dev" onChange={(e) => setUrl(e.target.value)} /></label>
+      <div className="card-title">云同步</div>
+      <div className="card-sub">备份命主档案、问卦记录与 AI 配置，换设备输入同一口令即可恢复。口令即钥匙，请自己保管好</div>
       <label className="ai-field">同步口令<input type="password" value={code} placeholder="自定 ≥6 位，两台设备填同一个" onChange={(e) => setCode(e.target.value)} /></label>
       <div className="ai-actions">
         <button className="chip" onClick={() => run(syncUpload)} disabled={working}>备份到云端</button>
