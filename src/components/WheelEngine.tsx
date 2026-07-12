@@ -74,12 +74,12 @@ export function WheelEngine({ config }: { config: WheelConfig }) {
         {/* 中宫太极（不随盘转） */}
         <circle cx={c} cy={c} r={hubR} fill={TOKENS.card} stroke={TOKENS.ink} strokeWidth="1.4" />
         <circle cx={c} cy={c} r={hubR - 4} fill="none" stroke={TOKENS.seal} strokeWidth="0.8" opacity="0.6" />
-        <g opacity="0.92" transform={`translate(0 ${-hubR * 0.18})`}>
-          <path d={`M ${c} ${c - hubR * 0.44} A ${hubR * 0.44} ${hubR * 0.44} 0 0 1 ${c} ${c + hubR * 0.44} A ${hubR * 0.22} ${hubR * 0.22} 0 0 1 ${c} ${c} A ${hubR * 0.22} ${hubR * 0.22} 0 0 0 ${c} ${c - hubR * 0.44} Z`} fill={TOKENS.ink} />
-          <circle cx={c} cy={c} r={hubR * 0.44} fill="none" stroke={TOKENS.ink} strokeWidth="1.2" />
-          <circle cx={c} cy={c - hubR * 0.22} r={hubR * 0.065} fill={TOKENS.card} />
-          <circle cx={c} cy={c + hubR * 0.22} r={hubR * 0.065} fill={TOKENS.ink} />
-        </g>
+        <image
+          href="/fx/taiji.png"
+          x={c - hubR * 0.5} y={c - hubR * 0.68}
+          width={hubR} height={hubR}
+          opacity="0.95"
+        />
         {config.center && (
           <g>
             <text x={c} y={c + hubR * 0.52} textAnchor="middle" dominantBaseline="central"
