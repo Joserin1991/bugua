@@ -9,7 +9,7 @@ import { saveRecord, updateRecordChat, type ChatLine } from '../lib/records'
 import { MasterMsg, UserMsg, CardMsg, Chips, InputBar, InkArt } from './ChatUI'
 import { CITIES } from '../lib/cities'
 import { traceNarrative } from '../lib/trace'
-import { loadAiConfig, buildMasterSystem, askMasterRetry, askIntake, explainAiError, type ChatTurn } from '../lib/ai'
+import { loadAiConfig, buildMasterSystem, askMasterRetry, askIntake, isRealSuggest, explainAiError, type ChatTurn } from '../lib/ai'
 import { profileId, touchProfile, appendHistory, addMemory, listProfiles } from '../lib/profiles'
 import { liuYueOf, liuRiOf, type LiuYue } from '../lib/liuyue'
 import { ReportView } from './ReportView'
@@ -83,7 +83,7 @@ function parseAiReply(raw: string): { body: string; card: Topic | null; note: st
   if (memoM) { memo = memoM[1].trim(); body = body.replace(memoM[0], '').trim() }
   const sugM = body.match(/^建议[：:]\s*(.+)$/m)
   if (sugM) {
-    suggests.push(...sugM[1].split(/[|｜、；;]/).map((x) => x.trim()).filter(Boolean).slice(0, 4))
+    suggests.push(...sugM[1].split(/[|｜、；;]/).map((x) => x.trim()).filter(isRealSuggest).slice(0, 4))
     body = body.replace(sugM[0], '').trim()
   }
   return { body, card, note, suggests, memo }
