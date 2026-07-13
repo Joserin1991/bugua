@@ -702,7 +702,7 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
         if (profileIdRef.current) appendHistory(profileIdRef.current, turns)
       })
       .catch((e) => masterThenCard(
-        [`未能接通 AI（${explainAiError(e)}）——此卡的解读须 AI 现写，下面仅列盘面数据；到「我的」页测试连接修好后再问。`],
+        [`网络一时未通（${explainAiError(e)}）——此卡的解读要 AI 现写，下面先把盘面数据列出；网络稳了再点一次这张卡，老朽即为你细解。`],
         buildTopicView(topic, true).card,
       ))
       .finally(() => { setAiThinking(false); scroll() })
@@ -740,7 +740,7 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
           if (profileIdRef.current) appendHistory(profileIdRef.current, turns)
         })
         .catch((e) => {
-          master([`未能接通 AI（${explainAiError(e)}）。已重试一次仍不通——到「我的」页点「测试连接」看具体原因，修好后老朽必以 AI 细断。`])
+          master([`网络一时未通（${explainAiError(e)}）——再问一句，老朽即刻重连细断。`])
         })
         .finally(() => { setAiThinking(false); scroll() })
       return
@@ -879,7 +879,7 @@ function DayunCard({ chart, prose = true, extraTop = null, extraBottom = null, a
     setLoadingIdx(i)
     aiAsk(`【系统指令】命主在大运卡上切换到「${dy.ganZhi}」大运（${dy.startYear}—${dy.endYear}，${dy.startAge}—${dy.startAge + 9}岁，运干${g}）。请解读这步运的要点（80~150字，扣着他的喜忌与处境），另起一行「卡注：不超过26字」。不要写「建议」「卡片」行。`)
       .then((raw) => { const pr = parseAiReply(raw); setAiCache((m) => ({ ...m, [i]: { body: pr.body, note: pr.note } })) })
-      .catch(() => setAiCache((m) => ({ ...m, [i]: { body: '未能接通 AI，此运解读暂缺——修好配置后重选即可。', note: '' } })))
+      .catch(() => setAiCache((m) => ({ ...m, [i]: { body: '未能接通 AI，此运解读暂缺——网络稳了重选此运即可。', note: '' } })))
       .finally(() => setLoadingIdx((v) => (v === i ? null : v)))
   }
   const topNode = !aiAsk || idx === init ? extraTop : (aiCache[idx] ? aiProseNode(aiCache[idx].body) : null)
@@ -930,7 +930,7 @@ function LiunianCard({ chart, prose = true, extraTop = null, extraBottom = null,
     setLoadingYear(y)
     aiAsk(`【系统指令】命主在流年卡上切换到 ${l.year} ${l.ganZhi} 年（流年${l.god}）。请解读该年运势要点（80~150字，扣着他的喜忌与处境，说明吉凶与该做什么），另起一行「卡注：不超过26字」。不要写「建议」「卡片」行。`)
       .then((raw) => { const pr = parseAiReply(raw); setAiCache((m) => ({ ...m, [y]: { body: pr.body, note: pr.note } })) })
-      .catch(() => setAiCache((m) => ({ ...m, [y]: { body: '未能接通 AI，此年解读暂缺——修好配置后重选此年即可。', note: '' } })))
+      .catch(() => setAiCache((m) => ({ ...m, [y]: { body: '未能接通 AI，此年解读暂缺——网络稳了重选此年即可。', note: '' } })))
       .finally(() => setLoadingYear((v) => (v === y ? null : v)))
   }
   const topNode = !aiAsk || year === now ? extraTop : (aiCache[year] ? aiProseNode(aiCache[year].body) : null)
@@ -1000,7 +1000,7 @@ function LiuYueSection({ year, yearGan, chart, aiAsk }: { year: number; yearGan:
     setLoading(key)
     aiAsk(`【系统指令】命主在流月表上点开 ${year} 年${mm.label}（${mm.ganZhi}月，流月${mm.god}）。请解读该月要点（60~100字，扣着他的喜忌与处境），直接给正文，不写建议/卡片/卡注。`)
       .then((raw) => setAiCache((c) => ({ ...c, [key]: parseAiReply(raw).body })))
-      .catch(() => setAiCache((c) => ({ ...c, [key]: '未能接通 AI，此月解读暂缺。' })))
+      .catch(() => setAiCache((c) => ({ ...c, [key]: '未能接通 AI，此月解读暂缺——网络稳了重选即可。' })))
       .finally(() => setLoading((v) => (v === key ? null : v)))
   }
 
