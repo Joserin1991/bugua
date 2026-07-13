@@ -608,9 +608,9 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
     return askMasterRetry(cfg, aiSystemRef.current, aiHistoryRef.current.slice(-6), q)
   }
 
-  // 通用后处理：建议换胶囊、记档入库
+  // 通用后处理：新建议并入胶囊池（保留未选的旧建议、去重、限量），记档入库
   const applyMeta = (parsed: ReturnType<typeof parseAiReply>) => {
-    if (parsed.suggests.length) setAiSuggests(parsed.suggests)
+    if (parsed.suggests.length) setAiSuggests((prev) => Array.from(new Set([...parsed.suggests, ...prev])).slice(0, 6))
     if (parsed.memo && profileIdRef.current) addMemory(profileIdRef.current, parsed.memo)
   }
 
@@ -819,7 +819,7 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
         {!busy && stage === 'ready' && suggestions.length > 0 && (
           <Chips items={suggestions} onPick={(v) => {
             if (v === '命盘报告') { setShowReport(true); return }
-            if (aiSuggests.includes(v)) onAsk(v)
+            if (aiSuggests.includes(v)) { setAiSuggests((prev) => prev.filter((x) => x !== v)); onAsk(v) }
             else runTopic(v as Topic)
           }} />
         )}

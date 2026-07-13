@@ -67,7 +67,7 @@ export function DivineChat() {
       .then(([raw]) => {
         const { body, suggests } = parseSuggestReply(raw as string)
         master([body])
-        if (suggests.length) setAiSuggests(suggests)
+        if (suggests.length) setAiSuggests((prev) => Array.from(new Set([...suggests, ...prev])).slice(0, 6))
         aiHistoryRef.current.push({ role: 'user', content: q }, { role: 'assistant', content: body })
       })
       .catch((e) => master([`网络一时未通（${explainAiError(e)}）——先以卦书体例为你断，稍后再问一句即接 AI。`]))
@@ -134,6 +134,7 @@ export function DivineChat() {
       setTossOpen(true)
       return
     }
+    setAiSuggests((prev) => prev.filter((x) => x !== v)) // 选过的移除，未选的保留
     if (aiAnswer(v, true)) return
     user(v)
     const cat: OracleCategory = v.includes('事业') ? '事业官运' : v.includes('感情') ? '感情姻缘' : '财运求财'

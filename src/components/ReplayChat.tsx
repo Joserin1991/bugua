@@ -43,7 +43,7 @@ export function ReplayChat({ record }: { record: RecordItem }) {
         const { body, suggests: sg } = parseSuggestReply(raw as string)
         setBusy(true)
         pushLine('m', body)
-        if (sg.length) setSuggests(sg)
+        if (sg.length) setSuggests((prev) => Array.from(new Set([...sg, ...prev])).slice(0, 6))
         aiHistoryRef.current.push({ role: 'user', content: q }, { role: 'assistant', content: body })
       })
       .catch((e) => { setBusy(true); pushLine('m', `未能接通 AI（${explainAiError(e)}）——稍后再试。`) })
@@ -76,7 +76,7 @@ export function ReplayChat({ record }: { record: RecordItem }) {
             <div className="msg-bubble typing" style={{ marginLeft: 44 }}>老朽正在回想此卦<span className="caret">▌</span></div>
           </div>
         )}
-        {!busy && !thinking && suggests.length > 0 && <Chips ghost items={suggests} onPick={ask} />}
+        {!busy && !thinking && suggests.length > 0 && <Chips ghost items={suggests} onPick={(v) => { setSuggests((prev) => prev.filter((x) => x !== v)); ask(v) }} />}
         <div ref={bottomRef} />
       </div>
       {record.gua && <InputBar placeholder="就这一卦，接着问…" onSend={ask} />}
