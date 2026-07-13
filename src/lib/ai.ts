@@ -104,7 +104,7 @@ export async function askMaster(
         },
         body: JSON.stringify({
           model: cfg.model,
-          max_tokens: 800,
+          max_tokens: 1500,
           system,
           messages: [...history, { role: 'user', content: question }],
         }),
@@ -122,7 +122,7 @@ export async function askMaster(
       body: JSON.stringify({
         model: cfg.model,
         messages: [{ role: 'system', content: system }, ...history, { role: 'user', content: question }],
-        max_tokens: 800,
+        max_tokens: 1500,
         temperature: 0.8,
       }),
     })
@@ -163,6 +163,57 @@ export function buildGuaSystem(g: GuaInfo, question: string, category: string): 
     g.changedName ? `动爻：${g.movingYao}；变卦：${g.changedName}——${g.changedOverall ?? ''}` : '六爻安静，无变卦，以本卦断之',
     `互卦：${g.mutualName}（观中程）——${g.mutualBrief}`,
   ].join('\n')
+}
+
+// ---------- 采集生辰 · AI 接引（自然对话 + 结构化抽取） ----------
+export interface BirthExtract {
+  gender: '男' | '女' | null
+  date: string | null   // YYYY-MM-DD（阳历）
+  hour: number | null   // 0-23 钟点
+  city: string | null
+  citySkipped: boolean
+  reply: string         // 老者的自然回话（含追问）
+  ready: boolean        // 性别+日期+时辰齐全
+}
+
+export function buildIntakeSystem(): string {
+  return [
+    '你是「玄机阁」的接引老者，自称"老朽"，替命主收集起盘所需信息：性别、阳历生日、出生时辰、出生城市（城市可跳过）。',
+    '读懂命主这句话及此前对话，抽取已知项；用老者口吻自然回一句（温和、简短、口语，别用列表和标题）。若还缺关键项，就顺势追问缺的一两样，一次别问太多。',
+    '无论如何，只输出一个 JSON 对象，不要输出 JSON 以外的任何字：',
+    '{"gender":"男"或"女"或null,"date":"YYYY-MM-DD"或null,"hour":0到23的整数或null,"city":"城市名"或null,"citySkipped":true或false,"reply":"你的自然回话","ready":true或false}',
+    '规则：',
+    '- date 仅在阳历年月日齐全时填；命主报的是农历或不确定阳历，就留 null，并在 reply 里问清是不是阳历。',
+    '- hour 填 24 小时制整点；只说了时辰就换算成该时辰起点（子23 丑1 寅3 卯5 辰7 巳9 午11 未13 申15 酉17 戌19 亥21）；「上午十点」→10，「下午两点」→14；完全不知留 null 并追问。',
+    '- city 填标准城市名（如"杭州"）；命主说不知道/跳过/记不清，则 city=null 且 citySkipped=true。',
+    '- ready：性别、date、hour 三样都齐即为 true；此时 reply 说一句「都齐了，老朽这就为你排盘」之类。',
+    '- 已在此前对话里给过的信息，本轮沿用，不要清空。',
+  ].join('\n')
+}
+
+function normDate(s: string): string | null {
+  const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
+  if (!m) return null
+  const y = Number(m[1]); const mo = Number(m[2]); const d = Number(m[3])
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null
+  return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+}
+
+export async function askIntake(cfg: AiConfig, history: ChatTurn[], userText: string): Promise<BirthExtract> {
+  const raw = await askMasterRetry(cfg, buildIntakeSystem(), history, userText)
+  const m = raw.match(/\{[\s\S]*\}/)
+  if (!m) throw new Error('未返回结构化结果')
+  const j = JSON.parse(m[0]) as Record<string, unknown>
+  const hour = Number(j.hour)
+  return {
+    gender: j.gender === '男' || j.gender === '女' ? j.gender : null,
+    date: typeof j.date === 'string' ? normDate(j.date) : null,
+    hour: Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : null,
+    city: typeof j.city === 'string' && j.city.trim() ? j.city.trim() : null,
+    citySkipped: j.citySkipped === true,
+    reply: typeof j.reply === 'string' ? j.reply.trim() : '',
+    ready: j.ready === true,
+  }
 }
 
 // 轻量协议解析：正文 + 「建议」行（卦象场景用）

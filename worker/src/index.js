@@ -75,7 +75,7 @@ async function aiProxy(req, env, h) {
   const payload = {
     model: env.UPSTREAM_MODEL || body.model,
     messages: Array.isArray(body.messages) ? body.messages.slice(-24) : [],
-    max_tokens: Math.min(Number(body.max_tokens) || 800, 1200),
+    max_tokens: Math.min(Number(body.max_tokens) || 1500, 4000),
     temperature: body.temperature ?? 0.8,
   }
   const res = await fetch(`${env.UPSTREAM_BASE.replace(/\/+$/, '')}/chat/completions`, {

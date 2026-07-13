@@ -9,7 +9,7 @@ import { saveRecord, updateRecordChat, type ChatLine } from '../lib/records'
 import { MasterMsg, UserMsg, CardMsg, Chips, InputBar, InkArt } from './ChatUI'
 import { CITIES } from '../lib/cities'
 import { traceNarrative } from '../lib/trace'
-import { loadAiConfig, buildMasterSystem, askMasterRetry, explainAiError, type ChatTurn } from '../lib/ai'
+import { loadAiConfig, buildMasterSystem, askMasterRetry, askIntake, explainAiError, type ChatTurn } from '../lib/ai'
 import { profileId, touchProfile, appendHistory, addMemory, listProfiles } from '../lib/profiles'
 import { liuYueOf, liuRiOf, type LiuYue } from '../lib/liuyue'
 import { ReportView } from './ReportView'
@@ -256,13 +256,52 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
     startCompute()
   }
 
+  const intakeHistoryRef = useRef<ChatTurn[]>([])
+  const [intakeThinking, setIntakeThinking] = useState(false)
+
   const handleGather = (text: string) => {
     user(text)
     const d = draftRef.current
+    // 先离线正则预填（快、稳，也给 AI 兜底）
     parseBirthText(text, d)
-    // 追问城市而未识别：按跳过处理，不纠缠
-    if (lastAskRef.current === 'city' && d.cityIdx === undefined) d.cityIdx = null
-    askMissing()
+    const cfg = loadAiConfig()
+    if (!cfg) {
+      if (lastAskRef.current === 'city' && d.cityIdx === undefined) d.cityIdx = null
+      askMissing()
+      return
+    }
+    // AI 接引：自然对话 + 结构化抽取
+    setIntakeThinking(true)
+    Promise.all([
+      askIntake(cfg, intakeHistoryRef.current.slice(-8), text),
+      new Promise((res) => setTimeout(res, 700)),
+    ])
+      .then(([ex]) => {
+        if (ex.gender) d.gender = ex.gender
+        if (ex.date) d.date = ex.date
+        if (ex.hour != null) d.hour = hourToOption(ex.hour)
+        if (ex.city) {
+          const i = CITIES.findIndex((c) => ex.city!.includes(c.name) || c.name.includes(ex.city!))
+          if (i >= 0) d.cityIdx = i
+        } else if (ex.citySkipped) {
+          d.cityIdx = null
+        }
+        intakeHistoryRef.current.push({ role: 'user', content: text }, { role: 'assistant', content: ex.reply })
+        const haveEssentials = !!d.gender && !!d.date && d.hour != null
+        const cityResolved = d.cityIdx !== undefined
+        if (haveEssentials && cityResolved) {
+          master([ex.reply || '都齐了，老朽这就为你排盘。'])
+          startCompute()
+        } else {
+          master([ex.reply || '好，老朽记下了，还差一点。'])
+        }
+      })
+      .catch(() => {
+        // AI 不通 → 回落规则问答（正则已预填部分）
+        if (lastAskRef.current === 'city' && d.cityIdx === undefined) d.cityIdx = null
+        askMissing()
+      })
+      .finally(() => { setIntakeThinking(false); scroll() })
   }
 
   const startCompute = () => {
@@ -757,9 +796,9 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
             }}
           />
         )}
-        {aiThinking && (
+        {(aiThinking || intakeThinking) && (
           <div className="msg-row fade-in">
-            <div className="msg-bubble typing" style={{ marginLeft: 44 }}>老朽正在掐指推算<span className="caret">▌</span></div>
+            <div className="msg-bubble typing" style={{ marginLeft: 44 }}>{intakeThinking ? '老朽正在听你说' : '老朽正在掐指推算'}<span className="caret">▌</span></div>
           </div>
         )}
         {cardCasting && (
