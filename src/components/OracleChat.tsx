@@ -59,7 +59,7 @@ export function OracleChat() {
       .then(([raw]) => {
         const { body, suggests } = parseSuggestReply(raw as string)
         master([body])
-        if (suggests.length) setAiSuggests(suggests)
+        if (suggests.length) setAiSuggests((prev) => Array.from(new Set([...suggests, ...prev])).slice(0, 6))
         aiHistoryRef.current.push({ role: 'user', content: q }, { role: 'assistant', content: body })
       })
       .catch((e) => master([`网络一时未通（${explainAiError(e)}）——先以卦书体例为你断，稍后再问一句即接 AI。`]))
@@ -146,7 +146,7 @@ export function OracleChat() {
           <Chips ghost items={['今年适合跳槽吗？', '这段感情能长久吗？', '这笔投资可行否？']} onPick={ask} />
         )}
         {!busy && !computing && !aiThinking && lastCast && (
-          <Chips ghost items={followUps} onPick={(v) => { if (v === '换个问题再问一卦') resetCast(); else ask(v) }} />
+          <Chips ghost items={followUps} onPick={(v) => { if (v === '换个问题再问一卦') resetCast(); else { setAiSuggests((prev) => prev.filter((x) => x !== v)); ask(v) } }} />
         )}
         <div ref={bottomRef} />
       </div>
