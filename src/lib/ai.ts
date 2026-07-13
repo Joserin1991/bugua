@@ -188,16 +188,21 @@ export function explainAiError(e: unknown): string {
   return raw
 }
 
-// 失败自动重试一次（多等一会儿也要 AI）
+// 失败自动重试（多等一会儿也要 AI）：3 次尝试、退避，重试用更短超时，抗冷启动/瞬时重置
 export async function askMasterRetry(
   cfg: AiConfig, system: string, history: ChatTurn[], question: string,
 ): Promise<string> {
-  try {
-    return await askMaster(cfg, system, history, question)
-  } catch {
-    await new Promise((r) => setTimeout(r, 1500))
-    return await askMaster(cfg, system, history, question)
+  const delays = [0, 1200, 2600]
+  let lastErr: unknown
+  for (let i = 0; i < delays.length; i++) {
+    if (delays[i]) await new Promise((r) => setTimeout(r, delays[i]))
+    try {
+      return await askMaster(cfg, system, history, question, i === 0 ? 90000 : 45000)
+    } catch (e) {
+      lastErr = e
+    }
   }
+  throw lastErr
 }
 
 // 拉取中转站可用模型列表（OpenAI 兼容 GET /models）

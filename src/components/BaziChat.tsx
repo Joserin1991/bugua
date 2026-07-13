@@ -241,7 +241,6 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
       '既然你想了解自己，把出生信息一并说与老朽——是男是女、哪年哪月哪日（阳历）、大概几点、生在哪座城市。',
       '例如：「女，1991年11月2日上午10点，杭州」。缺哪样，老朽再单问。',
       ...(archives.length ? ['若是旧相识，点下方档案即可取旧盘续问。'] : []),
-      ...(loadAiConfig() ? [] : ['（老朽当前以本地古法作答；到「我的」页接入 AI 后，问答更贴身。）']),
     ])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -358,7 +357,7 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
           aiHistoryRef.current.push({ role: 'assistant', content: body })
           if (profileIdRef.current) appendHistory(profileIdRef.current, [{ role: 'assistant', content: body }])
         })
-        .catch((e) => master([`未能接通 AI（${explainAiError(e)}）——以下为本地古法开场，修好「我的」页配置后问答即为 AI。`, ...fallbackOpening]))
+        .catch((e) => master([`网络一时未通（${explainAiError(e)}）——先以本地古法为你开场；稍后随便再发一句，接通即为 AI 详解。`, ...fallbackOpening]))
         .finally(() => { setAiThinking(false); scroll() })
     } else {
       master(fallbackOpening)
@@ -711,7 +710,7 @@ export function BaziChat({ resumePid = null }: { resumePid?: string | null }) {
     if (topic) {
       runTopic(topic, null)
     } else {
-      master(['此问尚在天机之外——你可以问老朽事业、财运、感情、健康、大运流年，或让老朽看看五行与紫微星盘。到「我的」页接入 AI 后，老朽便可自由对答。'])
+      master(['此问尚在天机之外——你可以问老朽事业、财运、感情、健康、大运流年，或让老朽看看五行与紫微星盘。'])
     }
   }
 
