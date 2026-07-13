@@ -249,12 +249,12 @@ export function explainAiError(e: unknown): string {
 export async function askMasterRetry(
   cfg: AiConfig, system: string, history: ChatTurn[], question: string,
 ): Promise<string> {
-  const delays = [0, 1200, 2600]
+  const attempts = [{ wait: 0, timeout: 60000 }, { wait: 1200, timeout: 40000 }, { wait: 2600, timeout: 40000 }]
   let lastErr: unknown
-  for (let i = 0; i < delays.length; i++) {
-    if (delays[i]) await new Promise((r) => setTimeout(r, delays[i]))
+  for (const a of attempts) {
+    if (a.wait) await new Promise((r) => setTimeout(r, a.wait))
     try {
-      return await askMaster(cfg, system, history, question, i === 0 ? 90000 : 45000)
+      return await askMaster(cfg, system, history, question, a.timeout)
     } catch (e) {
       lastErr = e
     }
