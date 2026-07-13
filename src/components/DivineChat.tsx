@@ -70,7 +70,7 @@ export function DivineChat() {
         if (suggests.length) setAiSuggests(suggests)
         aiHistoryRef.current.push({ role: 'user', content: q }, { role: 'assistant', content: body })
       })
-      .catch((e) => master([`未能接通 AI（${explainAiError(e)}）——且以卦书体例为你断。`]))
+      .catch((e) => master([`网络一时未通（${explainAiError(e)}）——先以卦书体例为你断，稍后再问一句即接 AI。`]))
       .finally(() => { setAiThinking(false); scroll() })
     return true
   }
