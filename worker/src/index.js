@@ -64,6 +64,24 @@ async function rateLimit(req, env) {
   return null
 }
 
+// 单个上游调用，自带超时（超时/网络错误抛出，交由上层切备用）
+async function callUpstream(u, payload, timeoutMs) {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs)
+  try {
+    const res = await fetch(`${u.base.replace(/\/+$/, '')}/chat/completions`, {
+      method: 'POST',
+      signal: ctrl.signal,
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${u.key}` },
+      body: JSON.stringify({ ...payload, model: u.model || payload.model }),
+    })
+    const text = await res.text()
+    return { ok: res.ok, status: res.status, text }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 async function aiProxy(req, env, h) {
   if (!privileged(req, env)) {
     if (!originAllowed(req, env)) return json({ error: { message: '仅允许玄机阁网页调用' } }, h, 401)
@@ -78,13 +96,21 @@ async function aiProxy(req, env, h) {
     max_tokens: Math.min(Number(body.max_tokens) || 1500, 4000),
     temperature: body.temperature ?? 0.8,
   }
-  const res = await fetch(`${env.UPSTREAM_BASE.replace(/\/+$/, '')}/chat/completions`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${env.UPSTREAM_KEY}` },
-    body: JSON.stringify(payload),
-  })
-  const text = await res.text()
-  return new Response(text, { status: res.status, headers: { 'content-type': 'application/json', ...h } })
+  const primary = { base: env.UPSTREAM_BASE, key: env.UPSTREAM_KEY, model: env.UPSTREAM_MODEL }
+  const backup = env.UPSTREAM2_BASE && env.UPSTREAM2_KEY
+    ? { base: env.UPSTREAM2_BASE, key: env.UPSTREAM2_KEY, model: env.UPSTREAM2_MODEL || env.UPSTREAM_MODEL }
+    : null
+  // 主上游先行，失败/超时则切备用；任一成功即返
+  let result = null
+  try { result = await callUpstream(primary, payload, 25000) } catch { result = null }
+  if ((!result || !result.ok) && backup) {
+    try {
+      const alt = await callUpstream(backup, payload, 30000)
+      if (alt.ok || !result) result = alt
+    } catch { /* 备用也挂 → 保留主上游错误（若有） */ }
+  }
+  if (!result) return json({ error: { message: '上游暂时不可用，请稍后再试' } }, h, 502)
+  return new Response(result.text, { status: result.status, headers: { 'content-type': 'application/json', ...h } })
 }
 
 function models(req, env, h) {
