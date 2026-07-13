@@ -66,7 +66,7 @@ await test('白名单来源零配置直通：换密钥、锁模型、封顶 toke
   const text = (await res.json()).choices[0].message.content
   assert.ok(text.includes('auth=Bearer sk-secret-upstream'), '上游应收到真密钥')
   assert.ok(text.includes('model=fixed-model'), '模型应被 Worker 锁定')
-  assert.ok(text.includes('max=1200'), 'max_tokens 应封顶 1200')
+  assert.ok(text.includes('max=4000'), 'max_tokens 应封顶 4000')
   assert.ok(text.includes('msgs=24'), '历史应截到 24 条')
 })
 
