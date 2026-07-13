@@ -10,10 +10,13 @@ binding = "SYNC_KV"
 id = "e2055f5e97db45aaa72b14afaba890ae"
 
 [vars]
-# 上游 OpenAI 兼容接口（不含 /chat/completions）
+# 主上游 OpenAI 兼容接口（不含 /chat/completions）
 UPSTREAM_BASE = "https://api.hao.ai/v1"
 # 固定使用的模型（前端填什么都以这里为准）
 UPSTREAM_MODEL = "claude-sonnet-5"
+# 备用上游：主上游失败/超时自动切换（密钥另用 secret：UPSTREAM2_KEY）
+UPSTREAM2_BASE = "https://api.apilio.ai/v1"
+UPSTREAM2_MODEL = "claude-sonnet-5"
 # 允许的网页来源；上线后建议收紧为 "https://joserin1991.github.io"
 ALLOW_ORIGIN = "*"
 # 零配置访问白名单（Origin 精确匹配，逗号分隔；localhost 恒放行方便开发）

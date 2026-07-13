@@ -106,6 +106,31 @@ await test('localhost 开发来源放行', async () => {
   assert.deepEqual((await res.json()).data, [{ id: 'fixed-model' }])
 })
 
+await test('主上游挂掉 → 自动切备用上游', async () => {
+  // 备用上游（500x）：正常回话
+  const backup = createServer((req, res) => {
+    let bb = ''; req.on('data', (c) => { bb += c })
+    req.on('end', () => {
+      const j = JSON.parse(bb)
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(JSON.stringify({ choices: [{ message: { content: `backup;model=${j.model};key=${req.headers.authorization}` } }] }))
+    })
+  })
+  await new Promise((r) => backup.listen(4631, r))
+  const env2 = { ...env, UPSTREAM_BASE: 'http://127.0.0.1:1/v1', UPSTREAM2_BASE: 'http://localhost:4631/v1', UPSTREAM2_KEY: 'sk-backup', UPSTREAM2_MODEL: 'backup-model', DAILY_LIMIT: '999', IP_DAILY_LIMIT: '999' }
+  const res = await worker.fetch(new Request('https://w.example/v1/chat/completions', {
+    method: 'POST',
+    headers: { origin: 'https://joserin1991.github.io', 'cf-connecting-ip': '9.9.9.9' },
+    body: JSON.stringify({ messages: [{ role: 'user', content: 'q' }] }),
+  }), env2)
+  assert.equal(res.status, 200)
+  const text = (await res.json()).choices[0].message.content
+  assert.ok(text.includes('backup'), '应由备用上游应答')
+  assert.ok(text.includes('key=Bearer sk-backup'), '备用应使用备用密钥')
+  assert.ok(text.includes('model=backup-model'), '备用应使用备用模型')
+  backup.close()
+})
+
 console.log('云同步')
 
 await test('口令太短拒绝 400', async () => {

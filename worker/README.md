@@ -39,10 +39,18 @@ npx wrangler deploy
 - **AI**：默认直连本 Worker（地址内置在 `src/lib/sync.ts` 的 `SYNC_URL`）。放行逻辑：来源在 `PUBLIC_ORIGINS` 白名单内（或 localhost 开发）即可用，受每日限额约束（全站 `DAILY_LIMIT`、单 IP `IP_DAILY_LIMIT`）；带 `ACCESS_CODE` 的请求不限额（自用）。
 - **云备份**：全自动。首次启动生成「恢复码」（「我的」页可见、点击复制），数据变动后 5 秒静默上云；换设备输入旧机恢复码即可取回档案与记录。
 
+## 主备双上游（自动故障切换）
+
+主上游失败或超时（25 秒）会自动切到备用上游（30 秒），任一成功即返回，显著减少"接不通"。
+
+- 主：`UPSTREAM_BASE` / `UPSTREAM_MODEL` + secret `UPSTREAM_KEY`
+- 备：`UPSTREAM2_BASE` / `UPSTREAM2_MODEL` + secret `UPSTREAM2_KEY`（`npx wrangler secret put UPSTREAM2_KEY`）
+- 不配备用（不设 `UPSTREAM2_*`）则退化为单上游，功能不受影响。
+
 ## 改配置
 
-- 换上游 / 换模型：改 `wrangler.toml` 的 `UPSTREAM_BASE` / `UPSTREAM_MODEL` 后重新 `npx wrangler deploy`
-- 换密钥：重跑 `npx wrangler secret put UPSTREAM_KEY`
+- 换上游 / 换模型：改 `wrangler.toml` 的 `UPSTREAM_BASE` / `UPSTREAM_MODEL`（或备用 `UPSTREAM2_*`）后重新 `npx wrangler deploy`
+- 换密钥：重跑 `npx wrangler secret put UPSTREAM_KEY`（备用：`UPSTREAM2_KEY`）
 - 收紧来源：`ALLOW_ORIGIN = "https://joserin1991.github.io"`（默认 `*` 方便预览页调试）
 
 ## 安全边界（照实说）
