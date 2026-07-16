@@ -5,6 +5,7 @@ import { buildResult, hexUnicode, tossOnce, YAO_NAMES, type CastLine, type CastR
 import { interpretOracle, detectCategory, type OracleCategory } from '../lib/interpret'
 import type { HexagramInfo } from '../data/hexagrams'
 import { saveRecord, updateRecordChat, type ChatLine } from '../lib/records'
+import { recallCast, rememberCast } from '../lib/castmemory'
 import { MasterMsg, UserMsg, CardMsg, Chips, EnsoRing, InputBar } from './ChatUI'
 import { loadAiConfig, buildGuaSystem, parseSuggestReply, askMasterRetry, explainAiError, type ChatTurn, type GuaInfo } from '../lib/ai'
 import { YAO_NAMES as YAO_NAMES_AI } from '../lib/hexagram'
@@ -91,16 +92,21 @@ export function DivineChat() {
 
   const startToss = () => {
     if (tossOpen) return
+    // 一事不二占：今日已为此问摇过卦 → 复用原卦，不再重摇（跨会话/跨设备持久）
+    const prior = question ? recallCast(question) : null
+    if (prior) {
+      settleGua(prior.result, question, prior.cat as OracleCategory, true)
+      return
+    }
     setTossOpen(true)
     master(['好。老朽以三枚铜钱代蓍，你来摇——每点一次，掷出一爻，自下而上，六掷成卦。'])
     node(<TossCard onDone={onCastDone} />)
   }
 
-  const onCastDone = (lines: CastLine[]) => {
-    const result = buildResult(lines)
+  // 就一卦（新摇或复用）铺陈卡片、建档、接 AI 解卦
+  const settleGua = (result: CastResult, q0: string, cat: OracleCategory, reused: boolean) => {
     setCastDone(result)
-    const q = question || '心中所念之事'
-    const cat = detectCategory(question || '综合运势')
+    const q = q0 || '心中所念之事'
     const reading = interpretOracle(result, q, cat)
     log('m', `〔卦象卡〕本卦 ${result.original.fullName}${result.changed ? `，动爻${result.changingIndexes.length}处，变卦 ${result.changed.fullName}` : '，六爻安静'}；互卦 ${result.mutual.fullName}。`)
     recordIdRef.current = saveRecord({
@@ -110,12 +116,20 @@ export function DivineChat() {
       chat: chatLogRef.current,
       gua: { info: guaInfoOf(result, '六爻摇卦'), question: q, category: cat },
     })
-    master([`卦象已成，来看本卦——${result.original.fullName}。${result.original.brief}。`])
+    if (reused) master([`一事不二占——你今日已为此事摇过卦，卦象已定为「${result.original.fullName}」，不必重摇。若执意另起，点下方「重新摇卦」。`])
+    else master([`卦象已成，来看本卦——${result.original.fullName}。${result.original.brief}。`])
     node(<GuaCard result={result} question={q} category={cat} />)
     aiSystemRef.current = buildGuaSystem(guaInfoOf(result, '六爻摇卦'), q, cat)
     aiHistoryRef.current = []
-    const usedAi = aiAnswer(`【系统指令】卦刚起好，卦象卡已展示。请就命主所问「${q}」解此卦（150~200字）：本卦定基调、动爻与变卦看走向，给出明确倾向与行动叮嘱。`, false)
+    const usedAi = aiAnswer(`【系统指令】卦${reused ? '仍为原卦（一事不二占）' : '刚起好'}，卦象卡已展示。请就命主所问「${q}」解此卦（150~200字）：本卦定基调、动爻与变卦看走向，给出明确倾向与行动叮嘱。`, false)
     if (!usedAi) master(['卦已解毕。若想就此卦再问一事，点下方追问；或重新摇一卦。'])
+  }
+
+  const onCastDone = (lines: CastLine[]) => {
+    const result = buildResult(lines)
+    const cat = detectCategory(question || '综合运势')
+    rememberCast(question, lines, cat) // 有明确问题才持久化（内部判空）
+    settleGua(result, question, cat, false)
   }
 
   const followUps = castDone

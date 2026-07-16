@@ -1,6 +1,7 @@
 // 答疑解惑 · 对话流：输入问题 → 梅花易数应时起卦 → 卦象卡 + AI 解卦（无 AI 则卦书断语） → 就卦追问
 import { useRef, useState, type ReactNode } from 'react'
-import { castByQuestion, normalizeQuestion, type CastResult } from '../lib/hexagram'
+import { castByQuestion, type CastResult } from '../lib/hexagram'
+import { recallCast, rememberCast } from '../lib/castmemory'
 import { interpretOracle, detectCategory, type OracleCategory } from '../lib/interpret'
 import { saveRecord, updateRecordChat, type ChatLine } from '../lib/records'
 import { MasterMsg, UserMsg, Chips, ProgressEnso, InputBar } from './ChatUI'
@@ -31,8 +32,6 @@ export function OracleChat() {
   const aiHistoryRef = useRef<ChatTurn[]>([])
   const aiSystemRef = useRef<string>('')
   const bottomRef = useRef<HTMLDivElement>(null)
-  // 一事不二占：本会话内同一问题复用原卦，不重起（增可信度）
-  const sessionCastsRef = useRef<Map<string, { result: CastResult; cat: OracleCategory }>>(new Map())
 
   const scroll = () => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100)
   const push = (item: NewItem) => { setItems((a) => [...a, { ...item, id: uid++ }]); scroll() }
@@ -97,11 +96,10 @@ export function OracleChat() {
   const cast = (q: string) => {
     if (computing) return
     setAiSuggests([])
-    // 一事不二占：今日已问过同一问题 → 直接复用原卦，不再摇出新卦
-    const key = normalizeQuestion(q)
-    const prior = sessionCastsRef.current.get(key)
+    // 一事不二占：今日已问过同一问题 → 复用原卦（跨会话/跨设备持久），不再摇新卦
+    const prior = recallCast(q)
     if (prior) {
-      settleCast(prior.result, q, prior.cat, true)
+      settleCast(prior.result, q, prior.cat as OracleCategory, true)
       return
     }
     setComputing(true)
@@ -116,7 +114,7 @@ export function OracleChat() {
         setPct(0)
         const result = castByQuestion(q, new Date())
         const cat = detectCategory(q)
-        sessionCastsRef.current.set(key, { result, cat })
+        rememberCast(q, result.lines, cat)
         settleCast(result, q, cat, false)
       }
     }, 90)

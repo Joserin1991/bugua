@@ -5,7 +5,7 @@ export const SYNC_URL = 'https://xuanjige-api.xuanjige.workers.dev'
 export interface SyncConfig { code: string; url?: string } // url 仅作隐藏覆盖位（测试/自部署）
 
 const LS_KEY = 'xjg-sync-config'
-const SYNC_KEYS = ['xjg-profiles', 'xuanjige_records', 'xjg-ai-config'] as const
+const SYNC_KEYS = ['xjg-profiles', 'xuanjige_records', 'xjg-ai-config', 'xjg-casts'] as const
 
 export function loadSyncConfig(): SyncConfig | null {
   try {
