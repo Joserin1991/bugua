@@ -8,7 +8,10 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "tsx tests/engine.test.ts && node tests/worker.test.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy:cloudflare": "npm run build && npx wrangler@latest pages deploy --force dist --project-name bugua",
+    "preview:cloudflare": "npm run build && npx wrangler@latest pages dev dist",
+    "deploy:worker": "cd worker && npx wrangler@latest deploy"
   },
   "dependencies": {
     "@fontsource/ma-shan-zheng": "^5.2.9",
