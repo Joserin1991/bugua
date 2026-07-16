@@ -4,6 +4,12 @@ import assert from 'node:assert/strict'
 import { computeBazi } from '../src/lib/bazi'
 import { liuYueOf, liuRiOf } from '../src/lib/liuyue'
 import { buildResult, castByQuestion, tossOnce, type CastLine } from '../src/lib/hexagram'
+// localStorage 垫片（Node 无），供 castmemory 使用
+;(globalThis as unknown as { localStorage: Storage }).localStorage = (() => {
+  const m = new Map<string, string>()
+  return { getItem: (k: string) => (m.has(k) ? m.get(k)! : null), setItem: (k: string, v: string) => { m.set(k, String(v)) }, removeItem: (k: string) => { m.delete(k) }, clear: () => m.clear(), key: () => null, length: 0 } as unknown as Storage
+})()
+const { recallCast, rememberCast } = await import('../src/lib/castmemory')
 
 let passed = 0
 function test(name: string, fn: () => void) {
@@ -134,6 +140,30 @@ test('摇卦 tossOnce 只产生 6/7/8/9，阴阳动静一致', () => {
     assert.equal(l.yang, l.value === 7 || l.value === 9)
     assert.equal(l.changing, l.value === 6 || l.value === 9)
   }
+})
+
+console.log('一事不二占 · 持久记忆')
+
+test('castmemory：记住后同日可召回同卦；空问题不记；未记返回 null', () => {
+  const t = new Date(2024, 5, 1, 10, 0, 0)
+  const cast = castByQuestion('明年财运如何', t)
+  rememberCast('明年财运如何', cast.lines, '财运求财', t)
+  const r = recallCast('明年财运如何', t)
+  assert.ok(r, '应召回')
+  assert.equal(r!.result.original.fullName, cast.original.fullName, '召回应为同卦')
+  assert.equal(r!.cat, '财运求财')
+  assert.equal(recallCast('从没问过的事', t), null, '未记应为 null')
+  rememberCast('', cast.lines, '综合运势', t)
+  assert.equal(recallCast('', t), null, '空问题不记')
+})
+
+test('castmemory：跨日不串卦（次日召回为空）', () => {
+  const d1 = new Date(2024, 5, 1, 10, 0, 0)
+  const d2 = new Date(2024, 5, 2, 10, 0, 0)
+  const cast = castByQuestion('这段感情走向', d1)
+  rememberCast('这段感情走向', cast.lines, '感情姻缘', d1)
+  assert.ok(recallCast('这段感情走向', d1), '当日可召回')
+  assert.equal(recallCast('这段感情走向', d2), null, '次日不应召回昨日之卦')
 })
 
 console.log(`\n全部通过：${passed} 项`)
