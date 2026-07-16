@@ -107,6 +107,26 @@ test('梅花易数：同问同时刻起卦结果确定（可复现）', () => {
   assert.equal(a.changed?.fullName, b.changed?.fullName)
 })
 
+test('一事不二占：同一天同问、不同时刻/措辞小异 → 同一卦', () => {
+  const morning = new Date(2024, 5, 1, 9, 5, 0)
+  const evening = new Date(2024, 5, 1, 22, 40, 0) // 同日不同时刻
+  const a = castByQuestion('今年适合跳槽吗', morning)
+  const b = castByQuestion('今年适合跳槽吗？', evening) // 加了问号
+  const c = castByQuestion('今年适合跳槽吗 ', evening) // 加了空格
+  assert.equal(a.original.fullName, b.original.fullName, '同日同问不同时刻应同卦')
+  assert.equal(a.original.fullName, c.original.fullName, '措辞标点小异应同卦')
+  assert.equal(a.changed?.fullName, b.changed?.fullName)
+})
+
+test('梅花易数：跨日同问 → 卦可不同（时移事异）', () => {
+  const d1 = new Date(2024, 5, 1, 10, 0, 0)
+  const d2 = new Date(2024, 8, 15, 10, 0, 0)
+  const a = castByQuestion('这段感情能长久吗', d1)
+  const b = castByQuestion('这段感情能长久吗', d2)
+  // 只要求引擎按日区分（可能相同也可能不同，此处两日恰不同）
+  assert.ok(a.original.fullName !== b.original.fullName || a.changed?.fullName !== b.changed?.fullName)
+})
+
 test('摇卦 tossOnce 只产生 6/7/8/9，阴阳动静一致', () => {
   for (let i = 0; i < 200; i++) {
     const l = tossOnce()
