@@ -65,11 +65,17 @@ export function buildResult(lines: CastLine[]): CastResult {
   }
 }
 
-// 梅花易数：以问题文字与时间起卦（确定性），用于「答疑解惑」
+// 归一化问题文本，供「一事不二占」判定（去空白标点，忽略措辞小异）
+export function normalizeQuestion(question: string): string {
+  return question.trim().toLowerCase().replace(/[\s，。！？、,.!?~～;:；：""''「」()（）]/g, '')
+}
+
+// 梅花易数：以「问题 + 当日」起卦（确定性到"天"）——同一天同一问题必得同一卦，合「一事不二占」之理
 export function castByQuestion(question: string, date: Date): CastResult {
   let seed = 0
-  for (const ch of question) seed = (seed * 131 + ch.codePointAt(0)!) >>> 0
-  seed = (seed + date.getFullYear() * 12 + (date.getMonth() + 1) * 31 + date.getDate() * 24 + date.getHours() * 60 + date.getMinutes()) >>> 0
+  for (const ch of normalizeQuestion(question)) seed = (seed * 131 + ch.codePointAt(0)!) >>> 0
+  // 只取到年月日：同日同问同卦；跨日方另起（时移事异）
+  seed = (seed + date.getFullYear() * 372 + (date.getMonth() + 1) * 31 + date.getDate()) >>> 0
 
   // 简易可复现伪随机
   let s = seed || 88
@@ -82,7 +88,7 @@ export function castByQuestion(question: string, date: Date): CastResult {
   const lines = Array.from({ length: 6 }, () => tossOnce(rand))
   // 梅花体例：至少保证一个动爻，取问题字数模六
   if (!lines.some((l) => l.changing)) {
-    const idx = [...question].length % 6
+    const idx = [...normalizeQuestion(question)].length % 6
     const l = lines[idx]
     lines[idx] = { ...l, value: (l.yang ? 9 : 6) as YaoValue, changing: true }
   }
